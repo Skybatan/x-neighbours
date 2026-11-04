@@ -13,17 +13,6 @@
       }
     },
     {
-      "id": "910002",
-      "name": "Amber Kiln",
-      "username": "amber_kiln",
-      "description": "Fires small cups and keeps the cracked ones.",
-      "profile_image_url": "avatars/910002.png",
-      "public_metrics": {
-        "followers_count": 640,
-        "tweet_count": 410
-      }
-    },
-    {
       "id": "910003",
       "name": "Pixel Otter",
       "username": "pixel_otter",
@@ -35,14 +24,14 @@
       }
     },
     {
-      "id": "910005",
-      "name": "Moss Radio",
-      "username": "moss_radio",
-      "description": "A one-room station for long songs.",
-      "profile_image_url": "avatars/910005.png",
+      "id": "910004",
+      "name": "Quiet Comet",
+      "username": "quiet_comet",
+      "description": "Night-sky notes from a rooftop desk.",
+      "profile_image_url": "avatars/910004.png",
       "public_metrics": {
-        "followers_count": 430,
-        "tweet_count": 260
+        "followers_count": 980,
+        "tweet_count": 1500
       }
     },
     {
@@ -65,6 +54,17 @@
       "public_metrics": {
         "followers_count": 8900,
         "tweet_count": 3400
+      }
+    },
+    {
+      "id": "910099",
+      "name": "Grok",
+      "username": "grok",
+      "description": "Bot account included so the sample can show that exclude works.",
+      "profile_image_url": "avatars/910099.png",
+      "public_metrics": {
+        "followers_count": 1,
+        "tweet_count": 1
       }
     }
   ],

@@ -2,6 +2,17 @@
   "_comment": "FICTIONAL SAMPLE. Made-up users and posts for the X Neighbours example. Not real X data.",
   "data": [
     {
+      "id": "910002",
+      "name": "Amber Kiln",
+      "username": "amber_kiln",
+      "description": "Fires small cups and keeps the cracked ones.",
+      "profile_image_url": "avatars/910002.png",
+      "public_metrics": {
+        "followers_count": 640,
+        "tweet_count": 410
+      }
+    },
+    {
       "id": "910003",
       "name": "Pixel Otter",
       "username": "pixel_otter",
@@ -11,9 +22,218 @@
         "followers_count": 12800,
         "tweet_count": 2300
       }
+    },
+    {
+      "id": "910005",
+      "name": "Moss Radio",
+      "username": "moss_radio",
+      "description": "A one-room station for long songs.",
+      "profile_image_url": "avatars/910005.png",
+      "public_metrics": {
+        "followers_count": 430,
+        "tweet_count": 260
+      }
+    },
+    {
+      "id": "910008",
+      "name": "Velvet Axis",
+      "username": "velvet_axis",
+      "description": "Designs posters for plays that do not exist.",
+      "profile_image_url": "avatars/910008.png",
+      "public_metrics": {
+        "followers_count": 3200,
+        "tweet_count": 1100
+      }
+    },
+    {
+      "id": "910009",
+      "name": "Tin Harbor",
+      "username": "tin_harbor",
+      "description": "Collects harbour bells and their recordings.",
+      "profile_image_url": "avatars/910009.png",
+      "public_metrics": {
+        "followers_count": 740,
+        "tweet_count": 390
+      }
+    },
+    {
+      "id": "910012",
+      "name": "Low Orbit",
+      "username": "low_orbit",
+      "description": "Keeps a log of satellites anyone can see.",
+      "profile_image_url": "avatars/910012.png",
+      "public_metrics": {
+        "followers_count": 8900,
+        "tweet_count": 3400
+      }
+    },
+    {
+      "id": "910014",
+      "name": "Echo Marsh",
+      "username": "echo_marsh",
+      "description": "Records frogs and answers them.",
+      "profile_image_url": "avatars/910014.png",
+      "public_metrics": {
+        "followers_count": 670,
+        "tweet_count": 540
+      }
+    },
+    {
+      "id": "910018",
+      "name": "Copper Sail",
+      "username": "copper_sail",
+      "description": "Mends small boats and longer stories.",
+      "profile_image_url": "avatars/910018.png",
+      "public_metrics": {
+        "followers_count": 2100,
+        "tweet_count": 980
+      }
+    },
+    {
+      "id": "910022",
+      "name": "Marble Ink",
+      "username": "marble_ink",
+      "description": "Lettering practice on scrap stone.",
+      "profile_image_url": "avatars/910022.png",
+      "public_metrics": {
+        "followers_count": 410,
+        "tweet_count": 255
+      }
+    },
+    {
+      "id": "910026",
+      "name": "Kite Window",
+      "username": "kite_window",
+      "description": "Office window, paper kite, long meeting.",
+      "profile_image_url": "avatars/910026.png",
+      "public_metrics": {
+        "followers_count": 230,
+        "tweet_count": 175
+      }
+    },
+    {
+      "id": "910030",
+      "name": "Bright Parcel",
+      "username": "bright_parcel",
+      "description": "Sends friends boxes of odd stationery.",
+      "profile_image_url": "avatars/910030.png",
+      "public_metrics": {
+        "followers_count": 5100,
+        "tweet_count": 760
+      }
+    },
+    {
+      "id": "910203",
+      "name": "Daisy Drawer",
+      "username": "daisy_drawer",
+      "description": "Fictional neighbour in the sample outer ring.",
+      "profile_image_url": "avatars/910203.png",
+      "public_metrics": {
+        "followers_count": 49,
+        "tweet_count": 15
+      }
+    },
+    {
+      "id": "910207",
+      "name": "Hazel Hammock",
+      "username": "hazel_hammock",
+      "description": "Fictional neighbour in the sample outer ring.",
+      "profile_image_url": "avatars/910207.png",
+      "public_metrics": {
+        "followers_count": 61,
+        "tweet_count": 19
+      }
+    },
+    {
+      "id": "910211",
+      "name": "Lemon Ladder",
+      "username": "lemon_ladder",
+      "description": "Fictional neighbour in the sample outer ring.",
+      "profile_image_url": "avatars/910211.png",
+      "public_metrics": {
+        "followers_count": 73,
+        "tweet_count": 23
+      }
+    },
+    {
+      "id": "910215",
+      "name": "Pearl Ribbon",
+      "username": "pearl_ribbon",
+      "description": "Fictional neighbour in the sample outer ring.",
+      "profile_image_url": "avatars/910215.png",
+      "public_metrics": {
+        "followers_count": 85,
+        "tweet_count": 27
+      }
+    },
+    {
+      "id": "910219",
+      "name": "Tulip Valley",
+      "username": "tulip_valley",
+      "description": "Fictional neighbour in the sample outer ring.",
+      "profile_image_url": "avatars/910219.png",
+      "public_metrics": {
+        "followers_count": 97,
+        "tweet_count": 31
+      }
+    },
+    {
+      "id": "910223",
+      "name": "Yarrow Easel",
+      "username": "yarrow_easel",
+      "description": "Fictional neighbour in the sample outer ring.",
+      "profile_image_url": "avatars/910223.png",
+      "public_metrics": {
+        "followers_count": 109,
+        "tweet_count": 35
+      }
+    },
+    {
+      "id": "910227",
+      "name": "Clover Inkwell",
+      "username": "clover_inkwell",
+      "description": "Fictional neighbour in the sample outer ring.",
+      "profile_image_url": "avatars/910227.png",
+      "public_metrics": {
+        "followers_count": 121,
+        "tweet_count": 39
+      }
+    },
+    {
+      "id": "910231",
+      "name": "Gull Nest",
+      "username": "gull_nest",
+      "description": "Fictional neighbour in the sample outer ring.",
+      "profile_image_url": "avatars/910231.png",
+      "public_metrics": {
+        "followers_count": 133,
+        "tweet_count": 43
+      }
+    },
+    {
+      "id": "910235",
+      "name": "Koi Reed",
+      "username": "koi_reed",
+      "description": "Fictional neighbour in the sample outer ring.",
+      "profile_image_url": "avatars/910235.png",
+      "public_metrics": {
+        "followers_count": 145,
+        "tweet_count": 47
+      }
+    },
+    {
+      "id": "910099",
+      "name": "Grok",
+      "username": "grok",
+      "description": "Bot account included so the sample can show that exclude works.",
+      "profile_image_url": "avatars/910099.png",
+      "public_metrics": {
+        "followers_count": 1,
+        "tweet_count": 1
+      }
     }
   ],
   "meta": {
-    "result_count": 1
+    "result_count": 21
   }
 }

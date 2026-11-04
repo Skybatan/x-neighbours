@@ -2,6 +2,17 @@
   "_comment": "FICTIONAL SAMPLE. Made-up users and posts for the X Neighbours example. Not real X data.",
   "data": [
     {
+      "id": "910002",
+      "name": "Amber Kiln",
+      "username": "amber_kiln",
+      "description": "Fires small cups and keeps the cracked ones.",
+      "profile_image_url": "avatars/910002.png",
+      "public_metrics": {
+        "followers_count": 640,
+        "tweet_count": 410
+      }
+    },
+    {
       "id": "910003",
       "name": "Pixel Otter",
       "username": "pixel_otter",
@@ -11,9 +22,42 @@
         "followers_count": 12800,
         "tweet_count": 2300
       }
+    },
+    {
+      "id": "910005",
+      "name": "Moss Radio",
+      "username": "moss_radio",
+      "description": "A one-room station for long songs.",
+      "profile_image_url": "avatars/910005.png",
+      "public_metrics": {
+        "followers_count": 430,
+        "tweet_count": 260
+      }
+    },
+    {
+      "id": "910010",
+      "name": "Glass Meadow",
+      "username": "glass_meadow",
+      "description": "Photographs greenhouses in winter.",
+      "profile_image_url": "avatars/910010.png",
+      "public_metrics": {
+        "followers_count": 510,
+        "tweet_count": 720
+      }
+    },
+    {
+      "id": "910013",
+      "name": "North Spoon",
+      "username": "north_spoon",
+      "description": "Recipes that start with whatever is left.",
+      "profile_image_url": "avatars/910013.png",
+      "public_metrics": {
+        "followers_count": 150,
+        "tweet_count": 80
+      }
     }
   ],
   "meta": {
-    "result_count": 1
+    "result_count": 5
   }
 }

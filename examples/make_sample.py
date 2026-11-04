@@ -77,6 +77,23 @@ WEEK_POSTS = [
 OLD_POST = ("8009", "2026-10-20T12:00:00Z", "This post is older than the sample week and should not count.")
 
 SHAPES = ("circle", "diamond", "square", "ring")
+RELATIONS = ("neither", "follows-you", "you-follow", "mutual")
+# Enough quiet neighbours to fill four rings: 8 + 14 + 20 + 26 = 68.
+# The 30 people above plus these 38 fillers, with @grok excluded.
+FILLER_A = (
+    "amber", "brass", "coral", "daisy", "ember", "flint", "grape", "hazel",
+    "ivory", "jade", "kelp", "lemon", "maple", "nylon", "olive", "pearl",
+    "quartz", "robin", "sage", "tulip", "umber", "violet", "willow", "yarrow",
+    "zinc", "apricot", "birch", "clover", "dune", "elm", "fern", "gull",
+    "heath", "iris", "juniper", "koi", "lark", "mink",
+)
+FILLER_B = (
+    "anchor", "bridge", "candle", "drawer", "engine", "fountain", "garden", "hammock",
+    "island", "journal", "kettle", "ladder", "mirror", "needle", "pocket", "ribbon",
+    "saddle", "thimble", "umbrella", "valley", "yarn", "basket", "compass", "easel",
+    "flute", "glove", "hinge", "inkwell", "jar", "key", "latch", "nest",
+    "oak", "paddle", "quill", "reed", "spool", "trellis",
+)
 
 
 def rgb(hue, sat, val):
@@ -137,15 +154,18 @@ def assign(people, day_posts, week_posts):
     week_likers = {pid: [] for pid, *_rest in week_posts}
     day_ids = [pid for pid, *_rest in day_posts]
     week_ids = [pid for pid, *_rest in week_posts]
+    cursor = {"day": 0, "week": 0}
     for person in people:
-        for bucket, ids, count in (
-            (day_likers, day_ids, person["day_likes"]),
-            (week_likers, week_ids, person["week_likes"] - person["day_likes"]),
+        for name, bucket, ids, count in (
+            ("day", day_likers, day_ids, person["day_likes"]),
+            ("week", week_likers, week_ids, person["week_likes"] - person["day_likes"]),
         ):
             placed = 0
-            for pid in ids:
-                if placed >= count:
-                    break
+            tried = 0
+            while placed < count and tried < len(ids) * 2:
+                pid = ids[cursor[name] % len(ids)]
+                cursor[name] += 1
+                tried += 1
                 if person["id"] not in bucket[pid]:
                     bucket[pid].append(person["id"])
                     placed += 1
@@ -174,6 +194,26 @@ def main():
             "followers": followers,
             "posts": posts,
             "hue": (index * 0.137) % 1.0,
+            "shape": SHAPES[index % len(SHAPES)],
+        })
+    used = {person["username"] for person in people}
+    for index, (left, right) in enumerate(zip(FILLER_A, FILLER_B)):
+        username = f"{left}_{right}"
+        if username in used:
+            raise SystemExit(f"filler handle collides: {username}")
+        people.append({
+            "id": str(910200 + index),
+            "username": username,
+            "name": f"{left.title()} {right.title()}",
+            "relation": RELATIONS[index % len(RELATIONS)],
+            "day_likes": 0,
+            "week_likes": 1,
+            "day_replies": 0,
+            "week_replies": 0,
+            "description": "Fictional neighbour in the sample outer ring.",
+            "followers": 40 + index * 3,
+            "posts": 12 + index,
+            "hue": (0.21 + index * 0.073) % 1.0,
             "shape": SHAPES[index % len(SHAPES)],
         })
     grok = {
