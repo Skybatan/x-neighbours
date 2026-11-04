@@ -15,7 +15,7 @@ It reads raw JSON saved from X tool calls (see README.md) in the data folder:
 Usage:
   python3 x_neighbours.py --handle your_handle --user-id your_user_id
                       [--data data] [--out .] [--now 2026-11-04T18:00:00Z]
-                      [--rings 4] [--top 10]
+                      [--rings 3] [--top 10]
                       [--report likes|replies|both] [--per-post] [--per-day]
 """
 import argparse
@@ -223,6 +223,88 @@ def like_count(post):
     return (post.get("public_metrics") or {}).get("like_count", 0) or 0
 
 
+def impression_count(post):
+    metrics = post.get("public_metrics") or {}
+    value = metrics.get("impression_count")
+    if value is None:
+        return None
+    return int(value)
+
+
+def fmt_int(n):
+    return f"{int(n):,}"
+
+
+def impression_rows(data, since, until=None):
+    rows = []
+    for pid, post in data.posts.items():
+        if not data._in_window(post.get("created_at"), since, until):
+            continue
+        count = impression_count(post)
+        if count is None:
+            continue
+        rows.append((count, ts(post["created_at"]), pid, post))
+    rows.sort(key=lambda row: (row[0], row[1]), reverse=True)
+    return rows
+
+
+def impression_change(total, previous):
+    delta = total - previous
+    if previous:
+        percent = round(100 * delta / previous)
+        if delta > 0:
+            return f"up {fmt_int(delta)} ({percent}%)"
+        if delta < 0:
+            return f"down {fmt_int(-delta)} ({abs(percent)}%)"
+        return "unchanged"
+    if delta > 0:
+        return f"up {fmt_int(delta)}"
+    if delta < 0:
+        return f"down {fmt_int(-delta)}"
+    return "unchanged"
+
+
+def impression_summary(data, since, days, handle):
+    current = impression_rows(data, since)
+    if not current:
+        return None
+    total = sum(count for count, *_rest in current)
+    previous_rows = impression_rows(data, since - timedelta(days=days), since)
+    payload = {
+        "total": total,
+        "top": [{
+            "impressions": count,
+            "text": snippet(post.get("text")),
+            "url": f"https://x.com/{handle}/status/{pid}",
+        } for count, _when, pid, post in current[:3]],
+    }
+    if previous_rows:
+        previous = sum(count for count, *_rest in previous_rows)
+        payload["previous"] = previous
+        payload["change"] = total - previous
+    return payload
+
+
+def append_impressions(lines, data, since, days, handle):
+    payload = impression_summary(data, since, days, handle)
+    if not payload:
+        lines += ["## Impressions", "",
+                  "Impression counts were not in the saved posts.", ""]
+        return None
+    period = "24 hours" if days == 1 else "7 days"
+    if "previous" in payload:
+        movement = impression_change(payload["total"], payload["previous"])
+        summary = f"{fmt_int(payload['total'])} impressions, {movement} from the previous {period}."
+    else:
+        summary = f"{fmt_int(payload['total'])} impressions."
+    lines += ["## Impressions", "", summary, "", "Top posts by impressions:", ""]
+    for post in payload["top"]:
+        title = post["text"] or "Post"
+        lines.append(f"- {fmt_int(post['impressions'])} — {title} — {post['url']}")
+    lines.append("")
+    return payload
+
+
 def summary(user):
     metrics = user.get("public_metrics") or {}
     bio = re.sub(r"\s+", " ", (user.get("description") or "").strip())
@@ -390,7 +472,8 @@ def append_per_post(lines, data, since, until, handle, report):
 
 
 def write_report(data, label, since, path, top, handle, like_weight=1, reply_weight=3,
-                 report="both", per_post=False, per_day=False, until=None):
+                 report="both", per_post=False, per_day=False, until=None,
+                 impressions=True, days=7):
     likes, replies = data.window(since)
     use_likes, use_replies = active_counts(likes, replies, report)
     ranked = score(use_likes, use_replies, like_weight, reply_weight)
@@ -403,6 +486,9 @@ def write_report(data, label, since, path, top, handle, like_weight=1, reply_wei
         f"Own posts in window: {own_posts}.",
         "",
     ]
+    impression_payload = None
+    if impressions:
+        impression_payload = append_impressions(lines, data, since, days, handle)
     if report != "replies":
         append_table(lines, "Top likers", likes, "likes", ranked, data, top)
     if report != "likes":
@@ -451,7 +537,7 @@ def write_report(data, label, since, path, top, handle, like_weight=1, reply_wei
     ]
     with open(path, "w", encoding="utf-8") as fh:
         fh.write("\n".join(lines) + "\n")
-    return likes, replies, suggestions, ranked
+    return likes, replies, suggestions, ranked, impression_payload
 
 
 THEMES = {
@@ -573,7 +659,7 @@ def draw_label(draw, text, face, x, y, anchor, fill_bg, fill_text, scale):
     draw_label_at(draw, text, face, x - text_width / 2, y, fill_bg, fill_text, scale)
 
 
-def draw_circle(data, me_user, scores, path, rings=4, show_names=True, width=1200,
+def draw_circle(data, me_user, scores, path, rings=3, show_names=True, width=1200,
                 subtitle="Top neighbours of the last 7 days", theme="midnight"):
     theme_colors = THEMES.get(theme, THEMES["midnight"])
     from PIL import Image, ImageDraw, ImageFilter
@@ -606,7 +692,7 @@ def draw_circle(data, me_user, scores, path, rings=4, show_names=True, width=120
     for orbit in radius:
         draw.ellipse((cx - orbit, cy - orbit, cx + orbit, cy + orbit),
                      outline=theme_colors["orbit"], width=2 * scale)
-    name_font = [font(max(15, int(size * 0.22))) for size in avatar_size]
+    name_font = [font(max(12, int(size * 0.17))) for size in avatar_size]
     index = 0
     for ring_index in range(rings):
         count = min(per_ring[ring_index], max(0, len(ranked) - index))
@@ -659,7 +745,8 @@ DEFAULTS = {
     "like_weight": 1,
     "reply_weight": 3,
     "exclude": ["grok"],
-    "rings": 4,
+    "rings": 3,
+    "impressions": True,
     "show_names": True,
     "theme": "midnight",
     "windows": ["week"],
@@ -718,6 +805,8 @@ def main():
                         default=None, help="add a per-post breakdown")
     parser.add_argument("--per-day", dest="per_day", action=argparse.BooleanOptionalAction,
                         default=None, help="add a per-day breakdown")
+    parser.add_argument("--impressions", dest="impressions", action=argparse.BooleanOptionalAction,
+                        default=None, help="show impression totals from your own posts (default on)")
     parser.add_argument("--show-names", dest="show_names", action="store_true", default=None)
     parser.add_argument("--hide-names", dest="show_names", action="store_false")
     parser.add_argument("--no-image", action="store_true")
@@ -754,6 +843,7 @@ def main():
     cfg["show_names"] = as_bool(cfg["show_names"])
     cfg["per_post"] = as_bool(cfg.get("per_post"))
     cfg["per_day"] = as_bool(cfg.get("per_day"))
+    cfg["impressions"] = as_bool(cfg.get("impressions", True))
     if cfg.get("report") not in REPORTS:
         parser.error("report must be likes, replies, or both")
     if not args.no_image:
@@ -781,11 +871,12 @@ def main():
     for key in cfg["windows"]:
         label, days, _subtitle = WINDOWS[key]
         since = now - timedelta(days=days)
-        likes, replies, suggestions, ranked = write_report(
+        likes, replies, suggestions, ranked, impression_payload = write_report(
             data, label, since,
             os.path.join(args.out, f"report_{key}.md"),
             cfg["top"], cfg["handle"], like_weight, reply_weight,
-            report=report, per_post=cfg["per_post"], per_day=cfg["per_day"], until=now)
+            report=report, per_post=cfg["per_post"], per_day=cfg["per_day"], until=now,
+            impressions=cfg["impressions"], days=days)
         if not args.no_image:
             draw_circle(
                 data, me, ranked, os.path.join(args.out, f"x_neighbours_{key}.png"),
@@ -801,6 +892,8 @@ def main():
             "follow_back": [display(uid) for uid, _count in suggestions],
             "inner": [(display(uid), points) for uid, points in ranked.most_common(8)],
         }
+        if impression_payload:
+            output[key]["impressions"] = impression_payload
     print(json.dumps(output, ensure_ascii=False))
 
 

@@ -9,7 +9,8 @@
       "public_metrics": {
         "like_count": 6,
         "reply_count": 0,
-        "repost_count": 0
+        "repost_count": 0,
+        "impression_count": 4200
       }
     },
     {
@@ -20,7 +21,8 @@
       "public_metrics": {
         "like_count": 6,
         "reply_count": 0,
-        "repost_count": 0
+        "repost_count": 0,
+        "impression_count": 1800
       }
     },
     {
@@ -31,7 +33,8 @@
       "public_metrics": {
         "like_count": 5,
         "reply_count": 0,
-        "repost_count": 0
+        "repost_count": 0,
+        "impression_count": 9100
       }
     },
     {
@@ -42,7 +45,8 @@
       "public_metrics": {
         "like_count": 5,
         "reply_count": 0,
-        "repost_count": 0
+        "repost_count": 0,
+        "impression_count": 2500
       }
     },
     {
@@ -53,7 +57,8 @@
       "public_metrics": {
         "like_count": 21,
         "reply_count": 0,
-        "repost_count": 0
+        "repost_count": 0,
+        "impression_count": 6400
       }
     },
     {
@@ -64,7 +69,8 @@
       "public_metrics": {
         "like_count": 21,
         "reply_count": 0,
-        "repost_count": 0
+        "repost_count": 0,
+        "impression_count": 3100
       }
     },
     {
@@ -75,7 +81,8 @@
       "public_metrics": {
         "like_count": 21,
         "reply_count": 0,
-        "repost_count": 0
+        "repost_count": 0,
+        "impression_count": 15000
       }
     },
     {
@@ -86,7 +93,8 @@
       "public_metrics": {
         "like_count": 21,
         "reply_count": 0,
-        "repost_count": 0
+        "repost_count": 0,
+        "impression_count": 2200
       }
     },
     {
@@ -97,7 +105,32 @@
       "public_metrics": {
         "like_count": 1,
         "reply_count": 0,
-        "repost_count": 0
+        "repost_count": 0,
+        "impression_count": 800
+      }
+    },
+    {
+      "id": "8010",
+      "author_id": "900001",
+      "created_at": "2026-11-03T10:00:00Z",
+      "text": "A quiet sketch from the day before this sample window.",
+      "public_metrics": {
+        "like_count": 0,
+        "reply_count": 0,
+        "repost_count": 0,
+        "impression_count": 12000
+      }
+    },
+    {
+      "id": "8011",
+      "author_id": "900001",
+      "created_at": "2026-10-25T16:00:00Z",
+      "text": "Last week's map, kept so the sample can show a change.",
+      "public_metrics": {
+        "like_count": 0,
+        "reply_count": 0,
+        "repost_count": 0,
+        "impression_count": 40000
       }
     }
   ],
@@ -117,6 +150,6 @@
     ]
   },
   "meta": {
-    "result_count": 9
+    "result_count": 11
   }
 }

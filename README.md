@@ -1,12 +1,12 @@
 # X Neighbours
 
-X Neighbours shows who liked and replied to an X account over the **last 7 days**. It tags each person (mutual, follows you, you follow, or neither), suggests follow-backs, and draws a square picture: your avatar in the centre, your closest neighbours in four rings around you. The last 24 hours is the same picture again, when you ask for it.
+X Neighbours shows who liked and replied to an X account over the **last 7 days**. It tags each person (mutual, follows you, you follow, or neither), suggests follow-backs, and draws a square picture: your avatar in the centre, your closest neighbours in three rings around you. The last 24 hours is the same picture again, on the daily run.
 
 A bot does the reading on X and saves the responses. `x_neighbours.py` turns those files into a markdown report and a PNG. The run is read-only. It does not follow, like, post, or send messages.
 
-![Sample X Neighbours picture: a fictional creator in the centre, with made-up neighbours in four rings](docs/sample-neighbours.png)
+![Sample X Neighbours picture: a fictional creator in the centre, with made-up neighbours in three rings](docs/sample-neighbours.png)
 
-*Sample picture, midnight theme, four rings, rendered from the fictional dataset in `examples/sample`. Every handle and avatar on it was invented for this repo.*
+*Sample picture, midnight theme, three rings, rendered from the fictional dataset in `examples/sample`. Every handle and avatar on it was invented for this repo.*
 
 The inner ring is the closest neighbours for that window, starting at the top and moving clockwise. The next rings step outward. Handles sit under the avatars.
 
@@ -50,7 +50,8 @@ A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same
   "like_weight": 1,
   "reply_weight": 3,
   "exclude": ["grok"],
-  "rings": 4,
+  "rings": 3,
+  "impressions": true,
   "show_names": true,
   "theme": "midnight",
   "windows": ["week"],
@@ -67,7 +68,8 @@ A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same
 | `user_id` | Your numeric X user id, stored as a string |
 | `like_weight`, `reply_weight` | Points per like and per reply. They order the picture and the follow-back list. The liker and replier tables stay in raw count order and include each person's combined score. These two numbers are a quiet setting: they are not drawn on the picture and they are not written in the report headings. Override them with `--like-weight` and `--reply-weight` |
 | `exclude` | Handles to leave out of the rankings and the picture, such as bots. `@grok` is the default. `--exclude ''` clears the list |
-| `rings` | Rings on the picture, from 1 to 4. Default 4. The rings hold 8, then 14, then 20, then 26 people |
+| `rings` | Rings on the picture, from 1 to 4. Default 3. The rings hold 8, then 14, then 20, then 26 people |
+| `impressions` | Show total impressions from your own posts, the change from the previous window when those posts were saved, and the top 3 posts. On by default. `--no-impressions` hides it |
 | `show_names` | Draw handles under the avatars. `--hide-names` turns them off |
 | `theme` | `midnight` (deep blue, the default), `light`, or `sunset` (purple into orange) |
 | `windows` | `week` by default. `day`, or `day` and `week` together, when you want the last 24 hours as well |
@@ -76,9 +78,11 @@ A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same
 | `per_post` | Add who liked or replied to each post. Off unless you ask |
 | `per_day` | Add a day-by-day breakdown. Off unless you ask |
 
-Other flags: `--config`, `--data`, `--out`, `--now`, `--rings`, `--top`, `--theme`, `--windows day,week`, `--report likes`, `--per-post`, `--per-day`, `--show-names`, `--no-image`.
+Other flags: `--config`, `--data`, `--out`, `--now`, `--rings`, `--top`, `--theme`, `--windows day,week`, `--report likes`, `--per-post`, `--per-day`, `--no-impressions`, `--show-names`, `--no-image`.
 
-A plain run is the week picture plus both rankings. Likes only, replies only, per post, and per day are there when you pass the flags. They read the files already in `data/` and do not call X.
+A plain run is the week picture plus both rankings, with impressions included. Likes only, replies only, per post, and per day are there when you pass the flags. They read the files already in `data/` and do not call X.
+
+Impressions come from `public_metrics.impression_count` on your own posts. That field is already in the posts fetch. The report sums the current window, compares it with the previous window when those older posts are in `data/`, and links the top 3. Viewers do not have impression counts, so nothing else is requested.
 
 ```bash
 python3 x_neighbours.py --now 2026-11-04T18:00:00Z --report likes
@@ -111,7 +115,7 @@ Pick a UTC timestamp `T` when you start. Pass `T` to the script as `--now`. For 
 | 3 | `get_posts_liking_users` | For each of your posts with likes: `id=<post id>`, `max_results=100`, `user.fields=username,name,description,public_metrics,profile_image_url` | `likes_<postid>`, then `likes_<postid>_p2` if you fetch another page |
 | 4 | `get_users_me_followers` and `get_users_me_following` | `max_results=1000`, `user.fields=username,name,description,public_metrics,profile_image_url`. Reuse the files when they are under 7 days old | `followers_1`, … and `following_1`, … |
 
-On a Grok Bot these tools are on the X connection. Call each tool by name. A reply counts when `in_reply_to_user_id` is `{ID}`, or when a `replied_to` reference points at one of your posts. Your own posts are ignored.
+On a Grok Bot these tools are on the X connection. Call each tool by name. A reply counts when `in_reply_to_user_id` is `{ID}`, or when a `replied_to` reference points at one of your posts. Your own posts are ignored. `public_metrics.impression_count` on those posts is the impressions total. No other call is needed for it.
 
 ### Keeping the read count down
 
@@ -123,7 +127,7 @@ Liker lists are the expensive step, one call per post:
 - Days 2–7: only posts with 3 or more likes. The posts you skip are usually short replies liked by one or two people.
 - One page of 100 likers is enough for almost every post. Fetch another page only when `meta.next_token` is present and you still have room in the day's budget.
 
-Follower and following lists are long. Refresh them on the weekly run, and reuse them in between. A day-only run is posts, mentions, and that day's liker lists.
+Follower and following lists are long. Refresh them on the Monday run, and reuse them on the daily runs. A day run is posts, mentions, and that day's liker lists. On Monday the week run reuses that morning's daily files and only fetches the earlier part of the week. The two runs together stay inside the daily cap. The steps are in [BOT.md](BOT.md).
 
 The report's Notes section counts liker lists that came back shorter than the like count (deleted, suspended, or protected accounts) and posts whose likers were not fetched.
 
