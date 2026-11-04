@@ -43,7 +43,7 @@ cp config.example.json config.json
 
 If the repo is already there, `git status` first. Unstage anything under `data/` or named `config.json` if it was staged. Then `git pull --ff-only`. Do not commit local files to make the pull succeed.
 
-Defaults you are keeping: rings 4, theme `midnight`, names on, window `week`, exclude `grok`, top 10, report `both`, per-post off, per-day off. Store `user_id` as a string.
+Defaults you are keeping: rings 3, theme `midnight`, names on, impressions on, window `week`, exclude `grok`, top 10, report `both`, per-post off, per-day off. Store `user_id` as a string.
 
 3. Fetch the last 7 days (the tool calls below) and run:
 
@@ -52,19 +52,22 @@ python3 x_neighbours.py --now <T>
 ```
 
 4. Send `x_neighbours_week.png` and the short summary. The picture goes out before any settings question.
-5. After that, in **one** message, list every setting below with its current default. Say they can change any of them just by asking. In the same message, list the extra reports and offer a Monday-morning routine. Do not send these as separate questions, and do not block the picture on an answer.
+5. Create **both** routines below, with no question. Use 9:00 AM in the owner's timezone. If you do not know it, use the timezone on their X profile when that is present, otherwise UTC, and name the zone you used in the settings message. Do not wait to ask.
+6. After the picture, in **one** message, list every setting below with its current default. Say they can change any of them, or turn either routine off, just by asking. Do not send these as separate questions, and do not block the picture on an answer.
 
 Use this shape, in your own words, with these defaults:
 
 - Theme: midnight. Also light or sunset.
-- Rings: 4 (1 to 4; the rings hold 8, then 14, then 20, then 26).
+- Rings: 3 (1 to 4; the rings hold 8, then 14, then 20, then 26).
 - Names on the picture: on.
-- Window: the last 7 days. The last 24 hours, or both, when they ask.
+- Impressions: on. Totals come from their own posts. They can turn them off.
+- Window for a manual run: the last 7 days.
 - Leave out: @grok. They can name other handles.
 - Table length: 10.
 - Scoring weights: a quiet setting, kept off the picture and out of the summary. They can ask to change it. Do not print the numbers.
-- More reports, only when they ask: likes only, replies only, per post (who liked or replied to each post), per day, and the last 24 hours as well as the week.
-- Offer a weekly routine, Monday morning in their time zone. If they say nothing, don't schedule it.
+- More reports, only when they ask: likes only, replies only, per post (who liked or replied to each post), and per day.
+- Daily routine: already on, every day at 9:00 AM, last 24 hours.
+- Weekly routine: already on, Mondays at 9:00 AM, last 7 days, and that is when follower lists refresh.
 
 To check the install on the fictional sample, without sending that picture as if it were theirs:
 
@@ -79,11 +82,11 @@ python3 x_neighbours.py \
   --now 2026-11-04T18:00:00Z
 ```
 
-You should get a four-ring PNG. The inner ring starts with `@nova_lane`. Those accounts are made up.
+You should get a three-ring PNG. The inner ring starts with `@nova_lane`. Those accounts are made up.
 
 ## Each run
 
-Work in the clone. Pick a UTC timestamp `T` when you start fetching, such as `2026-11-04T18:00:00Z`. You will pass `T` as `--now`.
+A manual run can fetch one window in a single pass. The daily and Monday routines below split the work so Monday reuses that morning's files. Work in the clone. Pick a UTC timestamp `T` when you start fetching, such as `2026-11-04T18:00:00Z`. You will pass `T` as `--now`.
 
 One fetch covers every window in config. When `week` is on, `START` is `T` minus 7 days. When the config is day-only, `START` is `T` minus 24 hours. The script cuts the 24-hour window out of the same files, so do not fetch twice.
 
@@ -111,7 +114,9 @@ Call the tools by these names on the owner's X connection. Page with `pagination
 - `expansions`: `author_id`
 - `user.fields`: `username,name,profile_image_url,public_metrics`
 
-Save as `posts_1`, `posts_2`, and so on.
+Save as `posts_1`, `posts_2`, and so on. On a scheduled run, use `posts_day_*` or `posts_week_*` as the Routines section says. The script loads every `posts_*.json`.
+
+`public_metrics` on these posts includes `impression_count` for the owner. That is the impressions figure. Do not make another call for it.
 
 ### 2. Mentions
 
@@ -173,14 +178,20 @@ It reads `config.json` and `data/`. It writes `report_day.md`, `report_week.md`,
     "likes": [["@handle", 8]],
     "replies": [["@handle", 4]],
     "follow_back": ["@handle"],
-    "inner": [["@handle", 17]]
+    "inner": [["@handle", 17]],
+    "impressions": {
+      "total": 56300,
+      "previous": 40000,
+      "change": 16300,
+      "top": [{"impressions": 15000, "text": "Named the streets after kitchen objects.", "url": "https://x.com/samplecreator/status/8007"}]
+    }
   }
 }
 ```
 
-`likes` and `replies` are raw counts. `follow_back` is people they do not follow. `inner` is the picture order. Do not quote `inner`'s point totals to the owner. Relationship tags (`mutual`, `follows-you`, `you-follow`, `neither`) are in the report tables and the follow-back lines.
+`likes` and `replies` are raw counts. `follow_back` is people they do not follow. `inner` is the picture order. Do not quote `inner`'s point totals to the owner. Relationship tags (`mutual`, `follows-you`, `you-follow`, `neither`) are in the report tables and the follow-back lines. `impressions` is present when the saved posts include `impression_count`. `previous` and `change` are present only when the previous window is in those files. The numbers above are from the fictional sample.
 
-Flags, when the owner asks: `--handle`, `--user-id`, `--data`, `--out`, `--rings`, `--top`, `--theme`, `--windows day` or `--windows day,week`, `--report likes`, `--report replies`, `--per-post`, `--per-day`, `--show-names`, `--hide-names`, `--exclude`, `--no-image`, `--config`. A plain run stays on the defaults: both rankings, no per-post, no per-day, week window. These modes re-read `data/` and do not need more X calls. Weight flags exist. Keep those values in config only.
+Flags, when the owner asks: `--handle`, `--user-id`, `--data`, `--out`, `--rings`, `--top`, `--theme`, `--windows day` or `--windows day,week`, `--report likes`, `--report replies`, `--per-post`, `--per-day`, `--no-impressions`, `--show-names`, `--hide-names`, `--exclude`, `--no-image`, `--config`. A plain run stays on the defaults: both rankings, impressions on, no per-post, no per-day, week window, three rings. These modes re-read `data/` and do not need more X calls. Weight flags exist. Keep those values in config only.
 
 ## What you send the owner
 
@@ -188,23 +199,43 @@ Send the PNG for each window they asked for, week picture first. Then a short no
 
 - who liked them most, with the like counts
 - who replied most, with the reply counts
+- total impressions, the change from the previous window when `impressions.previous` is present, and the top 3 posts with their links
 - up to five follow-back suggestions, each with its relationship tag
 - one line if Notes says liker lists were missing or short
 
-A note shaped like the fictional sample reads: "@pixel_otter liked you the most this week (8) and @nova_lane replied the most (4). Often here, and you don't follow them yet: @pixel_otter (follows you), @moss_radio (neither), @cedar_loop (neither), @drift_paper (follows you), @paper_kite (follows you)."
+A note shaped like the fictional sample reads: "@pixel_otter liked you the most this week (8) and @nova_lane replied the most (4). Your posts were seen 56,300 times, up 16,300 (41%) from the previous 7 days. Most seen: Named the streets after kitchen objects (15,000), the quiet sketch (12,000), and the blank circle (9,100). Often here, and you don't follow them yet: @pixel_otter (follows you), @moss_radio (neither), @cedar_loop (neither), @drift_paper (follows you), @paper_kite (follows you)."
 
 Use the real names from this run. Do not include the weight settings. Do not post the picture, like anything, or DM anyone.
 
 On the first run, the settings message from the First run section follows this note. On later runs, send the picture and the summary. Repeat the full settings list only when they ask what they can change.
 
-## Weekly schedule
+## Routines
 
-After the first report, offer one run a week, Monday morning in the owner's timezone. Don't block the picture on that offer. If they want it, the run is:
+Create both during the first run. Do not ask first. Tell the owner afterwards that they can change the time or turn either one off by asking.
 
-1. `git pull --ff-only` in the clone. Leave `config.json` and `data/` uncommitted.
-2. Refresh followers and following. This is the weekly refresh.
-3. Fetch posts, mentions, and likers for the last 7 days, using the liker rule above.
-4. Run `python3 x_neighbours.py --now <T>`.
-5. Send `x_neighbours_week.png` and the short summary. Include the day picture when `windows` contains `day`.
+Both run at 9:00 AM in the owner's timezone. Count every X call from both toward the same cap: about 30 a minute and 1,000 a day. On Monday, run the daily job first, then the weekly job, and do not fetch the last 24 hours twice.
 
-A daily picture is optional, and only if they ask. On the other days: posts and mentions for 24 hours, likers for that day's liked posts, reuse follower files, `--windows day`. Skip the daily run when it would push the day past about 1,000 reads.
+### Every day
+
+1. `git pull --ff-only`. Leave `config.json` and `data/` uncommitted.
+2. Do not refresh followers or following.
+3. Pick `T`. `START` is `T` minus 24 hours.
+4. Fetch posts and mentions from `START`. Save them as `posts_day_1`, `posts_day_2`, … and `mentions_day_1`, ….
+5. Fetch likers for that day's posts with `like_count` greater than 0. Skip a post that already has `likes_<postid>.json`.
+6. Run `python3 x_neighbours.py --now <T> --windows day`.
+7. Send `x_neighbours_day.png` and the short summary, including impressions.
+
+Leave the files in place. Later reports filter them by time.
+
+### Monday, after that day's daily run
+
+If today's `posts_day_1.json` is missing, do the daily run first.
+
+1. Refresh followers and following. This is the only day that does.
+2. Reuse today's posts, mentions, and liker files. Do not request the last 24 hours again.
+3. If saved posts already cover `T` minus 7 days through `T` minus 24 hours, do not page posts or mentions for that span. Fetch likers only for older posts with 3 or more likes that do not already have a likes file.
+4. If that span is missing, fetch it once: `get_users_posts` and `get_users_mentions` with `start_time` of `T` minus 7 days and `end_time` of `T` minus 24 hours. Save as `posts_week_1`, … and `mentions_week_1`, …. Then the same liker rule: 3 or more likes, skip files you already have.
+5. Run `python3 x_neighbours.py --now <T> --windows week`.
+6. Send `x_neighbours_week.png` and the short summary, including impressions.
+
+If the Monday calls would pass about 1,000 for the day, send the day picture you already have, fetch the older posts and mentions, and stop the liker lists when the cap is close. Tell the owner which older posts were left out.

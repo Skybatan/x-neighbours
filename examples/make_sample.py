@@ -75,10 +75,27 @@ WEEK_POSTS = [
     ("8008", "2026-10-29T07:15:00Z", "A week of small replies is a good week."),
 ]
 OLD_POST = ("8009", "2026-10-20T12:00:00Z", "This post is older than the sample week and should not count.")
+# Inside the previous day, so the day report can show a change. Also inside the current week.
+PREVIOUS_DAY_POST = ("8010", "2026-11-03T10:00:00Z", "A quiet sketch from the day before this sample window.")
+# Inside the previous week, outside the current one.
+PREVIOUS_WEEK_POST = ("8011", "2026-10-25T16:00:00Z", "Last week's map, kept so the sample can show a change.")
+IMPRESSIONS = {
+    "8001": 4200,
+    "8002": 1800,
+    "8003": 9100,
+    "8004": 2500,
+    "8005": 6400,
+    "8006": 3100,
+    "8007": 15000,
+    "8008": 2200,
+    "8009": 800,
+    "8010": 12000,
+    "8011": 40000,
+}
 
 SHAPES = ("circle", "diamond", "square", "ring")
 RELATIONS = ("neither", "follows-you", "you-follow", "mutual")
-# Enough quiet neighbours to fill four rings: 8 + 14 + 20 + 26 = 68.
+# Extra quiet neighbours. Three rings show the closest 42 (8 + 14 + 20).
 # The 30 people above plus these 38 fillers, with @grok excluded.
 FILLER_A = (
     "amber", "brass", "coral", "daisy", "ember", "flint", "grape", "hazel",
@@ -265,7 +282,12 @@ def main():
             "author_id": ME,
             "created_at": created,
             "text": text,
-            "public_metrics": {"like_count": len(likers), "reply_count": 0, "repost_count": 0},
+            "public_metrics": {
+                "like_count": len(likers),
+                "reply_count": 0,
+                "repost_count": 0,
+                "impression_count": IMPRESSIONS[pid],
+            },
         }
 
     posts = [post_obj(pid, created, text, day_likers[pid]) for pid, created, text in DAY_POSTS]
@@ -273,6 +295,8 @@ def main():
     old_id, old_created, old_text = OLD_POST
     old_likers = ["910091"]
     posts.append(post_obj(old_id, old_created, old_text, old_likers))
+    for pid, created, text in (PREVIOUS_DAY_POST, PREVIOUS_WEEK_POST):
+        posts.append(post_obj(pid, created, text, []))
     note = "FICTIONAL SAMPLE. Made-up users and posts for the X Neighbours example. Not real X data."
     dump("posts_1.json", {
         "_comment": note,
