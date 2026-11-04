@@ -1,12 +1,12 @@
 # X Neighbours
 
-X Neighbours shows who liked and replied to an X account over the **last 24 hours** and the **last 7 days**. It tags each person (mutual, follows you, you follow, or neither), suggests follow-backs, and draws a square picture: your avatar in the centre, your closest neighbours in rings around you.
+X Neighbours shows who liked and replied to an X account over the **last 7 days**. It tags each person (mutual, follows you, you follow, or neither), suggests follow-backs, and draws a square picture: your avatar in the centre, your closest neighbours in four rings around you. The last 24 hours is the same picture again, when you ask for it.
 
 A bot does the reading on X and saves the responses. `x_neighbours.py` turns those files into a markdown report and a PNG. The run is read-only. It does not follow, like, post, or send messages.
 
-![Sample X Neighbours picture: a fictional creator in the centre, with made-up neighbours in three rings](docs/sample-neighbours.png)
+![Sample X Neighbours picture: a fictional creator in the centre, with made-up neighbours in four rings](docs/sample-neighbours.png)
 
-*Sample picture, midnight theme, rendered from the fictional dataset in `examples/sample`. Every handle and avatar on it was invented for this repo.*
+*Sample picture, midnight theme, four rings, rendered from the fictional dataset in `examples/sample`. Every handle and avatar on it was invented for this repo.*
 
 The inner ring is the closest neighbours for that window, starting at the top and moving clockwise. The next rings step outward. Handles sit under the avatars.
 
@@ -32,8 +32,8 @@ python3 x_neighbours.py --now 2026-11-04T18:00:00Z
 
 | File | What it is |
 |---|---|
-| `report_day.md` / `report_week.md` | Top likers, top repliers, follow-back suggestions |
-| `x_neighbours_day.png` / `x_neighbours_week.png` | The picture |
+| `report_week.md` | Top likers, top repliers, follow-back suggestions. `report_day.md` when the day window is on |
+| `x_neighbours_week.png` | The picture. `x_neighbours_day.png` when the day window is on |
 
 It also prints a short JSON summary to stdout. In the sample week, that summary names `@pixel_otter` as the top liker and `@nova_lane` as the top replier.
 
@@ -50,11 +50,14 @@ A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same
   "like_weight": 1,
   "reply_weight": 3,
   "exclude": ["grok"],
-  "rings": 3,
+  "rings": 4,
   "show_names": true,
   "theme": "midnight",
-  "windows": ["day", "week"],
-  "top": 10
+  "windows": ["week"],
+  "top": 10,
+  "report": "both",
+  "per_post": false,
+  "per_day": false
 }
 ```
 
@@ -64,13 +67,26 @@ A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same
 | `user_id` | Your numeric X user id, stored as a string |
 | `like_weight`, `reply_weight` | Points per like and per reply. They order the picture and the follow-back list. The liker and replier tables stay in raw count order and include each person's combined score. These two numbers are a quiet setting: they are not drawn on the picture and they are not written in the report headings. Override them with `--like-weight` and `--reply-weight` |
 | `exclude` | Handles to leave out of the rankings and the picture, such as bots. `@grok` is the default. `--exclude ''` clears the list |
-| `rings` | Rings on the picture, from 1 to 4. The rings hold 8, then 14, then 20, then 26 people |
+| `rings` | Rings on the picture, from 1 to 4. Default 4. The rings hold 8, then 14, then 20, then 26 people |
 | `show_names` | Draw handles under the avatars. `--hide-names` turns them off |
 | `theme` | `midnight` (deep blue, the default), `light`, or `sunset` (purple into orange) |
-| `windows` | `day`, `week`, or both |
+| `windows` | `week` by default. `day`, or `day` and `week` together, when you want the last 24 hours as well |
 | `top` | Rows in the top-likers and top-repliers tables |
+| `report` | `both` (default), `likes`, or `replies`. `likes` and `replies` drop the other ranking |
+| `per_post` | Add who liked or replied to each post. Off unless you ask |
+| `per_day` | Add a day-by-day breakdown. Off unless you ask |
 
-Other flags: `--config`, `--data`, `--out`, `--now`, `--rings`, `--top`, `--theme`, `--windows day,week`, `--show-names`, `--no-image`.
+Other flags: `--config`, `--data`, `--out`, `--now`, `--rings`, `--top`, `--theme`, `--windows day,week`, `--report likes`, `--per-post`, `--per-day`, `--show-names`, `--no-image`.
+
+A plain run is the week picture plus both rankings. Likes only, replies only, per post, and per day are there when you pass the flags. They read the files already in `data/` and do not call X.
+
+```bash
+python3 x_neighbours.py --now 2026-11-04T18:00:00Z --report likes
+python3 x_neighbours.py --now 2026-11-04T18:00:00Z --report replies
+python3 x_neighbours.py --now 2026-11-04T18:00:00Z --per-post
+python3 x_neighbours.py --now 2026-11-04T18:00:00Z --per-day
+python3 x_neighbours.py --now 2026-11-04T18:00:00Z --windows day,week
+```
 
 `config.json` stays on your machine. It is listed in `.gitignore`.
 
@@ -125,7 +141,7 @@ python3 x_neighbours.py \
   --now 2026-11-04T18:00:00Z
 ```
 
-That writes `/tmp/x-neighbours-sample/x_neighbours_week.png`, which is the picture at the top of this file, plus a day picture and both reports. Rebuild the dataset with `python3 examples/make_sample.py`.
+That writes `/tmp/x-neighbours-sample/x_neighbours_week.png`, which is the picture at the top of this file, and `report_week.md`. Add `--windows day,week` for the last 24 hours as well, or `--per-post` / `--per-day` for the optional breakdowns. Rebuild the dataset with `python3 examples/make_sample.py`.
 
 ## Privacy
 

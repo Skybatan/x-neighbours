@@ -15,7 +15,8 @@ It reads raw JSON saved from X tool calls (see README.md) in the data folder:
 Usage:
   python3 x_neighbours.py --handle your_handle --user-id your_user_id
                       [--data data] [--out .] [--now 2026-11-04T18:00:00Z]
-                      [--rings 3] [--top 10]
+                      [--rings 4] [--top 10]
+                      [--report likes|replies|both] [--per-post] [--per-day]
 """
 import argparse
 import glob
@@ -183,18 +184,28 @@ class Data:
             return "you-follow"
         return "neither"
 
-    def window(self, since):
+    def _in_window(self, created, since, until):
+        if not created:
+            return False
+        when = ts(created)
+        if when < since:
+            return False
+        if until is not None and when >= until:
+            return False
+        return True
+
+    def window(self, since, until=None):
         likes, replies = Counter(), Counter()
         for pid, post in self.posts.items():
-            created = post.get("created_at")
-            if not created or ts(created) < since:
+            if not self._in_window(post.get("created_at"), since, until):
                 continue
             for uid in self.likes.get(pid, []):
                 if uid != self.me:
                     likes[uid] += 1
         for mention in self.mentions:
-            created = mention.get("created_at")
-            if mention.get("author_id") == self.me or not created or ts(created) < since:
+            if mention.get("author_id") == self.me:
+                continue
+            if not self._in_window(mention.get("created_at"), since, until):
                 continue
             refs = [ref.get("id") for ref in mention.get("referenced_tweets") or []
                     if ref.get("type") == "replied_to"]
@@ -241,11 +252,150 @@ def score(likes, replies, like_weight, reply_weight):
     return ranked
 
 
-def write_report(data, label, since, path, top, handle, like_weight=1, reply_weight=3):
+def active_counts(likes, replies, report):
+    if report == "likes":
+        return likes, Counter()
+    if report == "replies":
+        return Counter(), replies
+    return likes, replies
+
+
+def append_table(lines, title, counts, unit, ranked, data, top, level=2):
+    lines += ["#" * level + f" {title}", "",
+              f"| # | Who | {unit} | Score | Relationship |",
+              "|---|---|---|---|---|"]
+    for index, (uid, count) in enumerate(counts.most_common(top), 1):
+        user = data.users.get(uid, {"username": uid})
+        lines.append(
+            f"| {index} | {user.get('name', '')} {link(user)} | {count} | "
+            f"{ranked[uid]} | {data.relation(uid)} |"
+        )
+    if not counts:
+        lines.append("| – | none | – | – | – |")
+    lines.append("")
+
+
+def suggestion_detail(report, likes, replies, uid):
+    like_text = counted(likes[uid], "like", "likes")
+    reply_text = counted(replies[uid], "reply", "replies")
+    if report == "likes":
+        return like_text
+    if report == "replies":
+        return reply_text
+    return f"{like_text}, {reply_text}"
+
+
+def kept_user(data, uid):
+    if not uid or uid == data.me:
+        return False
+    handle = data.users.get(uid, {}).get("username", "")
+    return handle.lower() not in getattr(data, "exclude", set())
+
+
+def display_name(data, uid):
+    return "@" + data.users.get(uid, {}).get("username", uid)
+
+
+def each_utc_day(since, until):
+    start = since.astimezone(timezone.utc)
+    end = until.astimezone(timezone.utc)
+    cursor = datetime(start.year, start.month, start.day, tzinfo=timezone.utc)
+    while cursor <= end:
+        day_end = cursor + timedelta(days=1)
+        yield cursor.date(), max(start, cursor), min(end + timedelta(seconds=1), day_end)
+        cursor = day_end
+
+
+def snippet(text):
+    text = re.sub(r"\s+", " ", (text or "").strip())
+    if len(text) > 90:
+        return text[:87].rstrip() + "…"
+    return text
+
+
+def append_per_day(lines, data, since, until, top, like_weight, reply_weight, report):
+    lines += ["## Per day", ""]
+    for day, day_start, day_end in each_utc_day(since, until):
+        likes, replies = data.window(day_start, day_end)
+        use_likes, use_replies = active_counts(likes, replies, report)
+        ranked = score(use_likes, use_replies, like_weight, reply_weight)
+        lines += [f"### {day.isoformat()} UTC", ""]
+        if not use_likes and not use_replies:
+            lines += ["No likes or replies.", ""]
+            continue
+        if report != "replies":
+            append_table(lines, "Likers", likes, "likes", ranked, data, top, level=4)
+        if report != "likes":
+            append_table(lines, "Repliers", replies, "replies", ranked, data, top, level=4)
+
+
+def replies_for_post(data, pid, since, until):
+    counts = Counter()
+    for mention in data.mentions:
+        author = mention.get("author_id")
+        if not kept_user(data, author):
+            continue
+        if not data._in_window(mention.get("created_at"), since, until):
+            continue
+        refs = [ref.get("id") for ref in mention.get("referenced_tweets") or []
+                if ref.get("type") == "replied_to"]
+        if pid in refs:
+            counts[author] += 1
+    return counts
+
+
+def append_per_post(lines, data, since, until, handle, report):
+    lines += ["## Per post", ""]
+    posts = []
+    for pid, post in data.posts.items():
+        if data._in_window(post.get("created_at"), since, until):
+            posts.append((ts(post["created_at"]), pid, post))
+    posts.sort(reverse=True)
+    tied = Counter()
+    for mention in data.mentions:
+        author = mention.get("author_id")
+        if not kept_user(data, author):
+            continue
+        if not data._in_window(mention.get("created_at"), since, until):
+            continue
+        refs = [ref.get("id") for ref in mention.get("referenced_tweets") or []
+                if ref.get("type") == "replied_to" and ref.get("id") in data.posts]
+        if refs:
+            continue
+        if mention.get("in_reply_to_user_id") == data.me:
+            tied[author] += 1
+    if not posts:
+        lines += ["No posts in this window.", ""]
+    for when, pid, post in posts:
+        lines += [f"### {when.strftime('%Y-%m-%d %H:%M UTC')}", ""]
+        text = snippet(post.get("text"))
+        if text:
+            lines += [text, ""]
+        lines += [f"https://x.com/{handle}/status/{pid}", ""]
+        if report != "replies":
+            likers = [uid for uid in data.likes.get(pid, []) if kept_user(data, uid)]
+            names = ", ".join(display_name(data, uid) for uid in likers) or "none"
+            lines.append(f"Likes ({len(likers)}): {names}")
+        if report != "likes":
+            repliers = replies_for_post(data, pid, since, until)
+            ordered = [display_name(data, uid) for uid, _count in repliers.most_common()]
+            names = ", ".join(ordered) or "none"
+            total = sum(repliers.values())
+            lines.append(f"Replies ({total}): {names}")
+        lines.append("")
+    if report != "likes" and tied:
+        names = ", ".join(f"{display_name(data, uid)} ({count})"
+                          for uid, count in tied.most_common())
+        lines += ["Replies in this window that are not tied to one of these posts: " + names, ""]
+
+
+def write_report(data, label, since, path, top, handle, like_weight=1, reply_weight=3,
+                 report="both", per_post=False, per_day=False, until=None):
     likes, replies = data.window(since)
-    ranked = score(likes, replies, like_weight, reply_weight)
+    use_likes, use_replies = active_counts(likes, replies, report)
+    ranked = score(use_likes, use_replies, like_weight, reply_weight)
     own_posts = sum(1 for post in data.posts.values()
-                    if post.get("created_at") and ts(post["created_at"]) >= since)
+                    if data._in_window(post.get("created_at"), since, None))
     lines = [
         f"# X Neighbours: @{handle}, {label}",
         "",
@@ -253,45 +403,44 @@ def write_report(data, label, since, path, top, handle, like_weight=1, reply_wei
         f"Own posts in window: {own_posts}.",
         "",
     ]
-    for title, counts, unit in (("Top likers", likes, "likes"), ("Top repliers", replies, "replies")):
-        lines += [f"## {title}", "",
-                  f"| # | Who | {unit} | Score | Relationship |",
-                  "|---|---|---|---|---|"]
-        for index, (uid, count) in enumerate(counts.most_common(top), 1):
-            user = data.users.get(uid, {"username": uid})
-            lines.append(
-                f"| {index} | {user.get('name', '')} {link(user)} | {count} | "
-                f"{ranked[uid]} | {data.relation(uid)} |"
-            )
-        if not counts:
-            lines.append("| – | none | – | – | – |")
-        lines.append("")
+    if report != "replies":
+        append_table(lines, "Top likers", likes, "likes", ranked, data, top)
+    if report != "likes":
+        append_table(lines, "Top repliers", replies, "replies", ranked, data, top)
     suggestions = [(uid, count) for uid, count in ranked.most_common()
                    if uid not in data.following and uid in data.users][:5]
-    lines += ["## Follow-back suggestions", "",
-              "People who liked or replied often but you don't follow:", ""]
+    if report == "likes":
+        intro = "People who liked often but you don't follow:"
+    elif report == "replies":
+        intro = "People who replied often but you don't follow:"
+    else:
+        intro = "People who liked or replied often but you don't follow:"
+    lines += ["## Follow-back suggestions", "", intro, ""]
     for uid, _count in suggestions:
         user = data.users[uid]
         lines.append(
-            f"- {link(user)} (score {ranked[uid]}: {counted(likes[uid], 'like', 'likes')}, "
-            f"{counted(replies[uid], 'reply', 'replies')}, {data.relation(uid)}): {summary(user)}"
+            f"- {link(user)} (score {ranked[uid]}: {suggestion_detail(report, likes, replies, uid)}, "
+            f"{data.relation(uid)}): {summary(user)}"
         )
     if not suggestions:
         lines.append("- none")
+    lines.append("")
+    if per_day and until is not None:
+        append_per_day(lines, data, since, until, top, like_weight, reply_weight, report)
+    if per_post:
+        append_per_post(lines, data, since, until, handle, report)
     short = []
-    for pid, got, want in data.likes_truncated:
+    for pid, _got, _want in data.likes_truncated:
         created = (data.posts.get(pid) or {}).get("created_at")
-        if created and ts(created) >= since:
-            short.append((pid, got, want))
+        if data._in_window(created, since, None):
+            short.append(pid)
     missing = 0
     for pid, post in data.posts.items():
-        created = post.get("created_at")
-        if not created or ts(created) < since:
+        if not data._in_window(post.get("created_at"), since, None):
             continue
         if like_count(post) > 0 and pid not in data.likes:
             missing += 1
     lines += [
-        "",
         "## Notes",
         "",
         "- Likes come from each post's liker list, which can be a few short of the like count "
@@ -381,7 +530,50 @@ def fetch_avatar(user, cache_dir, size):
     return img.resize((size, size), Image.LANCZOS)
 
 
-def draw_circle(data, me_user, scores, path, rings=3, show_names=True, width=1200,
+def ring_geometry(rings):
+    """Fractions of the canvas. Four rings leave a gap under each avatar for its name."""
+    if rings >= 4:
+        return {
+            "cy": 0.545,
+            "centre": 0.118,
+            "per_ring": [8, 14, 20, 26],
+            "radius": [0.150, 0.248, 0.340, 0.430],
+            "size": [0.062, 0.048, 0.038, 0.031],
+            # Wider pills on the inner rings, where neighbours are further apart.
+            "name_width": [1.7, 1.35, 1.15, 1.05],
+        }
+    return {
+        "cy": 0.535,
+        "centre": 0.165,
+        "per_ring": [8, 14, 20][:rings],
+        "radius": [0.19, 0.30, 0.395][:rings],
+        "size": [0.085, 0.064, 0.05][:rings],
+        "name_width": [1.45, 1.45, 1.45][:rings],
+    }
+
+
+def fit_label(draw, text, face, limit):
+    while draw.textlength(text, font=face) > limit and len(text) > 4:
+        text = text[:-2] + "…"
+    return text
+
+
+def draw_label_at(draw, text, face, x, y, fill_bg, fill_text, scale):
+    """Draw a pill whose top-left is (x, y)."""
+    text_width = draw.textlength(text, font=face)
+    text_height = face.size + 6 * scale
+    box = (x - 6 * scale, y - 2 * scale, x + text_width + 6 * scale, y + text_height - 2 * scale)
+    draw.rounded_rectangle(box, radius=text_height / 2, fill=fill_bg)
+    draw.text((x, y), text, font=face, fill=fill_text)
+
+
+def draw_label(draw, text, face, x, y, anchor, fill_bg, fill_text, scale):
+    text = fit_label(draw, text, face, anchor)
+    text_width = draw.textlength(text, font=face)
+    draw_label_at(draw, text, face, x - text_width / 2, y, fill_bg, fill_text, scale)
+
+
+def draw_circle(data, me_user, scores, path, rings=4, show_names=True, width=1200,
                 subtitle="Top neighbours of the last 7 days", theme="midnight"):
     theme_colors = THEMES.get(theme, THEMES["midnight"])
     from PIL import Image, ImageDraw, ImageFilter
@@ -404,16 +596,17 @@ def draw_circle(data, me_user, scores, path, rings=3, show_names=True, width=120
                                  background, glow)
     canvas = background.convert("RGBA")
     draw = ImageDraw.Draw(canvas)
-    cx, cy = canvas_size // 2, int(canvas_size * 0.535)
-    per_ring = [8, 14, 20, 26][:rings]
-    radius = [canvas_size * r for r in (0.19, 0.30, 0.395, 0.46)][:rings]
-    avatar_size = [int(canvas_size * s) for s in (0.085, 0.064, 0.05, 0.042)][:rings]
+    layout = ring_geometry(rings)
+    cx, cy = canvas_size // 2, int(canvas_size * layout["cy"])
+    per_ring = layout["per_ring"]
+    radius = [canvas_size * r for r in layout["radius"]]
+    avatar_size = [int(canvas_size * s) for s in layout["size"]]
     ranked = [uid for uid, _points in scores.most_common()
               if uid in data.users and uid != data.me]
     for orbit in radius:
         draw.ellipse((cx - orbit, cy - orbit, cx + orbit, cy + orbit),
                      outline=theme_colors["orbit"], width=2 * scale)
-    name_font = [font(max(12, int(size * 0.17))) for size in avatar_size]
+    name_font = [font(max(15, int(size * 0.22))) for size in avatar_size]
     index = 0
     for ring_index in range(rings):
         count = min(per_ring[ring_index], max(0, len(ranked) - index))
@@ -435,17 +628,11 @@ def draw_circle(data, me_user, scores, path, rings=3, show_names=True, width=120
             if show_names:
                 label = "@" + data.users[uid].get("username", "")
                 face = name_font[ring_index]
-                while draw.textlength(label, font=face) > size * 1.45 and len(label) > 4:
-                    label = label[:-2] + "…"
-                text_width = draw.textlength(label, font=face)
-                text_y = y + size / 2 + 5 * scale
-                text_height = face.size + 6 * scale
-                draw.rounded_rectangle(
-                    (x - text_width / 2 - 6 * scale, text_y - 2 * scale,
-                     x + text_width / 2 + 6 * scale, text_y + text_height - 2 * scale),
-                    radius=text_height / 2, fill=theme_colors["label_bg"])
-                draw.text((x - text_width / 2, text_y), label, font=face, fill=theme_colors["label"])
-    centre = int(canvas_size * 0.165)
+                wedge = 2 * radius[ring_index] * math.sin(math.pi / max(count, 1))
+                limit = min(size * layout["name_width"][ring_index], wedge * 0.92)
+                draw_label(draw, label, face, x, y + size / 2 + 4 * scale, limit,
+                           theme_colors["label_bg"], theme_colors["label"], scale)
+    centre = int(canvas_size * layout["centre"])
     for grow, alpha in ((26, 40), (16, 80), (8, 160)):
         draw.ellipse((cx - centre / 2 - grow * scale, cy - centre / 2 - grow * scale,
                       cx + centre / 2 + grow * scale, cy + centre / 2 + grow * scale),
@@ -472,15 +659,33 @@ DEFAULTS = {
     "like_weight": 1,
     "reply_weight": 3,
     "exclude": ["grok"],
-    "rings": 3,
+    "rings": 4,
     "show_names": True,
     "theme": "midnight",
-    "windows": ["day", "week"],
+    "windows": ["week"],
     "top": 10,
+    "report": "both",
+    "per_post": False,
+    "per_day": False,
 }
 WINDOWS = {
     "day": ("last 24 hours", 1, "Top neighbours of the last 24 hours"),
     "week": ("last 7 days", 7, "Top neighbours of the last 7 days"),
+}
+REPORTS = ("likes", "replies", "both")
+SUBTITLES = {
+    "both": {
+        "day": "Top neighbours of the last 24 hours",
+        "week": "Top neighbours of the last 7 days",
+    },
+    "likes": {
+        "day": "Top likers of the last 24 hours",
+        "week": "Top likers of the last 7 days",
+    },
+    "replies": {
+        "day": "Top repliers of the last 24 hours",
+        "week": "Top repliers of the last 7 days",
+    },
 }
 
 
@@ -507,6 +712,12 @@ def main():
     parser.add_argument("--top", type=int)
     parser.add_argument("--theme", choices=sorted(THEMES))
     parser.add_argument("--windows", help="comma-separated: day,week")
+    parser.add_argument("--report", choices=REPORTS,
+                        help="likes, replies, or both (default both)")
+    parser.add_argument("--per-post", dest="per_post", action=argparse.BooleanOptionalAction,
+                        default=None, help="add a per-post breakdown")
+    parser.add_argument("--per-day", dest="per_day", action=argparse.BooleanOptionalAction,
+                        default=None, help="add a per-day breakdown")
     parser.add_argument("--show-names", dest="show_names", action="store_true", default=None)
     parser.add_argument("--hide-names", dest="show_names", action="store_false")
     parser.add_argument("--no-image", action="store_true")
@@ -541,6 +752,10 @@ def main():
     if cfg["theme"] not in THEMES:
         parser.error("theme must be midnight, light, or sunset")
     cfg["show_names"] = as_bool(cfg["show_names"])
+    cfg["per_post"] = as_bool(cfg.get("per_post"))
+    cfg["per_day"] = as_bool(cfg.get("per_day"))
+    if cfg.get("report") not in REPORTS:
+        parser.error("report must be likes, replies, or both")
     if not args.no_image:
         try:
             import PIL  # noqa: F401
@@ -562,17 +777,20 @@ def main():
     stored = data.users.get(me_id, {})
     me.update({k: v for k, v in stored.items() if v not in (None, "")})
     output = {}
+    report = cfg["report"]
     for key in cfg["windows"]:
-        label, days, subtitle = WINDOWS[key]
+        label, days, _subtitle = WINDOWS[key]
+        since = now - timedelta(days=days)
         likes, replies, suggestions, ranked = write_report(
-            data, label, now - timedelta(days=days),
+            data, label, since,
             os.path.join(args.out, f"report_{key}.md"),
-            cfg["top"], cfg["handle"], like_weight, reply_weight)
+            cfg["top"], cfg["handle"], like_weight, reply_weight,
+            report=report, per_post=cfg["per_post"], per_day=cfg["per_day"], until=now)
         if not args.no_image:
             draw_circle(
                 data, me, ranked, os.path.join(args.out, f"x_neighbours_{key}.png"),
-                rings=cfg["rings"], show_names=cfg["show_names"], subtitle=subtitle,
-                theme=cfg["theme"])
+                rings=cfg["rings"], show_names=cfg["show_names"],
+                subtitle=SUBTITLES[report][key], theme=cfg["theme"])
 
         def display(uid):
             return "@" + data.users.get(uid, {}).get("username", uid)

@@ -4,9 +4,12 @@
   "like_weight": 1,
   "reply_weight": 3,
   "exclude": ["grok"],
-  "rings": 3,
+  "rings": 4,
   "show_names": true,
   "theme": "midnight",
-  "windows": ["day", "week"],
-  "top": 10
+  "windows": ["week"],
+  "top": 10,
+  "report": "both",
+  "per_post": false,
+  "per_day": false
 }

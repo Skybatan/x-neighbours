@@ -35,28 +35,6 @@
       }
     },
     {
-      "id": "910004",
-      "name": "Quiet Comet",
-      "username": "quiet_comet",
-      "description": "Night-sky notes from a rooftop desk.",
-      "profile_image_url": "avatars/910004.png",
-      "public_metrics": {
-        "followers_count": 980,
-        "tweet_count": 1500
-      }
-    },
-    {
-      "id": "910005",
-      "name": "Moss Radio",
-      "username": "moss_radio",
-      "description": "A one-room station for long songs.",
-      "profile_image_url": "avatars/910005.png",
-      "public_metrics": {
-        "followers_count": 430,
-        "tweet_count": 260
-      }
-    },
-    {
       "id": "910007",
       "name": "Drift Paper",
       "username": "drift_paper",
@@ -65,28 +43,6 @@
       "public_metrics": {
         "followers_count": 1560,
         "tweet_count": 640
-      }
-    },
-    {
-      "id": "910008",
-      "name": "Velvet Axis",
-      "username": "velvet_axis",
-      "description": "Designs posters for plays that do not exist.",
-      "profile_image_url": "avatars/910008.png",
-      "public_metrics": {
-        "followers_count": 3200,
-        "tweet_count": 1100
-      }
-    },
-    {
-      "id": "910010",
-      "name": "Glass Meadow",
-      "username": "glass_meadow",
-      "description": "Photographs greenhouses in winter.",
-      "profile_image_url": "avatars/910010.png",
-      "public_metrics": {
-        "followers_count": 510,
-        "tweet_count": 720
       }
     },
     {
@@ -101,28 +57,6 @@
       }
     },
     {
-      "id": "910012",
-      "name": "Low Orbit",
-      "username": "low_orbit",
-      "description": "Keeps a log of satellites anyone can see.",
-      "profile_image_url": "avatars/910012.png",
-      "public_metrics": {
-        "followers_count": 8900,
-        "tweet_count": 3400
-      }
-    },
-    {
-      "id": "910013",
-      "name": "North Spoon",
-      "username": "north_spoon",
-      "description": "Recipes that start with whatever is left.",
-      "profile_image_url": "avatars/910013.png",
-      "public_metrics": {
-        "followers_count": 150,
-        "tweet_count": 80
-      }
-    },
-    {
       "id": "910015",
       "name": "Kiln Static",
       "username": "kiln_static",
@@ -132,20 +66,9 @@
         "followers_count": 90,
         "tweet_count": 40
       }
-    },
-    {
-      "id": "910099",
-      "name": "Grok",
-      "username": "grok",
-      "description": "Bot account included so the sample can show that exclude works.",
-      "profile_image_url": "avatars/910099.png",
-      "public_metrics": {
-        "followers_count": 1,
-        "tweet_count": 1
-      }
     }
   ],
   "meta": {
-    "result_count": 13
+    "result_count": 6
   }
 }
