@@ -1,0 +1,129 @@
+{
+  "_comment": "FICTIONAL SAMPLE. Made-up users and posts for the X Neighbours example. Not real X data.",
+  "data": [
+    {
+      "id": "910001",
+      "name": "Nova Lane",
+      "username": "nova_lane",
+      "description": "Draws paper maps of imaginary streets.",
+      "profile_image_url": "avatars/910001.png",
+      "public_metrics": {
+        "followers_count": 1840,
+        "tweet_count": 920
+      }
+    },
+    {
+      "id": "910002",
+      "name": "Amber Kiln",
+      "username": "amber_kiln",
+      "description": "Fires small cups and keeps the cracked ones.",
+      "profile_image_url": "avatars/910002.png",
+      "public_metrics": {
+        "followers_count": 640,
+        "tweet_count": 410
+      }
+    },
+    {
+      "id": "910003",
+      "name": "Pixel Otter",
+      "username": "pixel_otter",
+      "description": "Builds tiny games about weather.",
+      "profile_image_url": "avatars/910003.png",
+      "public_metrics": {
+        "followers_count": 12800,
+        "tweet_count": 2300
+      }
+    },
+    {
+      "id": "910005",
+      "name": "Moss Radio",
+      "username": "moss_radio",
+      "description": "A one-room station for long songs.",
+      "profile_image_url": "avatars/910005.png",
+      "public_metrics": {
+        "followers_count": 430,
+        "tweet_count": 260
+      }
+    },
+    {
+      "id": "910007",
+      "name": "Drift Paper",
+      "username": "drift_paper",
+      "description": "Folds boats out of old schedules.",
+      "profile_image_url": "avatars/910007.png",
+      "public_metrics": {
+        "followers_count": 1560,
+        "tweet_count": 640
+      }
+    },
+    {
+      "id": "910008",
+      "name": "Velvet Axis",
+      "username": "velvet_axis",
+      "description": "Designs posters for plays that do not exist.",
+      "profile_image_url": "avatars/910008.png",
+      "public_metrics": {
+        "followers_count": 3200,
+        "tweet_count": 1100
+      }
+    },
+    {
+      "id": "910009",
+      "name": "Tin Harbor",
+      "username": "tin_harbor",
+      "description": "Collects harbour bells and their recordings.",
+      "profile_image_url": "avatars/910009.png",
+      "public_metrics": {
+        "followers_count": 740,
+        "tweet_count": 390
+      }
+    },
+    {
+      "id": "910012",
+      "name": "Low Orbit",
+      "username": "low_orbit",
+      "description": "Keeps a log of satellites anyone can see.",
+      "profile_image_url": "avatars/910012.png",
+      "public_metrics": {
+        "followers_count": 8900,
+        "tweet_count": 3400
+      }
+    },
+    {
+      "id": "910013",
+      "name": "North Spoon",
+      "username": "north_spoon",
+      "description": "Recipes that start with whatever is left.",
+      "profile_image_url": "avatars/910013.png",
+      "public_metrics": {
+        "followers_count": 150,
+        "tweet_count": 80
+      }
+    },
+    {
+      "id": "910014",
+      "name": "Echo Marsh",
+      "username": "echo_marsh",
+      "description": "Records frogs and answers them.",
+      "profile_image_url": "avatars/910014.png",
+      "public_metrics": {
+        "followers_count": 670,
+        "tweet_count": 540
+      }
+    },
+    {
+      "id": "910099",
+      "name": "Grok",
+      "username": "grok",
+      "description": "Bot account included so the sample can show that exclude works.",
+      "profile_image_url": "avatars/910099.png",
+      "public_metrics": {
+        "followers_count": 1,
+        "tweet_count": 1
+      }
+    }
+  ],
+  "meta": {
+    "result_count": 11
+  }
+}

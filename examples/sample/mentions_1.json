@@ -1,0 +1,460 @@
+{
+  "_comment": "FICTIONAL SAMPLE. Made-up users and posts for the X Neighbours example. Not real X data.",
+  "data": [
+    {
+      "id": "7001",
+      "author_id": "910001",
+      "created_at": "2026-11-04T12:01:00Z",
+      "text": "Replying to the sample sketch (day 1).",
+      "in_reply_to_user_id": "900001",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "8001"
+        }
+      ],
+      "conversation_id": "8001"
+    },
+    {
+      "id": "7002",
+      "author_id": "910001",
+      "created_at": "2026-11-04T12:03:00Z",
+      "text": "Replying to the sample sketch (day 2).",
+      "in_reply_to_user_id": "900001",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "8002"
+        }
+      ],
+      "conversation_id": "8002"
+    },
+    {
+      "id": "7003",
+      "author_id": "910001",
+      "created_at": "2026-11-01T15:03:00Z",
+      "text": "Replying to the sample sketch (week 1).",
+      "in_reply_to_user_id": "900001",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "8005"
+        }
+      ],
+      "conversation_id": "8005"
+    },
+    {
+      "id": "7004",
+      "author_id": "910001",
+      "created_at": "2026-11-01T15:05:00Z",
+      "text": "Replying to the sample sketch (week 2).",
+      "in_reply_to_user_id": "900001",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "8006"
+        }
+      ],
+      "conversation_id": "8006"
+    },
+    {
+      "id": "7005",
+      "author_id": "910002",
+      "created_at": "2026-11-04T12:05:00Z",
+      "text": "Replying to the sample sketch (day 1).",
+      "in_reply_to_user_id": "900001",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "8001"
+        }
+      ],
+      "conversation_id": "8001"
+    },
+    {
+      "id": "7006",
+      "author_id": "910002",
+      "created_at": "2026-11-01T15:06:00Z",
+      "text": "Replying to the sample sketch (week 1).",
+      "in_reply_to_user_id": "900001",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "8005"
+        }
+      ],
+      "conversation_id": "8005"
+    },
+    {
+      "id": "7007",
+      "author_id": "910002",
+      "created_at": "2026-11-01T15:08:00Z",
+      "text": "Replying to the sample sketch (week 2).",
+      "in_reply_to_user_id": "900001",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "8006"
+        }
+      ],
+      "conversation_id": "8006"
+    },
+    {
+      "id": "7008",
+      "author_id": "910003",
+      "created_at": "2026-11-01T15:08:00Z",
+      "text": "Replying to the sample sketch (week 1).",
+      "in_reply_to_user_id": "900001",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "8005"
+        }
+      ],
+      "conversation_id": "8005"
+    },
+    {
+      "id": "7009",
+      "author_id": "910004",
+      "created_at": "2026-11-04T12:09:00Z",
+      "text": "Replying to the sample sketch (day 1).",
+      "in_reply_to_user_id": "900001",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "8001"
+        }
+      ],
+      "conversation_id": "8001"
+    },
+    {
+      "id": "7010",
+      "author_id": "910004",
+      "created_at": "2026-11-01T15:10:00Z",
+      "text": "Replying to the sample sketch (week 1).",
+      "in_reply_to_user_id": "900001",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "8005"
+        }
+      ],
+      "conversation_id": "8005"
+    },
+    {
+      "id": "7011",
+      "author_id": "910005",
+      "created_at": "2026-11-01T15:11:00Z",
+      "text": "Replying to the sample sketch (week 1).",
+      "in_reply_to_user_id": "900001",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "8005"
+        }
+      ],
+      "conversation_id": "8005"
+    },
+    {
+      "id": "7012",
+      "author_id": "910006",
+      "created_at": "2026-11-04T12:12:00Z",
+      "text": "Replying to the sample sketch (day 1).",
+      "in_reply_to_user_id": "900001",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "8001"
+        }
+      ],
+      "conversation_id": "8001"
+    },
+    {
+      "id": "7013",
+      "author_id": "910006",
+      "created_at": "2026-11-01T15:13:00Z",
+      "text": "Replying to the sample sketch (week 1).",
+      "in_reply_to_user_id": "900001",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "8005"
+        }
+      ],
+      "conversation_id": "8005"
+    },
+    {
+      "id": "7014",
+      "author_id": "910007",
+      "created_at": "2026-11-04T12:14:00Z",
+      "text": "Replying to the sample sketch (day 1).",
+      "in_reply_to_user_id": "900001",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "8001"
+        }
+      ],
+      "conversation_id": "8001"
+    },
+    {
+      "id": "7015",
+      "author_id": "910008",
+      "created_at": "2026-11-01T15:15:00Z",
+      "text": "Replying to the sample sketch (week 1).",
+      "in_reply_to_user_id": "900001",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "8005"
+        }
+      ],
+      "conversation_id": "8005"
+    },
+    {
+      "id": "7016",
+      "author_id": "910009",
+      "created_at": "2026-11-01T15:16:00Z",
+      "text": "Replying to the sample sketch (week 1).",
+      "in_reply_to_user_id": "900001",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "8005"
+        }
+      ],
+      "conversation_id": "8005"
+    },
+    {
+      "id": "7017",
+      "author_id": "910010",
+      "created_at": "2026-11-01T15:17:00Z",
+      "text": "Replying to the sample sketch (week 1).",
+      "in_reply_to_user_id": "900001",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "8005"
+        }
+      ],
+      "conversation_id": "8005"
+    },
+    {
+      "id": "7018",
+      "author_id": "910011",
+      "created_at": "2026-11-01T15:18:00Z",
+      "text": "Replying to the sample sketch (week 1).",
+      "in_reply_to_user_id": "900001",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "8005"
+        }
+      ],
+      "conversation_id": "8005"
+    },
+    {
+      "id": "7019",
+      "author_id": "910099",
+      "created_at": "2026-11-01T15:19:00Z",
+      "text": "Replying to the sample sketch (week 1).",
+      "in_reply_to_user_id": "900001",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "8005"
+        }
+      ],
+      "conversation_id": "8005"
+    },
+    {
+      "id": "7020",
+      "author_id": "910092",
+      "created_at": "2026-10-20T13:00:00Z",
+      "text": "A reply from before the sample week.",
+      "in_reply_to_user_id": "900001",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "8009"
+        }
+      ],
+      "conversation_id": "8009"
+    },
+    {
+      "id": "7021",
+      "author_id": "910093",
+      "created_at": "2026-11-04T16:00:00Z",
+      "text": "Mentioned @samplecreator while replying to someone else.",
+      "in_reply_to_user_id": "910091",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "424242"
+        }
+      ],
+      "conversation_id": "424242"
+    }
+  ],
+  "includes": {
+    "users": [
+      {
+        "id": "910001",
+        "name": "Nova Lane",
+        "username": "nova_lane",
+        "description": "Draws paper maps of imaginary streets.",
+        "profile_image_url": "avatars/910001.png",
+        "public_metrics": {
+          "followers_count": 1840,
+          "tweet_count": 920
+        }
+      },
+      {
+        "id": "910002",
+        "name": "Amber Kiln",
+        "username": "amber_kiln",
+        "description": "Fires small cups and keeps the cracked ones.",
+        "profile_image_url": "avatars/910002.png",
+        "public_metrics": {
+          "followers_count": 640,
+          "tweet_count": 410
+        }
+      },
+      {
+        "id": "910003",
+        "name": "Pixel Otter",
+        "username": "pixel_otter",
+        "description": "Builds tiny games about weather.",
+        "profile_image_url": "avatars/910003.png",
+        "public_metrics": {
+          "followers_count": 12800,
+          "tweet_count": 2300
+        }
+      },
+      {
+        "id": "910004",
+        "name": "Quiet Comet",
+        "username": "quiet_comet",
+        "description": "Night-sky notes from a rooftop desk.",
+        "profile_image_url": "avatars/910004.png",
+        "public_metrics": {
+          "followers_count": 980,
+          "tweet_count": 1500
+        }
+      },
+      {
+        "id": "910005",
+        "name": "Moss Radio",
+        "username": "moss_radio",
+        "description": "A one-room station for long songs.",
+        "profile_image_url": "avatars/910005.png",
+        "public_metrics": {
+          "followers_count": 430,
+          "tweet_count": 260
+        }
+      },
+      {
+        "id": "910006",
+        "name": "Cedar Loop",
+        "username": "cedar_loop",
+        "description": "Walks the same trail and writes it down.",
+        "profile_image_url": "avatars/910006.png",
+        "public_metrics": {
+          "followers_count": 210,
+          "tweet_count": 880
+        }
+      },
+      {
+        "id": "910007",
+        "name": "Drift Paper",
+        "username": "drift_paper",
+        "description": "Folds boats out of old schedules.",
+        "profile_image_url": "avatars/910007.png",
+        "public_metrics": {
+          "followers_count": 1560,
+          "tweet_count": 640
+        }
+      },
+      {
+        "id": "910008",
+        "name": "Velvet Axis",
+        "username": "velvet_axis",
+        "description": "Designs posters for plays that do not exist.",
+        "profile_image_url": "avatars/910008.png",
+        "public_metrics": {
+          "followers_count": 3200,
+          "tweet_count": 1100
+        }
+      },
+      {
+        "id": "910009",
+        "name": "Tin Harbor",
+        "username": "tin_harbor",
+        "description": "Collects harbour bells and their recordings.",
+        "profile_image_url": "avatars/910009.png",
+        "public_metrics": {
+          "followers_count": 740,
+          "tweet_count": 390
+        }
+      },
+      {
+        "id": "910010",
+        "name": "Glass Meadow",
+        "username": "glass_meadow",
+        "description": "Photographs greenhouses in winter.",
+        "profile_image_url": "avatars/910010.png",
+        "public_metrics": {
+          "followers_count": 510,
+          "tweet_count": 720
+        }
+      },
+      {
+        "id": "910011",
+        "name": "Paper Kite",
+        "username": "paper_kite",
+        "description": "Flies kites when the forecast is boring.",
+        "profile_image_url": "avatars/910011.png",
+        "public_metrics": {
+          "followers_count": 260,
+          "tweet_count": 190
+        }
+      },
+      {
+        "id": "910099",
+        "name": "Grok",
+        "username": "grok",
+        "description": "Bot account included so the sample can show that exclude works.",
+        "profile_image_url": "avatars/910099.png",
+        "public_metrics": {
+          "followers_count": 1,
+          "tweet_count": 1
+        }
+      },
+      {
+        "id": "910092",
+        "name": "Late Echo",
+        "username": "late_echo",
+        "description": "Replied before the week began.",
+        "profile_image_url": "avatars/910092.png",
+        "public_metrics": {
+          "followers_count": 14,
+          "tweet_count": 5
+        }
+      },
+      {
+        "id": "910093",
+        "name": "Side Mention",
+        "username": "side_mention",
+        "description": "Mentioned the sample account without replying to it.",
+        "profile_image_url": "avatars/910093.png",
+        "public_metrics": {
+          "followers_count": 15,
+          "tweet_count": 6
+        }
+      }
+    ]
+  },
+  "meta": {
+    "result_count": 21
+  }
+}

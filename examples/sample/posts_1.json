@@ -1,0 +1,122 @@
+{
+  "_comment": "FICTIONAL SAMPLE. Made-up users and posts for the X Neighbours example. Not real X data.",
+  "data": [
+    {
+      "id": "8001",
+      "author_id": "900001",
+      "created_at": "2026-11-04T08:00:00Z",
+      "text": "Sketched a paper neighbourhood and a ring of chairs.",
+      "public_metrics": {
+        "like_count": 13,
+        "reply_count": 0,
+        "repost_count": 0
+      }
+    },
+    {
+      "id": "8002",
+      "author_id": "900001",
+      "created_at": "2026-11-04T11:30:00Z",
+      "text": "The kettle won the argument. The drawing can wait.",
+      "public_metrics": {
+        "like_count": 6,
+        "reply_count": 0,
+        "repost_count": 0
+      }
+    },
+    {
+      "id": "8003",
+      "author_id": "900001",
+      "created_at": "2026-11-04T15:10:00Z",
+      "text": "Left a blank circle in the middle of the map on purpose.",
+      "public_metrics": {
+        "like_count": 2,
+        "reply_count": 0,
+        "repost_count": 0
+      }
+    },
+    {
+      "id": "8004",
+      "author_id": "900001",
+      "created_at": "2026-11-03T20:00:00Z",
+      "text": "Tonight's margin notes are mostly arrows.",
+      "public_metrics": {
+        "like_count": 1,
+        "reply_count": 0,
+        "repost_count": 0
+      }
+    },
+    {
+      "id": "8005",
+      "author_id": "900001",
+      "created_at": "2026-11-02T13:00:00Z",
+      "text": "Tried a sunset palette on a midnight sketch.",
+      "public_metrics": {
+        "like_count": 31,
+        "reply_count": 0,
+        "repost_count": 0
+      }
+    },
+    {
+      "id": "8006",
+      "author_id": "900001",
+      "created_at": "2026-11-01T09:40:00Z",
+      "text": "Three rings, then stop. The fourth ring is for later.",
+      "public_metrics": {
+        "like_count": 11,
+        "reply_count": 0,
+        "repost_count": 0
+      }
+    },
+    {
+      "id": "8007",
+      "author_id": "900001",
+      "created_at": "2026-10-30T18:20:00Z",
+      "text": "Named the streets after kitchen objects.",
+      "public_metrics": {
+        "like_count": 3,
+        "reply_count": 0,
+        "repost_count": 0
+      }
+    },
+    {
+      "id": "8008",
+      "author_id": "900001",
+      "created_at": "2026-10-29T07:15:00Z",
+      "text": "A week of small replies is a good week.",
+      "public_metrics": {
+        "like_count": 1,
+        "reply_count": 0,
+        "repost_count": 0
+      }
+    },
+    {
+      "id": "8009",
+      "author_id": "900001",
+      "created_at": "2026-10-20T12:00:00Z",
+      "text": "This post is older than the sample week and should not count.",
+      "public_metrics": {
+        "like_count": 1,
+        "reply_count": 0,
+        "repost_count": 0
+      }
+    }
+  ],
+  "includes": {
+    "users": [
+      {
+        "id": "900001",
+        "name": "Sample Creator",
+        "username": "samplecreator",
+        "description": "Fictional account used only to demonstrate X Neighbours.",
+        "profile_image_url": "avatars/900001.png",
+        "public_metrics": {
+          "followers_count": 2400,
+          "tweet_count": 860
+        }
+      }
+    ]
+  },
+  "meta": {
+    "result_count": 9
+  }
+}

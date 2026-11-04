@@ -1,0 +1,173 @@
+{
+  "_comment": "FICTIONAL SAMPLE. Made-up users and posts for the X Neighbours example. Not real X data.",
+  "data": [
+    {
+      "id": "910001",
+      "name": "Nova Lane",
+      "username": "nova_lane",
+      "description": "Draws paper maps of imaginary streets.",
+      "profile_image_url": "avatars/910001.png",
+      "public_metrics": {
+        "followers_count": 1840,
+        "tweet_count": 920
+      }
+    },
+    {
+      "id": "910002",
+      "name": "Amber Kiln",
+      "username": "amber_kiln",
+      "description": "Fires small cups and keeps the cracked ones.",
+      "profile_image_url": "avatars/910002.png",
+      "public_metrics": {
+        "followers_count": 640,
+        "tweet_count": 410
+      }
+    },
+    {
+      "id": "910004",
+      "name": "Quiet Comet",
+      "username": "quiet_comet",
+      "description": "Night-sky notes from a rooftop desk.",
+      "profile_image_url": "avatars/910004.png",
+      "public_metrics": {
+        "followers_count": 980,
+        "tweet_count": 1500
+      }
+    },
+    {
+      "id": "910008",
+      "name": "Velvet Axis",
+      "username": "velvet_axis",
+      "description": "Designs posters for plays that do not exist.",
+      "profile_image_url": "avatars/910008.png",
+      "public_metrics": {
+        "followers_count": 3200,
+        "tweet_count": 1100
+      }
+    },
+    {
+      "id": "910009",
+      "name": "Tin Harbor",
+      "username": "tin_harbor",
+      "description": "Collects harbour bells and their recordings.",
+      "profile_image_url": "avatars/910009.png",
+      "public_metrics": {
+        "followers_count": 740,
+        "tweet_count": 390
+      }
+    },
+    {
+      "id": "910010",
+      "name": "Glass Meadow",
+      "username": "glass_meadow",
+      "description": "Photographs greenhouses in winter.",
+      "profile_image_url": "avatars/910010.png",
+      "public_metrics": {
+        "followers_count": 510,
+        "tweet_count": 720
+      }
+    },
+    {
+      "id": "910014",
+      "name": "Echo Marsh",
+      "username": "echo_marsh",
+      "description": "Records frogs and answers them.",
+      "profile_image_url": "avatars/910014.png",
+      "public_metrics": {
+        "followers_count": 670,
+        "tweet_count": 540
+      }
+    },
+    {
+      "id": "910016",
+      "name": "Blue Ladle",
+      "username": "blue_ladle",
+      "description": "Soup on Sundays, notes on Mondays.",
+      "profile_image_url": "avatars/910016.png",
+      "public_metrics": {
+        "followers_count": 300,
+        "tweet_count": 210
+      }
+    },
+    {
+      "id": "910019",
+      "name": "Odd Thermos",
+      "username": "odd_thermos",
+      "description": "Tea reviews nobody asked for.",
+      "profile_image_url": "avatars/910019.png",
+      "public_metrics": {
+        "followers_count": 75,
+        "tweet_count": 360
+      }
+    },
+    {
+      "id": "910020",
+      "name": "Plum Vector",
+      "username": "plum_vector",
+      "description": "Draws arrows until the page looks finished.",
+      "profile_image_url": "avatars/910020.png",
+      "public_metrics": {
+        "followers_count": 540,
+        "tweet_count": 610
+      }
+    },
+    {
+      "id": "910023",
+      "name": "Frost Pantry",
+      "username": "frost_pantry",
+      "description": "What kept in a cold kitchen this week.",
+      "profile_image_url": "avatars/910023.png",
+      "public_metrics": {
+        "followers_count": 188,
+        "tweet_count": 140
+      }
+    },
+    {
+      "id": "910025",
+      "name": "Pebble Choir",
+      "username": "pebble_choir",
+      "description": "A club for people who collect smooth stones.",
+      "profile_image_url": "avatars/910025.png",
+      "public_metrics": {
+        "followers_count": 1320,
+        "tweet_count": 470
+      }
+    },
+    {
+      "id": "910028",
+      "name": "Calm Voltage",
+      "username": "calm_voltage",
+      "description": "Quiet notes on batteries and bicycles.",
+      "profile_image_url": "avatars/910028.png",
+      "public_metrics": {
+        "followers_count": 305,
+        "tweet_count": 280
+      }
+    },
+    {
+      "id": "910031",
+      "name": "Still Porch",
+      "username": "still_porch",
+      "description": "Follows both ways and did not engage this week.",
+      "profile_image_url": "avatars/910031.png",
+      "public_metrics": {
+        "followers_count": 16,
+        "tweet_count": 7
+      }
+    },
+    {
+      "id": "910033",
+      "name": "Kept Lantern",
+      "username": "kept_lantern",
+      "description": "The sample account follows them. No likes or replies.",
+      "profile_image_url": "avatars/910033.png",
+      "public_metrics": {
+        "followers_count": 18,
+        "tweet_count": 9
+      }
+    }
+  ],
+  "meta": {
+    "result_count": 15
+  }
+}

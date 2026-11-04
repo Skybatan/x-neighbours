@@ -1,0 +1,19 @@
+{
+  "_comment": "FICTIONAL SAMPLE. Made-up users and posts for the X Neighbours example. Not real X data.",
+  "data": [
+    {
+      "id": "910091",
+      "name": "Old Signal",
+      "username": "old_signal",
+      "description": "Only liked a post from outside the week.",
+      "profile_image_url": "avatars/910091.png",
+      "public_metrics": {
+        "followers_count": 13,
+        "tweet_count": 4
+      }
+    }
+  ],
+  "meta": {
+    "result_count": 1
+  }
+}

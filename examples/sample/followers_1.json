@@ -1,0 +1,184 @@
+{
+  "_comment": "FICTIONAL SAMPLE. Made-up users and posts for the X Neighbours example. Not real X data.",
+  "data": [
+    {
+      "id": "910001",
+      "name": "Nova Lane",
+      "username": "nova_lane",
+      "description": "Draws paper maps of imaginary streets.",
+      "profile_image_url": "avatars/910001.png",
+      "public_metrics": {
+        "followers_count": 1840,
+        "tweet_count": 920
+      }
+    },
+    {
+      "id": "910002",
+      "name": "Amber Kiln",
+      "username": "amber_kiln",
+      "description": "Fires small cups and keeps the cracked ones.",
+      "profile_image_url": "avatars/910002.png",
+      "public_metrics": {
+        "followers_count": 640,
+        "tweet_count": 410
+      }
+    },
+    {
+      "id": "910003",
+      "name": "Pixel Otter",
+      "username": "pixel_otter",
+      "description": "Builds tiny games about weather.",
+      "profile_image_url": "avatars/910003.png",
+      "public_metrics": {
+        "followers_count": 12800,
+        "tweet_count": 2300
+      }
+    },
+    {
+      "id": "910007",
+      "name": "Drift Paper",
+      "username": "drift_paper",
+      "description": "Folds boats out of old schedules.",
+      "profile_image_url": "avatars/910007.png",
+      "public_metrics": {
+        "followers_count": 1560,
+        "tweet_count": 640
+      }
+    },
+    {
+      "id": "910008",
+      "name": "Velvet Axis",
+      "username": "velvet_axis",
+      "description": "Designs posters for plays that do not exist.",
+      "profile_image_url": "avatars/910008.png",
+      "public_metrics": {
+        "followers_count": 3200,
+        "tweet_count": 1100
+      }
+    },
+    {
+      "id": "910011",
+      "name": "Paper Kite",
+      "username": "paper_kite",
+      "description": "Flies kites when the forecast is boring.",
+      "profile_image_url": "avatars/910011.png",
+      "public_metrics": {
+        "followers_count": 260,
+        "tweet_count": 190
+      }
+    },
+    {
+      "id": "910013",
+      "name": "North Spoon",
+      "username": "north_spoon",
+      "description": "Recipes that start with whatever is left.",
+      "profile_image_url": "avatars/910013.png",
+      "public_metrics": {
+        "followers_count": 150,
+        "tweet_count": 80
+      }
+    },
+    {
+      "id": "910014",
+      "name": "Echo Marsh",
+      "username": "echo_marsh",
+      "description": "Records frogs and answers them.",
+      "profile_image_url": "avatars/910014.png",
+      "public_metrics": {
+        "followers_count": 670,
+        "tweet_count": 540
+      }
+    },
+    {
+      "id": "910017",
+      "name": "Harbor Mint",
+      "username": "harbor_mint",
+      "description": "Grows herbs in tins on a windowsill.",
+      "profile_image_url": "avatars/910017.png",
+      "public_metrics": {
+        "followers_count": 120,
+        "tweet_count": 70
+      }
+    },
+    {
+      "id": "910020",
+      "name": "Plum Vector",
+      "username": "plum_vector",
+      "description": "Draws arrows until the page looks finished.",
+      "profile_image_url": "avatars/910020.png",
+      "public_metrics": {
+        "followers_count": 540,
+        "tweet_count": 610
+      }
+    },
+    {
+      "id": "910022",
+      "name": "Marble Ink",
+      "username": "marble_ink",
+      "description": "Lettering practice on scrap stone.",
+      "profile_image_url": "avatars/910022.png",
+      "public_metrics": {
+        "followers_count": 410,
+        "tweet_count": 255
+      }
+    },
+    {
+      "id": "910025",
+      "name": "Pebble Choir",
+      "username": "pebble_choir",
+      "description": "A club for people who collect smooth stones.",
+      "profile_image_url": "avatars/910025.png",
+      "public_metrics": {
+        "followers_count": 1320,
+        "tweet_count": 470
+      }
+    },
+    {
+      "id": "910026",
+      "name": "Kite Window",
+      "username": "kite_window",
+      "description": "Office window, paper kite, long meeting.",
+      "profile_image_url": "avatars/910026.png",
+      "public_metrics": {
+        "followers_count": 230,
+        "tweet_count": 175
+      }
+    },
+    {
+      "id": "910030",
+      "name": "Bright Parcel",
+      "username": "bright_parcel",
+      "description": "Sends friends boxes of odd stationery.",
+      "profile_image_url": "avatars/910030.png",
+      "public_metrics": {
+        "followers_count": 5100,
+        "tweet_count": 760
+      }
+    },
+    {
+      "id": "910031",
+      "name": "Still Porch",
+      "username": "still_porch",
+      "description": "Follows both ways and did not engage this week.",
+      "profile_image_url": "avatars/910031.png",
+      "public_metrics": {
+        "followers_count": 16,
+        "tweet_count": 7
+      }
+    },
+    {
+      "id": "910032",
+      "name": "Idle Creek",
+      "username": "idle_creek",
+      "description": "Follows the sample account and stayed quiet.",
+      "profile_image_url": "avatars/910032.png",
+      "public_metrics": {
+        "followers_count": 17,
+        "tweet_count": 8
+      }
+    }
+  ],
+  "meta": {
+    "result_count": 16
+  }
+}

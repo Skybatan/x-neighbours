@@ -1,0 +1,12 @@
+{
+  "handle": "your_handle",
+  "user_id": "your_user_id",
+  "like_weight": 1,
+  "reply_weight": 3,
+  "exclude": ["grok"],
+  "rings": 3,
+  "show_names": true,
+  "theme": "midnight",
+  "windows": ["day", "week"],
+  "top": 10
+}

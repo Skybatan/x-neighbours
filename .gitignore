@@ -1,0 +1,14 @@
+# Per-creator settings. Copy config.example.json to config.json.
+config.json
+
+# Raw X responses, downloaded avatars, and files the script writes.
+data/
+.avatar_cache/
+report_*.md
+x_neighbours_*.png
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.DS_Store
