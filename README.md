@@ -6,15 +6,15 @@ X Neighbours helps a creator catch up with the people who replied, quoted, liked
 
 *Sample report with fictional people.*
 
-The first run covers the last two days, so it loads quickly, and it always includes the picture. Later Mondays include the picture about one week in three. With only a few neighbours the picture uses one larger ring instead of an empty three-ring chart.
+The first run covers the last two days, so it loads quickly. Every report includes the house-framed picture and a thank-you link. With only a few neighbours the picture uses one larger ring instead of an empty three-ring chart.
 
 ![A first-run picture with five fictional neighbours](docs/sample-few-neighbours.png)
 
 *Five made-up neighbours, one ring, house frames. From `examples/few`.*
 
-People the owner does not follow are marked 👤?. There is no followed/unfollowed split. Catch up lists each person's latest original post (not a reply or a plain repost; a quote of their own counts). People with none in the saved page are skipped. The ordering score stays in config and is not printed.
+People the owner does not follow are marked 👤?. There is no followed/unfollowed split. Catch up with your good neighbours lists each person's latest original post (not a reply or a plain repost; a quote of their own counts). People with none in the saved page are skipped. When the owner has a good neighbours list, that section shows only those people. When the list is empty, it stays the top people from the period and adds one hint line. A ⭐ marks a good neighbour in the other sections too. The ordering score stays in config and is not printed.
 
-The ring picture is separate. The original three-ring layout is unchanged, and every avatar, including the centre, sits in a simple house frame. It is not part of the default report. A Monday run includes it about one week in three, with a thank-you post ready to send. Ask any time and it is drawn.
+The ring picture is part of every report, under Thank your neighbours on X, with a ready-to-post thank-you link. The original three-ring layout is unchanged, and every avatar, including the centre, sits in a simple house frame. `--no-picture` skips the image.
 
 ![Sample neighbours picture with house frames, fictional data](docs/sample-neighbours.png)
 
@@ -43,7 +43,7 @@ python3 x_neighbours.py --now 2026-11-04T18:00:00Z
 | File | What it is |
 |---|---|
 | `report_week.md` | The text report. `report_day.md` for a day, `report_first.md` for the first run |
-| `x_neighbours_*.png` | The house-framed picture, on the first run, on some Mondays, or with `--picture` |
+| `x_neighbours_*.png` | The house-framed picture, included with every report |
 
 A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same runbook is in [skills/x-neighbours/SKILL.md](skills/x-neighbours/SKILL.md)).
 
@@ -60,7 +60,6 @@ A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same
   "exclude": ["grok"],
   "rings": 3,
   "show_names": true,
-  "picture_every_n_weeks": 3,
   "first_run_days": 2,
   "items_per_user": 3,
   "theme": "midnight",
@@ -81,17 +80,17 @@ A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same
 | `rings` | Rings on the picture, from 1 to 4. Default 3. The rings hold 8, then 14, then 20, then 26 people |
 | `first_run_days` | How many days the first fetch covers. Default 2. Daily stays 24 hours. Monday stays 7 days |
 | `items_per_user` | Reply and quote lines shown per person before `+N more`. Default 3 |
-| `picture_every_n_weeks` | About how many Monday runs pass between pictures after the first run. Default 3. `--picture` draws it now |
 | `show_names` | Handles under the avatars on the picture |
 | `theme` | `midnight` (default), `light`, or `sunset` |
 | `windows` | `week` by default. `day` is the daily report |
-| `top` | Rows in Likes & Reposts (user, likes, reposts), and people in Catch up. Default 10 |
+| `top` | Rows in Likes & Reposts (user, replies, likes, reposts), and people in Catch up when the good neighbours list is empty. Default 10 |
+| `good_neighbours` | Optional path to the personal list. Prefer `--good-neighbours`, because the file lives outside the repo. A missing file is an empty list. At most 20 people |
 | `report` | `both` (default), `likes`, or `replies` |
 | `per_post`, `per_day` | Extra markdown sections. Off unless you ask |
 
-Other flags: `--config`, `--data`, `--out`, `--now`, `--days`, `--first-run`, `--report-card`, `--rings`, `--top`, `--theme`, `--windows day,week`, `--report likes`, `--per-post`, `--per-day`, `--picture`, `--no-picture`, `--show-names`, `--no-image`.
+Other flags: `--config`, `--data`, `--out`, `--now`, `--days`, `--first-run`, `--report-card`, `--rings`, `--top`, `--theme`, `--windows day,week`, `--report likes`, `--per-post`, `--per-day`, `--picture`, `--no-picture`, `--show-names`, `--no-image`, `--good-neighbours PATH`.
 
-A plain run writes markdown only. `--first-run` uses `first_run_days` and always draws the picture. `--report-card` adds the PNG card. `--days 14` is a custom period.
+A plain run writes the markdown report and the neighbours picture. `--first-run` uses `first_run_days`. `--report-card` adds the PNG card. `--days 14` is a custom period. `--no-picture` skips the image.
 
 ```bash
 python3 x_neighbours.py --now 2026-11-04T18:00:00Z --report likes
@@ -124,7 +123,7 @@ Pick a UTC timestamp `T` when you start. Pass `T` to the script as `--now`. For 
 | 3 | `get_posts_liking_users` | Posts with likes. `user.fields=username,name,description,profile_image_url` | `likes_<postid>` |
 | 4 | `get_posts_reposted_by` | Posts with reposts. Same user fields | `reposts_<postid>` |
 | 5 | `get_posts_quoted_posts` | Posts with quotes. `post.fields=created_at,author_id,text,referenced_tweets`, `expansions=author_id` | `quotes_<postid>` |
-| 6 | `get_users_posts` | At most 10 catch-up people, `max_results=10`, `exclude=replies,retweets`, `post.fields=created_at,text,author_id,in_reply_to_user_id,referenced_tweets` | `latest_<userid>` |
+| 6 | `get_users_posts` | Each good neighbour (at most 20), or at most 10 catch-up people when the list is empty. `max_results=10`, `exclude=replies,retweets`, `post.fields=created_at,text,author_id,in_reply_to_user_id,referenced_tweets` | `latest_<userid>` |
 | 7 | `get_users_me_followers` and `get_users_me_following` | `max_results=1000`. Refresh on Mondays | `followers_1`, `following_1`, … |
 
 On a Grok Bot these tools are on the X connection. A reply counts when `in_reply_to_user_id` is `{ID}`, or when a `replied_to` reference points at one of your posts. The owner has replied to that item when one of their own posts replies to its id. Your own posts are ignored as neighbours.
@@ -137,7 +136,7 @@ Likes, reposts, and quotes are one call per post:
 
 - The last 24 hours: every post with that count above 0.
 - Days 2–7: only counts of 3 or more.
-- Latest posts: at most 10 calls, one per catch-up person.
+- Latest posts: one call per good neighbour (at most 20), or at most 10 when that list is empty.
 - One page is enough for almost every post. Fetch another page only while you are inside the day's budget.
 
 Follower lists refresh on Monday only. The Monday run reuses that morning's daily files and only fetches the earlier part of the week, including likes, reposts, and quotes. The two runs share the 1,000-read cap. The steps are in [BOT.md](BOT.md).
@@ -169,11 +168,25 @@ python3 x_neighbours.py \
   --first-run
 ```
 
-That writes `report_first.md` and `x_neighbours_first.png` (the picture above). Rebuild both datasets with `python3 examples/make_sample.py`.
+That writes `report_first.md` and `x_neighbours_first.png` (the picture above). The same data with a fictional list:
+
+```bash
+python3 x_neighbours.py \
+  --config config.example.json \
+  --handle fewcreator \
+  --user-id 800001 \
+  --data examples/few \
+  --good-neighbours examples/few/good_neighbours.json \
+  --out /tmp/x-neighbours-few \
+  --now 2026-11-04T18:00:00Z \
+  --windows day
+```
+
+`examples/few/sample-report.md` is that daily report: Likes & Reposts first (with a Replies column), then Replies & Quote posts, then Catch up with your good neighbours, then Thank your neighbours on X, and a ⭐ Add list. Rebuild both datasets with `python3 examples/make_sample.py`. The list file is not rewritten by that script. Add someone with `python3 good_neighbours.py --file PATH add handle --id ID --name "Name"`.
 
 ## Privacy
 
-- `config.json`, `data/`, `.avatar_cache/`, `report_*.md`, `report_*.png`, and `x_neighbours_*.png` are gitignored. Leave them that way.
+- `config.json`, `data/`, `.avatar_cache/`, `report_*.md`, `report_*.png`, `x_neighbours_*.png`, and a `good_neighbours.json` copied into the repo root are gitignored. Leave them that way. The real list belongs in the bot's store, not in this repo. `examples/few/good_neighbours.json` is fictional and is the only copy that is tracked.
 - Real avatars are downloaded from the `profile_image_url` values in the saved JSON into `.avatar_cache/` next to the output folder.
 - Do not commit a creator's config, raw responses, avatar cache, reports, or pictures, and do not open a pull request that contains them.
 - The sample dataset is the only account data in this repo, and it is not from X.
@@ -183,6 +196,7 @@ That writes `report_first.md` and `x_neighbours_first.png` (the picture above). 
 | Path | Role |
 |---|---|
 | `x_neighbours.py` | Reports and pictures |
+| `good_neighbours.py` | Add, remove, or list the personal good neighbours file |
 | `save_raw.py` | Store one tool result under `data/` |
 | `config.example.json` | Config template |
 | `BOT.md`, `skills/x-neighbours/SKILL.md` | Runbook for the bot |
@@ -192,3 +206,5 @@ That writes `report_first.md` and `x_neighbours_first.png` (the picture above). 
 | `docs/sample-few-neighbours.png` | First-run picture with five fictional neighbours |
 | `docs/sample-neighbours.png` | A full three-ring picture from `examples/sample` |
 | `examples/few/` | The short fictional dataset |
+| `examples/few/good_neighbours.json` | Fictional good neighbours list |
+| `examples/few/sample-report.md` | Daily report from that list, with ⭐ and the follow-up question |

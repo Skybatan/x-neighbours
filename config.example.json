@@ -6,7 +6,6 @@
   "exclude": ["grok"],
   "rings": 3,
   "show_names": true,
-  "picture_every_n_weeks": 3,
   "first_run_days": 2,
   "items_per_user": 3,
   "theme": "midnight",
