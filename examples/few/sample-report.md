@@ -15,9 +15,7 @@ last 24 hours (Nov 3 – Nov 4) · 💬 2 replies · 🔁💬 1 quote · ❤️ 
 ### Catch up with your good neighbours
 Latest original posts from your good neighbours.
 - **Ada Brook** ⭐ [@ada_brook](https://x.com/ada_brook)
-  - “Quoting my own note about the window.” · 1h ago · [Read post](https://x.com/ada_brook/status/83101q)
-- **Fay Glen** ⭐ [@fay_glen](https://x.com/fay_glen)
-  - “Planted the last of the bulbs.” · 2h ago · [Read post](https://x.com/fay_glen/status/83106)
+  - “Kept the window light on.” · 2h ago · [Read post](https://x.com/ada_brook/status/83101)
 
 ### 👋 Greetings from your neighbours
 - **Eri Fern** [@eri_fern](https://x.com/eri_fern) 👤?

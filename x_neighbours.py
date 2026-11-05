@@ -9,7 +9,9 @@ It reads raw JSON saved from X tool calls (see README.md) in the data folder:
   likes_<postid>.json  get_posts_liking_users
   reposts_<postid>.json get_posts_reposted_by
   quotes_<postid>.json get_posts_quoted_posts
-  latest_<userid>.json get_users_posts for one neighbour (their latest post)
+  latest_<userid>.json get_users_posts for one neighbour (their latest posts)
+  my_likes_*.json      get_users_liked_posts (posts the owner already liked)
+  my_posts_*.json      get_users_posts for the owner, including replies and reposts
   followers_*.json     get_users_me_followers pages
   following_*.json     get_users_me_following pages
 
@@ -42,6 +44,20 @@ def load(pattern):
                 out.append((f, json.load(fh)))
             except json.JSONDecodeError as exc:
                 raise SystemExit(f"{f} is not JSON ({exc})") from exc
+    return out
+
+
+def load_soft(pattern):
+    """Engagement files are optional. A missing or broken file is ignored."""
+    out = []
+    for f in sorted(glob.glob(pattern)):
+        try:
+            with open(f, encoding="utf-8") as fh:
+                doc = json.load(fh)
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(doc, dict):
+            out.append(doc)
     return out
 
 
@@ -88,6 +104,8 @@ class Data:
         self.reposts = {}
         self.quotes = {}
         self.latest = {}
+        self.originals = {}
+        self.engaged = set()
         self.owner_replied_to = set()
         self.likes_truncated = []
         for _, doc in load(os.path.join(data_dir, "posts_*.json")):
@@ -149,6 +167,7 @@ class Data:
         self._load_user_lists("reposts_*.json", self.reposts, "reposts_<post id>")
         self._load_quotes()
         self._load_latest()
+        self._load_engagement()
         self.followers = self._idset("followers_*.json")
         self.following = self._idset("following_*.json")
 
@@ -251,9 +270,45 @@ class Data:
             if not posts:
                 continue
             posts.sort(key=lambda post: ts(post["created_at"]), reverse=True)
-            current = self.latest.get(uid)
-            if current is None or ts(posts[0]["created_at"]) > ts(current["created_at"]):
-                self.latest[uid] = posts[0]
+            merged = {post["id"]: post for post in self.originals.get(uid, [])}
+            for post in posts:
+                merged[post["id"]] = post
+            ordered = sorted(merged.values(), key=lambda post: ts(post["created_at"]), reverse=True)
+            self.originals[uid] = ordered
+            self.latest[uid] = ordered[0]
+
+    def _add_owner_targets(self, post):
+        if not isinstance(post, dict):
+            return
+        own = str(post.get("id") or "")
+        conversation = post.get("conversation_id")
+        if conversation and str(conversation) != own:
+            self.engaged.add(str(conversation))
+        for key in ("in_reply_to_tweet_id", "in_reply_to_status_id"):
+            if post.get(key):
+                self.engaged.add(str(post[key]))
+        for ref in post.get("referenced_tweets") or []:
+            if not isinstance(ref, dict) or ref.get("id") is None:
+                continue
+            kind = (ref.get("type") or "").lower()
+            if kind in ("replied_to", "quoted", "retweeted"):
+                self.engaged.add(str(ref["id"]))
+
+    def _load_engagement(self):
+        """Post ids the owner already liked, replied to, reposted, or quoted.
+
+        Missing files leave the set empty apart from replies already in posts_*.json.
+        """
+        self.engaged = set(self.owner_replied_to)
+        for post in self.posts.values():
+            self._add_owner_targets(post)
+        for doc in load_soft(os.path.join(self.data_dir, "my_posts_*.json")):
+            for post in doc.get("data") or []:
+                self._add_owner_targets(post)
+        for doc in load_soft(os.path.join(self.data_dir, "my_likes_*.json")):
+            for post in doc.get("data") or []:
+                if isinstance(post, dict) and post.get("id") is not None:
+                    self.engaged.add(str(post["id"]))
 
     def _idset(self, pattern):
         found = set()
@@ -903,14 +958,27 @@ def build_activity(data, since, until, top, like_weight, reply_weight, mode, now
         row["username"],
     ))
 
+    skipped_engaged = []
+
     def catch_person(uid, fallback=None):
-        latest = data.latest.get(uid)
-        if not is_original_post(latest):
+        chosen = None
+        saw_engaged = False
+        for post in data.originals.get(uid) or []:
+            if not is_original_post(post):
+                continue
+            if str(post["id"]) in data.engaged:
+                saw_engaged = True
+                continue
+            chosen = post
+            break
+        if chosen is None:
+            if saw_engaged:
+                skipped_engaged.append(uid)
             return None
         return {
             **describe(uid, fallback),
-            "latest": latest,
-            "latest_url": status_url(data, uid, latest["id"]),
+            "latest": chosen,
+            "latest_url": status_url(data, uid, chosen["id"]),
         }
 
     catch_up = []
@@ -943,6 +1011,7 @@ def build_activity(data, since, until, top, like_weight, reply_weight, mode, now
         "ranked": ranked,
         "has_good_neighbours": bool(good),
         "catch_hint": not good,
+        "all_caught_up": not catch_up and bool(skipped_engaged),
     }
 
 
@@ -1028,7 +1097,9 @@ def write_chat_report(activity, path, handle, since, now, label, top=10, items_p
     lines.append("")
     catch = activity["catch_up"]
     if not catch:
-        if activity.get("catch_hint"):
+        if activity.get("all_caught_up"):
+            lines.append("You're all caught up with your good neighbours 🎉")
+        elif activity.get("catch_hint"):
             lines.append("No one to catch up with in this stretch.")
             lines.append("Add people to your good neighbours list to keep up with them here.")
         else:
@@ -1237,7 +1308,9 @@ def render_report(activity, path, handle, since, now, label, top=10, thanks=None
     add(28, catch_intro)
     if not activity["catch_up"]:
         def empty_catch(_draw, _img, y):
-            if activity.get("has_good_neighbours"):
+            if activity.get("all_caught_up"):
+                text = "You're all caught up with your good neighbours."
+            elif activity.get("has_good_neighbours"):
                 text = "No recent original posts from your good neighbours."
             else:
                 text = "No one to catch up with in this window."
