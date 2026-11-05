@@ -1,0 +1,29 @@
+{
+  "_comment": "FICTIONAL SAMPLE. Five made-up neighbours for a short first run. Not real X data.",
+  "data": [
+    {
+      "id": "83103",
+      "author_id": "800103",
+      "created_at": "2026-11-04T16:00:00Z",
+      "text": "Wrote the morning down in pencil."
+    }
+  ],
+  "includes": {
+    "users": [
+      {
+        "id": "800103",
+        "name": "Cleo Dawn",
+        "username": "cleo_dawn",
+        "description": "Wrote the morning down in pencil.",
+        "profile_image_url": "avatars/800103.png",
+        "public_metrics": {
+          "followers_count": 100,
+          "tweet_count": 22
+        }
+      }
+    ]
+  },
+  "meta": {
+    "result_count": 1
+  }
+}

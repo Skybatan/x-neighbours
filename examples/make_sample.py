@@ -466,5 +466,101 @@ def main():
           f"followers={len(followers)} following={len(following)} now={NOW}")
 
 
+def write_few():
+    """A five-neighbour slice so the first-run picture is full, not a sparse ring."""
+    folder = os.path.join(ROOT, "examples", "few")
+    if os.path.isdir(folder):
+        shutil.rmtree(folder)
+    os.makedirs(os.path.join(folder, "avatars"))
+    note = "FICTIONAL SAMPLE. Five made-up neighbours for a short first run. Not real X data."
+    me_id = "800001"
+    people = [
+        ("800101", "ada_brook", "Ada Brook", "mutual", "Kept the window light on."),
+        ("800102", "ben_coast", "Ben Coast", "follows-you", "Walked the long way home."),
+        ("800103", "cleo_dawn", "Cleo Dawn", "neither", "Wrote the morning down in pencil."),
+        ("800104", "dax_elm", "Dax Elm", "you-follow", "Fixed the gate, then the kettle."),
+        ("800105", "eri_fern", "Eri Fern", "follows-you", "Left a stone on the step."),
+    ]
+    users = {}
+    me = user_obj("fewcreator", me_id, "Few Creator",
+                  "Fictional account for a short X Neighbours sample.",
+                  120, 40, 0.55, "circle")
+    users[me_id] = me
+    for index, (uid, username, name, relation, latest) in enumerate(people):
+        users[uid] = user_obj(username, uid, name, latest, 80 + index * 10, 20 + index,
+                              (0.08 + index * 0.17) % 1, SHAPES[index % len(SHAPES)])
+        users[uid]["_relation"] = relation
+        users[uid]["_latest"] = latest
+    for user in users.values():
+        avatar(os.path.join(folder, "avatars", f"{user['id']}.png"),
+               user["username"][:1].upper(), user["_hue"], user["_shape"])
+
+    def save(name, payload):
+        with open(os.path.join(folder, name), "w", encoding="utf-8") as fh:
+            json.dump(payload, fh, ensure_ascii=False, indent=2)
+            fh.write("\n")
+
+    posts = [
+        {"id": "70001", "author_id": me_id, "created_at": "2026-11-04T09:00:00Z",
+         "text": "Left a light on in the window.",
+         "public_metrics": {"like_count": 3, "reply_count": 1, "repost_count": 1}},
+        {"id": "70002", "author_id": me_id, "created_at": "2026-11-03T21:00:00Z",
+         "text": "The street is quiet after rain.",
+         "public_metrics": {"like_count": 2, "reply_count": 1, "repost_count": 0}},
+        {"id": "89001", "author_id": me_id, "created_at": "2026-11-04T12:00:00Z",
+         "text": "Glad the light helped.",
+         "referenced_tweets": [{"type": "replied_to", "id": "71001"}],
+         "public_metrics": {"like_count": 0, "reply_count": 0, "repost_count": 0}},
+    ]
+    save("posts_1.json", {"_comment": note, "data": posts,
+                          "includes": {"users": [public_user(me)]}, "meta": {"result_count": len(posts)}})
+    mentions = [
+        {"id": "71001", "author_id": "800101", "created_at": "2026-11-04T10:00:00Z",
+         "text": "I could see it from the corner.", "in_reply_to_user_id": me_id,
+         "referenced_tweets": [{"type": "replied_to", "id": "70001"}], "conversation_id": "70001"},
+        {"id": "71002", "author_id": "800103", "created_at": "2026-11-04T11:30:00Z",
+         "text": "Rain on the page, in a good way.", "in_reply_to_user_id": me_id,
+         "referenced_tweets": [{"type": "replied_to", "id": "70002"}], "conversation_id": "70002"},
+    ]
+    save("mentions_1.json", {
+        "_comment": note, "data": mentions,
+        "includes": {"users": [public_user(users["800101"]), public_user(users["800103"])]},
+        "meta": {"result_count": len(mentions)},
+    })
+    save("likes_70001.json", {"_comment": note, "data": [public_user(users[uid]) for uid in ("800101", "800102", "800104")],
+                              "meta": {"result_count": 3}})
+    save("likes_70002.json", {"_comment": note, "data": [public_user(users[uid]) for uid in ("800103", "800105")],
+                              "meta": {"result_count": 2}})
+    save("reposts_70001.json", {"_comment": note, "data": [public_user(users["800102"])], "meta": {"result_count": 1}})
+    save("quotes_70002.json", {
+        "_comment": note,
+        "data": [{
+            "id": "72001", "author_id": "800105", "created_at": "2026-11-04T15:00:00Z",
+            "text": "Quiet streets are the best kind.",
+            "referenced_tweets": [{"type": "quoted", "id": "70002"}],
+        }],
+        "includes": {"users": [public_user(users["800105"])]},
+        "meta": {"result_count": 1},
+    })
+    for uid, _username, _name, _relation, latest in people:
+        save(f"latest_{uid}.json", {
+            "_comment": note,
+            "data": [{"id": "83" + uid[-3:], "author_id": uid, "created_at": "2026-11-04T16:00:00Z", "text": latest}],
+            "includes": {"users": [public_user(users[uid])]},
+            "meta": {"result_count": 1},
+        })
+    followers, following = [], []
+    for uid, _username, _name, relation, _latest in people:
+        pub = public_user(users[uid])
+        if relation in ("mutual", "follows-you"):
+            followers.append(pub)
+        if relation in ("mutual", "you-follow"):
+            following.append(pub)
+    save("followers_1.json", {"_comment": note, "data": followers, "meta": {"result_count": len(followers)}})
+    save("following_1.json", {"_comment": note, "data": following, "meta": {"result_count": len(following)}})
+    print(f"wrote {folder}")
+
+
 if __name__ == "__main__":
     main()
+    write_few()

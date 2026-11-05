@@ -1,0 +1,30 @@
+{
+  "_comment": "FICTIONAL SAMPLE. Five made-up neighbours for a short first run. Not real X data.",
+  "data": [
+    {
+      "id": "800101",
+      "name": "Ada Brook",
+      "username": "ada_brook",
+      "description": "Kept the window light on.",
+      "profile_image_url": "avatars/800101.png",
+      "public_metrics": {
+        "followers_count": 80,
+        "tweet_count": 20
+      }
+    },
+    {
+      "id": "800104",
+      "name": "Dax Elm",
+      "username": "dax_elm",
+      "description": "Fixed the gate, then the kettle.",
+      "profile_image_url": "avatars/800104.png",
+      "public_metrics": {
+        "followers_count": 110,
+        "tweet_count": 23
+      }
+    }
+  ],
+  "meta": {
+    "result_count": 2
+  }
+}

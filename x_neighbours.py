@@ -472,7 +472,7 @@ def fetch_avatar(user, cache_dir, size):
 
 
 def ring_geometry(rings):
-    """Fractions of the canvas. Four rings leave a gap under each avatar for its name."""
+    """The original ring layout. Three rings is the usual full picture."""
     if rings >= 4:
         return {
             "cy": 0.545,
@@ -480,7 +480,6 @@ def ring_geometry(rings):
             "per_ring": [8, 14, 20, 26],
             "radius": [0.150, 0.248, 0.340, 0.430],
             "size": [0.062, 0.048, 0.038, 0.031],
-            # Wider pills on the inner rings, where neighbours are further apart.
             "name_width": [1.7, 1.35, 1.15, 1.05],
         }
     return {
@@ -491,6 +490,35 @@ def ring_geometry(rings):
         "size": [0.085, 0.064, 0.05][:rings],
         "name_width": [1.45, 1.45, 1.45][:rings],
     }
+
+
+def layout_for_count(count, rings):
+    """Use fewer, larger rings when only a handful of neighbours showed up."""
+    rings = max(1, min(int(rings), 4))
+    if count <= 0:
+        return {
+            "cy": 0.52, "centre": 0.30,
+            "per_ring": [], "radius": [], "size": [], "name_width": [],
+        }
+    if count <= 8:
+        return {
+            "cy": 0.56,
+            "centre": 0.26 if count <= 3 else 0.22,
+            "per_ring": [8],
+            "radius": [0.36 if count <= 4 else 0.34],
+            "size": [0.16 if count <= 3 else 0.13 if count <= 5 else 0.11],
+            "name_width": [1.8],
+        }
+    if count <= 22 and rings >= 2:
+        return {
+            "cy": 0.55,
+            "centre": 0.18,
+            "per_ring": [8, 14],
+            "radius": [0.24, 0.40],
+            "size": [0.105, 0.078],
+            "name_width": [1.55, 1.4],
+        }
+    return ring_geometry(rings)
 
 
 def draw_house_frame(draw, x, y, size, color, width, gap, roof=0.32):
@@ -549,19 +577,19 @@ def draw_circle(data, me_user, scores, path, rings=3, show_names=True, width=120
                                  background, glow)
     canvas = background.convert("RGBA")
     draw = ImageDraw.Draw(canvas)
-    layout = ring_geometry(rings)
+    ranked = [uid for uid, _points in scores.most_common()
+              if uid in data.users and uid != data.me]
+    layout = layout_for_count(len(ranked), rings)
     cx, cy = canvas_size // 2, int(canvas_size * layout["cy"])
     per_ring = layout["per_ring"]
     radius = [canvas_size * r for r in layout["radius"]]
     avatar_size = [int(canvas_size * s) for s in layout["size"]]
-    ranked = [uid for uid, _points in scores.most_common()
-              if uid in data.users and uid != data.me]
     for orbit in radius:
         draw.ellipse((cx - orbit, cy - orbit, cx + orbit, cy + orbit),
                      outline=theme_colors["orbit"], width=2 * scale)
     name_font = [font(max(12, int(size * 0.17))) for size in avatar_size]
     index = 0
-    for ring_index in range(rings):
+    for ring_index in range(len(per_ring)):
         count = min(per_ring[ring_index], max(0, len(ranked) - index))
         if count == 0:
             break
@@ -611,6 +639,8 @@ DEFAULTS = {
     "rings": 3,
     "show_names": True,
     "picture_every_n_weeks": 3,
+    "first_run_days": 2,
+    "items_per_user": 3,
     "theme": "midnight",
     "windows": ["week"],
     "top": 10,
@@ -785,8 +815,6 @@ def build_activity(data, since, until, top, like_weight, reply_weight, mode, now
     interactions.sort(key=lambda row: (-row["total"], -row["likes"], row["username"]))
     if mode == "replies":
         interactions = []
-    else:
-        interactions = interactions[:top]
 
     catch_up = []
     for uid in catch_ranked:
@@ -825,57 +853,86 @@ def user_markdown(person):
     return f"**{person['name']}** [@{person['username']}](https://x.com/{person['username']}){mark}"
 
 
-def write_chat_report(activity, path, handle, since, now, label):
+def on_post_line(text):
+    text = text or "your post"
+    if not text.endswith("…"):
+        text += "…"
+    return f"↳ on your post: “{text}”"
+
+
+def write_chat_report(activity, path, handle, since, now, label, top=10, items_per_user=3):
     end = now.astimezone(timezone.utc)
     start = since.astimezone(timezone.utc)
     totals = activity["totals"]
     lines = [
         f"**X Neighbours · @{handle}**",
         f"{label} ({start.strftime('%b %-d')} – {end.strftime('%b %-d')}) · "
-        f"💬 {totals['replies']} replies · 🔁💬 {totals['quotes']} quotes · "
-        f"❤️ {totals['likes']} likes · 🔁 {totals['reposts']} reposts",
-        "👤? = you don't follow them yet",
-        "",
-        "### 💬 Replies & Quote posts",
+        f"💬 {counted(totals['replies'], 'reply', 'replies')} · "
+        f"🔁💬 {counted(totals['quotes'], 'quote', 'quotes')} · "
+        f"❤️ {counted(totals['likes'], 'like', 'likes')} · "
+        f"🔁 {counted(totals['reposts'], 'repost', 'reposts')}",
     ]
-    if not activity["threads"]:
-        lines.append("- none")
-    for thread in activity["threads"]:
-        lines.append(f"- {user_markdown(thread)} — {len(thread['items'])} item(s)")
-        for item in thread["items"]:
-            kind = "Reply" if item["kind"] == "reply" else "Quote"
-            state = "✅ Replied" if item["replied"] else "⏳ Not replied yet"
-            action = "reply" if item["kind"] == "reply" else "quote"
+    people = activity["threads"] + activity["interactions"] + activity["catch_up"]
+    if any(person["stranger"] for person in people):
+        lines.append("👤? = you don't follow them yet")
+    lines.append("")
+    threads = activity["threads"][:top]
+    if not threads:
+        lines.append("No replies or quote posts in this stretch.")
+    else:
+        lines.append("### Replies & Quote posts")
+        for thread in threads:
+            lines.append(f"- {user_markdown(thread)}")
+            shown = thread["items"][:items_per_user]
+            for item in shown:
+                kind = "Reply" if item["kind"] == "reply" else "Quote"
+                state = "Replied" if item["replied"] else "Not replied yet"
+                lines.append(
+                    f"  - **{kind}** [“{item['text']}”]({item['url']}) · "
+                    f"{ago(item['created_at'], now)} · {state}"
+                )
+                lines.append(f"    - {on_post_line(item['on_text'])}")
+            extra = len(thread["items"]) - len(shown)
+            if extra:
+                lines.append(f"  - +{extra} more")
+        more_people = len(activity["threads"]) - len(threads)
+        if more_people:
+            lines.append(f"- +{more_people} more people")
+    lines.append("")
+    rows = activity["interactions"][:top]
+    if not rows:
+        lines.append("No likes or reposts in this stretch.")
+    else:
+        lines += ["### Likes & Reposts",
+                  "| User | Likes | Reposts | Total |",
+                  "|---|---|---|---|"]
+        for row in rows:
+            mark = " 👤?" if row["stranger"] else ""
             lines.append(
-                f"  - **{kind}** “{item['text']}” · {ago(item['created_at'], now)} · {state}"
+                f"| {row['name']} [@{row['username']}](https://x.com/{row['username']}){mark} "
+                f"| {row['likes']} | {row['reposts']} | {row['total']} |"
             )
-            lines.append(f"    - ↳ on your post: “{item['on_text']}…”")
-            lines.append(f"    - [Open {action} → reply / repost]({item['url']})")
-    lines += ["", "### ❤️ Likes & 🔁 Reposts",
-              "| User | Likes | Reposts | Total |",
-              "|---|---|---|---|"]
-    if not activity["interactions"]:
-        lines.append("| – | – | – | – |")
-    for row in activity["interactions"]:
-        lines.append(
-            f"| {row['name']} [@{row['username']}](https://x.com/{row['username']})"
-            f"{' 👤?' if row['stranger'] else ''} | {row['likes']} | {row['reposts']} | {row['total']} |"
-        )
-    lines += ["", "### 📖 Catch up with your friends",
-              "_Latest posts from the people who engaged with you most_"]
-    if not activity["catch_up"]:
-        lines.append("- none")
-    for person in activity["catch_up"]:
-        lines.append(f"- {user_markdown(person)}")
-        latest = person["latest"]
-        if not latest:
-            lines.append("  - ↳ No latest post saved.")
-            continue
-        when = ts(latest["created_at"])
-        lines.append(
-            f"  - ↳ “{snippet(latest.get('text')) or 'Post'}” · {ago(when, now)} · "
-            f"[Read post →]({person['latest_url']})"
-        )
+        more_rows = len(activity["interactions"]) - len(rows)
+        if more_rows:
+            lines.append(f"\n+{more_rows} more people")
+    lines.append("")
+    catch = activity["catch_up"][:top]
+    if not catch:
+        lines.append("No one to catch up with in this stretch.")
+    else:
+        lines += ["### Catch up with your friends",
+                  "Latest posts from the people who engaged with you most."]
+        for person in catch:
+            lines.append(f"- {user_markdown(person)}")
+            latest = person["latest"]
+            if not latest:
+                lines.append("  - No latest post saved yet.")
+                continue
+            when = ts(latest["created_at"])
+            lines.append(
+                f"  - “{snippet(latest.get('text')) or 'Post'}” · {ago(when, now)} · "
+                f"[Read post]({person['latest_url']})"
+            )
     with open(path, "w", encoding="utf-8") as fh:
         fh.write("\n".join(lines) + "\n")
 
@@ -1095,7 +1152,7 @@ def render_report(activity, path, handle, since, now, label):
 def thank_you_post(names):
     shown = [name for name in names if name][:5]
     mentions = " ".join(shown)
-    text = f"Thank you to my X neighbours this week — {mentions}. You made the week better."
+    text = f"Thank you to my X neighbours — {mentions}."
     if len(text) > 280:
         text = text[:277].rstrip() + "…"
     return text, "https://x.com/intent/post?text=" + urllib.parse.quote(text)
@@ -1166,6 +1223,10 @@ def main():
     parser.add_argument("--per-day", dest="per_day", action=argparse.BooleanOptionalAction,
                         default=None, help="add a per-day breakdown to the markdown")
     parser.add_argument("--days", type=int, help="custom period length in days")
+    parser.add_argument("--first-run", action="store_true",
+                        help="report the last first_run_days and always draw the picture")
+    parser.add_argument("--report-card", action="store_true",
+                        help="also write the report card PNG (off by default)")
     parser.add_argument("--picture", dest="picture", action=argparse.BooleanOptionalAction,
                         default=None, help="include the neighbours picture (weekly default is about 1 in 3)")
     parser.add_argument("--show-names", dest="show_names", action="store_true", default=None)
@@ -1206,11 +1267,12 @@ def main():
     cfg["per_day"] = as_bool(cfg.get("per_day"))
     if cfg.get("report") not in REPORTS:
         parser.error("report must be likes, replies, or both")
-    if not args.no_image:
+    needs_pillow = args.report_card or args.picture is not False
+    if needs_pillow and not args.no_image:
         try:
             import PIL  # noqa: F401
         except ImportError:
-            sys.exit("Pillow is required to draw the image. "
+            sys.exit("Pillow is required to draw the picture. "
                      "Install it with: python3 -m pip install -r requirements.txt")
     if not os.path.isdir(args.data):
         parser.error(f"data folder not found: {args.data}")
@@ -1228,26 +1290,38 @@ def main():
     me.update({k: v for k, v in stored.items() if v not in (None, "")})
     output = {}
     mode = cfg["report"]
-    windows = [("custom", args.days, f"Last {args.days} days")] if args.days else [
-        (key, days, label) for key, (label, days, _subtitle) in (
-            (name, WINDOWS[name]) for name in cfg["windows"]
-        )
-    ]
-    if args.days and args.days < 1:
-        parser.error("days must be at least 1")
+    if args.first_run:
+        first_days = int(cfg.get("first_run_days") or 2)
+        if first_days < 1:
+            parser.error("first_run_days must be at least 1")
+        windows = [("first", first_days, f"Last {first_days} days")]
+        if args.picture is None:
+            args.picture = True
+    elif args.days:
+        if args.days < 1:
+            parser.error("days must be at least 1")
+        windows = [("custom", args.days, f"Last {args.days} days")]
+    else:
+        windows = [
+            (key, days, label) for key, (label, days, _subtitle) in (
+                (name, WINDOWS[name]) for name in cfg["windows"]
+            )
+        ]
     for key, days, label in windows:
         since = now - timedelta(days=days)
         activity = build_activity(
             data, since, now, cfg["top"], like_weight, reply_weight, mode, now)
         md_path = os.path.join(args.out, f"report_{key}.md")
         png_path = os.path.join(args.out, f"report_{key}.png")
-        write_chat_report(activity, md_path, cfg["handle"], since, now, label)
+        write_chat_report(
+            activity, md_path, cfg["handle"], since, now, label,
+            top=cfg["top"], items_per_user=int(cfg.get("items_per_user") or 3))
         if cfg["per_post"] or cfg["per_day"]:
             with open(md_path, "a", encoding="utf-8") as fh:
                 fh.write("\n" + extra_sections(
                     data, since, now, cfg["handle"], cfg["top"], like_weight, reply_weight,
                     cfg["per_post"], cfg["per_day"]) + "\n")
-        if not args.no_image:
+        if args.report_card and not args.no_image:
             render_report(activity, png_path, cfg["handle"], since, now, label)
         draw_picture = args.picture
         if draw_picture is None and key == "week":
@@ -1275,8 +1349,9 @@ def main():
             "reposts": activity["totals"]["reposts"],
             "catch_up": ["@" + person["username"] for person in activity["catch_up"]],
             "report_md": md_path,
-            "report_png": None if args.no_image else png_path,
         }
+        if args.report_card and not args.no_image:
+            output[key]["report_png"] = png_path
         if picture_path:
             output[key]["picture"] = picture_path
             output[key]["thank_you"] = thanks

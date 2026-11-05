@@ -1,0 +1,62 @@
+{
+  "_comment": "FICTIONAL SAMPLE. Five made-up neighbours for a short first run. Not real X data.",
+  "data": [
+    {
+      "id": "70001",
+      "author_id": "800001",
+      "created_at": "2026-11-04T09:00:00Z",
+      "text": "Left a light on in the window.",
+      "public_metrics": {
+        "like_count": 3,
+        "reply_count": 1,
+        "repost_count": 1
+      }
+    },
+    {
+      "id": "70002",
+      "author_id": "800001",
+      "created_at": "2026-11-03T21:00:00Z",
+      "text": "The street is quiet after rain.",
+      "public_metrics": {
+        "like_count": 2,
+        "reply_count": 1,
+        "repost_count": 0
+      }
+    },
+    {
+      "id": "89001",
+      "author_id": "800001",
+      "created_at": "2026-11-04T12:00:00Z",
+      "text": "Glad the light helped.",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "71001"
+        }
+      ],
+      "public_metrics": {
+        "like_count": 0,
+        "reply_count": 0,
+        "repost_count": 0
+      }
+    }
+  ],
+  "includes": {
+    "users": [
+      {
+        "id": "800001",
+        "name": "Few Creator",
+        "username": "fewcreator",
+        "description": "Fictional account for a short X Neighbours sample.",
+        "profile_image_url": "avatars/800001.png",
+        "public_metrics": {
+          "followers_count": 120,
+          "tweet_count": 40
+        }
+      }
+    ]
+  },
+  "meta": {
+    "result_count": 3
+  }
+}
