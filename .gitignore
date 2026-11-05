@@ -5,6 +5,7 @@ config.json
 data/
 .avatar_cache/
 report_*.md
+report_*.png
 x_neighbours_*.png
 
 __pycache__/

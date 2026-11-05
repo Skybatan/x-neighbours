@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""X Neighbours: rank who liked and replied to an account, tag relationships,
-suggest follow-backs, and draw a shareable picture.
+"""X Neighbours: who replied, quoted, liked, and reposted, plus an occasional picture.
 
 Settings come from config.json. CLI flags override it. The script does not call X.
 It reads raw JSON saved from X tool calls (see README.md) in the data folder:
 
-  posts_*.json        get_users_posts pages (expansions=author_id)
-  mentions_*.json     get_users_mentions pages (expansions=author_id)
-  likes_<postid>.json get_posts_liking_users, one post per file stem
-                      (likes_<postid>_p2.json is merged into the same post)
-  followers_*.json    get_users_me_followers pages
-  following_*.json    get_users_me_following pages
+  posts_*.json         get_users_posts pages (expansions=author_id)
+  mentions_*.json      get_users_mentions pages (expansions=author_id)
+  likes_<postid>.json  get_posts_liking_users
+  reposts_<postid>.json get_posts_reposted_by
+  quotes_<postid>.json get_posts_quoted_posts
+  latest_<userid>.json get_users_posts for one neighbour (their latest post)
+  followers_*.json     get_users_me_followers pages
+  following_*.json     get_users_me_following pages
 
 Usage:
   python3 x_neighbours.py --handle your_handle --user-id your_user_id
@@ -23,10 +24,12 @@ import glob
 import json
 import math
 import os
+import random
 import re
 import sys
+import urllib.parse
 import urllib.request
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 
 
@@ -81,6 +84,10 @@ class Data:
         self.mentions = []
         self._mention_ids = set()
         self.likes = {}
+        self.reposts = {}
+        self.quotes = {}
+        self.latest = {}
+        self.owner_replied_to = set()
         self.likes_truncated = []
         for _, doc in load(os.path.join(data_dir, "posts_*.json")):
             for post in doc.get("data") or []:
@@ -92,6 +99,9 @@ class Data:
                     post["author_id"] = str(post["author_id"])
                 if post.get("author_id", self.me) == self.me:
                     self.posts[post["id"]] = post
+                    for ref in post.get("referenced_tweets") or []:
+                        if ref.get("type") == "replied_to" and ref.get("id"):
+                            self.owner_replied_to.add(str(ref["id"]))
             self._users((doc.get("includes") or {}).get("users") or [])
         for _, doc in load(os.path.join(data_dir, "mentions_*.json")):
             for mention in doc.get("data") or []:
@@ -135,6 +145,9 @@ class Data:
             want = like_count(self.posts.get(pid, {}))
             if want > len(ids):
                 self.likes_truncated.append((pid, len(ids), want))
+        self._load_user_lists("reposts_*.json", self.reposts, "reposts_<post id>")
+        self._load_quotes()
+        self._load_latest()
         self.followers = self._idset("followers_*.json")
         self.following = self._idset("following_*.json")
 
@@ -160,6 +173,75 @@ class Data:
             old = self.users.get(uid, {})
             fresh = {k: v for k, v in user.items() if v not in (None, "")}
             self.users[uid] = {**old, **fresh}
+
+    def _load_user_lists(self, pattern, dest, label):
+        for path, doc in load(os.path.join(self.data_dir, pattern)):
+            match = re.search(r"_(\d+)", os.path.basename(path))
+            if not match:
+                raise SystemExit(f"{label} file name must include an id: {path}")
+            pid = match.group(1)
+            users = [self._prepare_user(u) for u in (doc.get("data") or [])]
+            self._users(users)
+            bucket = dest.setdefault(pid, [])
+            have = set(bucket)
+            for user in users:
+                uid = user.get("id")
+                if uid and uid not in have:
+                    bucket.append(uid)
+                    have.add(uid)
+
+    def _load_quotes(self):
+        for path, doc in load(os.path.join(self.data_dir, "quotes_*.json")):
+            match = re.search(r"quotes_(\d+)", os.path.basename(path))
+            if not match:
+                raise SystemExit(f"quote file name must contain quotes_<post id>: {path}")
+            pid = match.group(1)
+            self._users((doc.get("includes") or {}).get("users") or [])
+            bucket = self.quotes.setdefault(pid, [])
+            have = {item.get("id") for item in bucket}
+            for post in doc.get("data") or []:
+                post = dict(post)
+                if post.get("id") is None:
+                    continue
+                post["id"] = str(post["id"])
+                if post["id"] in have:
+                    continue
+                if post.get("author_id") is not None:
+                    post["author_id"] = str(post["author_id"])
+                refs = []
+                for ref in post.get("referenced_tweets") or []:
+                    ref = dict(ref)
+                    if ref.get("id") is not None:
+                        ref["id"] = str(ref["id"])
+                    refs.append(ref)
+                if refs:
+                    post["referenced_tweets"] = refs
+                post["_on_post"] = pid
+                bucket.append(post)
+                have.add(post["id"])
+
+    def _load_latest(self):
+        for path, doc in load(os.path.join(self.data_dir, "latest_*.json")):
+            match = re.search(r"latest_(\d+)", os.path.basename(path))
+            if not match:
+                continue
+            uid = match.group(1)
+            self._users((doc.get("includes") or {}).get("users") or [])
+            posts = []
+            for post in doc.get("data") or []:
+                post = dict(post)
+                if post.get("id") is None or not post.get("created_at"):
+                    continue
+                post["id"] = str(post["id"])
+                if post.get("author_id") is not None:
+                    post["author_id"] = str(post["author_id"])
+                posts.append(post)
+            if not posts:
+                continue
+            posts.sort(key=lambda post: ts(post["created_at"]), reverse=True)
+            current = self.latest.get(uid)
+            if current is None or ts(posts[0]["created_at"]) > ts(current["created_at"]):
+                self.latest[uid] = posts[0]
 
     def _idset(self, pattern):
         found = set()
@@ -221,88 +303,6 @@ class Data:
 
 def like_count(post):
     return (post.get("public_metrics") or {}).get("like_count", 0) or 0
-
-
-def impression_count(post):
-    metrics = post.get("public_metrics") or {}
-    value = metrics.get("impression_count")
-    if value is None:
-        return None
-    return int(value)
-
-
-def fmt_int(n):
-    return f"{int(n):,}"
-
-
-def impression_rows(data, since, until=None):
-    rows = []
-    for pid, post in data.posts.items():
-        if not data._in_window(post.get("created_at"), since, until):
-            continue
-        count = impression_count(post)
-        if count is None:
-            continue
-        rows.append((count, ts(post["created_at"]), pid, post))
-    rows.sort(key=lambda row: (row[0], row[1]), reverse=True)
-    return rows
-
-
-def impression_change(total, previous):
-    delta = total - previous
-    if previous:
-        percent = round(100 * delta / previous)
-        if delta > 0:
-            return f"up {fmt_int(delta)} ({percent}%)"
-        if delta < 0:
-            return f"down {fmt_int(-delta)} ({abs(percent)}%)"
-        return "unchanged"
-    if delta > 0:
-        return f"up {fmt_int(delta)}"
-    if delta < 0:
-        return f"down {fmt_int(-delta)}"
-    return "unchanged"
-
-
-def impression_summary(data, since, days, handle):
-    current = impression_rows(data, since)
-    if not current:
-        return None
-    total = sum(count for count, *_rest in current)
-    previous_rows = impression_rows(data, since - timedelta(days=days), since)
-    payload = {
-        "total": total,
-        "top": [{
-            "impressions": count,
-            "text": snippet(post.get("text")),
-            "url": f"https://x.com/{handle}/status/{pid}",
-        } for count, _when, pid, post in current[:3]],
-    }
-    if previous_rows:
-        previous = sum(count for count, *_rest in previous_rows)
-        payload["previous"] = previous
-        payload["change"] = total - previous
-    return payload
-
-
-def append_impressions(lines, data, since, days, handle):
-    payload = impression_summary(data, since, days, handle)
-    if not payload:
-        lines += ["## Impressions", "",
-                  "Impression counts were not in the saved posts.", ""]
-        return None
-    period = "24 hours" if days == 1 else "7 days"
-    if "previous" in payload:
-        movement = impression_change(payload["total"], payload["previous"])
-        summary = f"{fmt_int(payload['total'])} impressions, {movement} from the previous {period}."
-    else:
-        summary = f"{fmt_int(payload['total'])} impressions."
-    lines += ["## Impressions", "", summary, "", "Top posts by impressions:", ""]
-    for post in payload["top"]:
-        title = post["text"] or "Post"
-        lines.append(f"- {fmt_int(post['impressions'])} — {title} — {post['url']}")
-    lines.append("")
-    return payload
 
 
 def summary(user):
@@ -393,151 +393,6 @@ def snippet(text):
     if len(text) > 90:
         return text[:87].rstrip() + "…"
     return text
-
-
-def append_per_day(lines, data, since, until, top, like_weight, reply_weight, report):
-    lines += ["## Per day", ""]
-    for day, day_start, day_end in each_utc_day(since, until):
-        likes, replies = data.window(day_start, day_end)
-        use_likes, use_replies = active_counts(likes, replies, report)
-        ranked = score(use_likes, use_replies, like_weight, reply_weight)
-        lines += [f"### {day.isoformat()} UTC", ""]
-        if not use_likes and not use_replies:
-            lines += ["No likes or replies.", ""]
-            continue
-        if report != "replies":
-            append_table(lines, "Likers", likes, "likes", ranked, data, top, level=4)
-        if report != "likes":
-            append_table(lines, "Repliers", replies, "replies", ranked, data, top, level=4)
-
-
-def replies_for_post(data, pid, since, until):
-    counts = Counter()
-    for mention in data.mentions:
-        author = mention.get("author_id")
-        if not kept_user(data, author):
-            continue
-        if not data._in_window(mention.get("created_at"), since, until):
-            continue
-        refs = [ref.get("id") for ref in mention.get("referenced_tweets") or []
-                if ref.get("type") == "replied_to"]
-        if pid in refs:
-            counts[author] += 1
-    return counts
-
-
-def append_per_post(lines, data, since, until, handle, report):
-    lines += ["## Per post", ""]
-    posts = []
-    for pid, post in data.posts.items():
-        if data._in_window(post.get("created_at"), since, until):
-            posts.append((ts(post["created_at"]), pid, post))
-    posts.sort(reverse=True)
-    tied = Counter()
-    for mention in data.mentions:
-        author = mention.get("author_id")
-        if not kept_user(data, author):
-            continue
-        if not data._in_window(mention.get("created_at"), since, until):
-            continue
-        refs = [ref.get("id") for ref in mention.get("referenced_tweets") or []
-                if ref.get("type") == "replied_to" and ref.get("id") in data.posts]
-        if refs:
-            continue
-        if mention.get("in_reply_to_user_id") == data.me:
-            tied[author] += 1
-    if not posts:
-        lines += ["No posts in this window.", ""]
-    for when, pid, post in posts:
-        lines += [f"### {when.strftime('%Y-%m-%d %H:%M UTC')}", ""]
-        text = snippet(post.get("text"))
-        if text:
-            lines += [text, ""]
-        lines += [f"https://x.com/{handle}/status/{pid}", ""]
-        if report != "replies":
-            likers = [uid for uid in data.likes.get(pid, []) if kept_user(data, uid)]
-            names = ", ".join(display_name(data, uid) for uid in likers) or "none"
-            lines.append(f"Likes ({len(likers)}): {names}")
-        if report != "likes":
-            repliers = replies_for_post(data, pid, since, until)
-            ordered = [display_name(data, uid) for uid, _count in repliers.most_common()]
-            names = ", ".join(ordered) or "none"
-            total = sum(repliers.values())
-            lines.append(f"Replies ({total}): {names}")
-        lines.append("")
-    if report != "likes" and tied:
-        names = ", ".join(f"{display_name(data, uid)} ({count})"
-                          for uid, count in tied.most_common())
-        lines += ["Replies in this window that are not tied to one of these posts: " + names, ""]
-
-
-def write_report(data, label, since, path, top, handle, like_weight=1, reply_weight=3,
-                 report="both", per_post=False, per_day=False, until=None,
-                 impressions=True, days=7):
-    likes, replies = data.window(since)
-    use_likes, use_replies = active_counts(likes, replies, report)
-    ranked = score(use_likes, use_replies, like_weight, reply_weight)
-    own_posts = sum(1 for post in data.posts.values()
-                    if data._in_window(post.get("created_at"), since, None))
-    lines = [
-        f"# X Neighbours: @{handle}, {label}",
-        "",
-        f"Window: since {since.strftime('%Y-%m-%d %H:%M UTC')}. "
-        f"Own posts in window: {own_posts}.",
-        "",
-    ]
-    impression_payload = None
-    if impressions:
-        impression_payload = append_impressions(lines, data, since, days, handle)
-    if report != "replies":
-        append_table(lines, "Top likers", likes, "likes", ranked, data, top)
-    if report != "likes":
-        append_table(lines, "Top repliers", replies, "replies", ranked, data, top)
-    suggestions = [(uid, count) for uid, count in ranked.most_common()
-                   if uid not in data.following and uid in data.users][:5]
-    if report == "likes":
-        intro = "People who liked often but you don't follow:"
-    elif report == "replies":
-        intro = "People who replied often but you don't follow:"
-    else:
-        intro = "People who liked or replied often but you don't follow:"
-    lines += ["## Follow-back suggestions", "", intro, ""]
-    for uid, _count in suggestions:
-        user = data.users[uid]
-        lines.append(
-            f"- {link(user)} (score {ranked[uid]}: {suggestion_detail(report, likes, replies, uid)}, "
-            f"{data.relation(uid)}): {summary(user)}"
-        )
-    if not suggestions:
-        lines.append("- none")
-    lines.append("")
-    if per_day and until is not None:
-        append_per_day(lines, data, since, until, top, like_weight, reply_weight, report)
-    if per_post:
-        append_per_post(lines, data, since, until, handle, report)
-    short = []
-    for pid, _got, _want in data.likes_truncated:
-        created = (data.posts.get(pid) or {}).get("created_at")
-        if data._in_window(created, since, None):
-            short.append(pid)
-    missing = 0
-    for pid, post in data.posts.items():
-        if not data._in_window(post.get("created_at"), since, None):
-            continue
-        if like_count(post) > 0 and pid not in data.likes:
-            missing += 1
-    lines += [
-        "## Notes",
-        "",
-        "- Likes come from each post's liker list, which can be a few short of the like count "
-        "(deleted, suspended or protected likers).",
-        f"- Posts whose liker list was shorter than the like count: {len(short)}.",
-        "- Posts with likes whose liker list was not fetched: "
-        f"{missing}.",
-    ]
-    with open(path, "w", encoding="utf-8") as fh:
-        fh.write("\n".join(lines) + "\n")
-    return likes, replies, suggestions, ranked, impression_payload
 
 
 THEMES = {
@@ -638,6 +493,18 @@ def ring_geometry(rings):
     }
 
 
+def draw_house_frame(draw, x, y, size, color, width, gap, roof=0.32):
+    """Thin home-shaped outline (roof peak + walls + flat base) around a round avatar."""
+    half = size / 2 + gap
+    eave = y - size * 0.18
+    peak = y - half - size * roof
+    overhang = half + size * 0.10
+    walls = [(x - half, eave), (x - half, y + half), (x + half, y + half), (x + half, eave)]
+    draw.line(walls, fill=color, width=width, joint="curve")
+    draw.line([(x - overhang, eave + size * 0.06), (x, peak), (x + overhang, eave + size * 0.06)],
+              fill=color, width=width, joint="curve")
+
+
 def fit_label(draw, text, face, limit):
     while draw.textlength(text, font=face) > limit and len(text) > 4:
         text = text[:-2] + "…"
@@ -707,8 +574,7 @@ def draw_circle(data, me_user, scores, path, rings=3, show_names=True, width=120
             y = cy + radius[ring_index] * math.sin(angle)
             ring_color = theme_colors["ring0"] if ring_index == 0 else theme_colors["ring"]
             pad = 3 * scale
-            draw.ellipse((x - size / 2 - pad, y - size / 2 - pad, x + size / 2 + pad, y + size / 2 + pad),
-                         fill=ring_color)
+            draw_house_frame(draw, x, y, size, ring_color, 2 * scale, pad)
             avatar = fetch_avatar(data.users[uid], cache, size)
             canvas.alpha_composite(avatar, (int(x - size / 2), int(y - size / 2)))
             if show_names:
@@ -716,13 +582,10 @@ def draw_circle(data, me_user, scores, path, rings=3, show_names=True, width=120
                 face = name_font[ring_index]
                 wedge = 2 * radius[ring_index] * math.sin(math.pi / max(count, 1))
                 limit = min(size * layout["name_width"][ring_index], wedge * 0.92)
-                draw_label(draw, label, face, x, y + size / 2 + 4 * scale, limit,
+                draw_label(draw, label, face, x, y + size / 2 + pad + 4 * scale, limit,
                            theme_colors["label_bg"], theme_colors["label"], scale)
     centre = int(canvas_size * layout["centre"])
-    for grow, alpha in ((26, 40), (16, 80), (8, 160)):
-        draw.ellipse((cx - centre / 2 - grow * scale, cy - centre / 2 - grow * scale,
-                      cx + centre / 2 + grow * scale, cy + centre / 2 + grow * scale),
-                     fill=theme_colors["ring0"][:3] + (alpha,))
+    draw_house_frame(draw, cx, cy, centre, theme_colors["ring0"], 5 * scale, 4 * scale, roof=0.2)
     canvas.alpha_composite(fetch_avatar(me_user, cache, centre), (cx - centre // 2, cy - centre // 2))
     title_font = font(int(canvas_size * .032))
     subtitle_font = font(int(canvas_size * .016), bold=False)
@@ -746,8 +609,8 @@ DEFAULTS = {
     "reply_weight": 3,
     "exclude": ["grok"],
     "rings": 3,
-    "impressions": True,
     "show_names": True,
+    "picture_every_n_weeks": 3,
     "theme": "midnight",
     "windows": ["week"],
     "top": 10,
@@ -781,10 +644,507 @@ def whole_number(value):
     return int(number) if number == int(number) else number
 
 
+def hidden_user(data, uid):
+    if not uid or uid == data.me:
+        return True
+    return data.users.get(uid, {}).get("username", "").lower() in getattr(data, "exclude", set())
+
+
+def stranger(data, uid):
+    return uid not in data.following
+
+
+def ago(when, now):
+    seconds = max(0, (now - when).total_seconds())
+    if seconds < 3600:
+        return f"{max(1, int(seconds // 60))}m ago"
+    if seconds < 86400:
+        return f"{max(1, int(seconds // 3600))}h ago"
+    return f"{max(1, int(seconds // 86400))}d ago"
+
+
+def post_text(data, pid):
+    text = snippet((data.posts.get(pid) or {}).get("text"))
+    return text or "your post"
+
+
+def status_url(data, uid, post_id):
+    handle = data.users.get(uid, {}).get("username", uid)
+    return f"https://x.com/{handle}/status/{post_id}"
+
+
+def build_activity(data, since, until, top, like_weight, reply_weight, mode, now):
+    items = []
+    seen = set()
+
+    def add_item(kind, post, author, on_id):
+        if hidden_user(data, author) or post.get("id") in seen:
+            return
+        if not data._in_window(post.get("created_at"), since, until):
+            return
+        seen.add(post["id"])
+        when = ts(post["created_at"])
+        items.append({
+            "kind": kind,
+            "id": post["id"],
+            "author_id": author,
+            "text": snippet(post.get("text")) or "(no text)",
+            "created_at": when,
+            "on_id": on_id,
+            "on_text": post_text(data, on_id) if on_id else "your post",
+            "url": status_url(data, author, post["id"]),
+            "replied": post["id"] in data.owner_replied_to,
+        })
+
+    for mention in data.mentions:
+        author = mention.get("author_id")
+        refs = [ref.get("id") for ref in mention.get("referenced_tweets") or []
+                if ref.get("type") == "replied_to"]
+        quoted = [ref.get("id") for ref in mention.get("referenced_tweets") or []
+                  if ref.get("type") == "quoted"]
+        on_reply = next((ref for ref in refs if ref in data.posts), None)
+        on_quote = next((ref for ref in quoted if ref in data.posts), None)
+        is_reply = mention.get("in_reply_to_user_id") == data.me or on_reply is not None
+        if on_quote and not is_reply:
+            add_item("quote", mention, author, on_quote)
+        elif is_reply:
+            add_item("reply", mention, author, on_reply)
+    for pid, quotes in data.quotes.items():
+        for quote in quotes:
+            add_item("quote", quote, quote.get("author_id"), quote.get("_on_post") or pid)
+
+    likes_c, reposts_c = Counter(), Counter()
+    reply_c, quote_c = Counter(), Counter()
+    for pid, post in data.posts.items():
+        if not data._in_window(post.get("created_at"), since, until):
+            continue
+        for uid in data.likes.get(pid, []):
+            if not hidden_user(data, uid):
+                likes_c[uid] += 1
+        for uid in data.reposts.get(pid, []):
+            if not hidden_user(data, uid):
+                reposts_c[uid] += 1
+    for item in items:
+        (quote_c if item["kind"] == "quote" else reply_c)[item["author_id"]] += 1
+
+    def points(uid, which):
+        likes = likes_c[uid] if which != "replies" else 0
+        reposts = reposts_c[uid] if which != "replies" else 0
+        replies = reply_c[uid] if which != "likes" else 0
+        quotes = quote_c[uid] if which != "likes" else 0
+        if which == "likes":
+            replies = quotes = 0
+        if which == "replies":
+            likes = reposts = 0
+        return (likes + reposts) * like_weight + (replies + quotes) * reply_weight
+
+    people = set(likes_c) | set(reposts_c) | set(reply_c) | set(quote_c)
+    ranked = Counter()
+    order = sorted(people, key=lambda uid: (-points(uid, "both"), -reply_c[uid] - quote_c[uid], uid))
+    for uid in order:
+        ranked[uid] = points(uid, "both")
+    catch_ranked = sorted(people, key=lambda uid: (-points(uid, mode), -reply_c[uid] - quote_c[uid], uid))
+
+    groups = defaultdict(list)
+    for item in items:
+        groups[item["author_id"]].append(item)
+    threads = []
+    for uid, group in groups.items():
+        group.sort(key=lambda item: item["created_at"], reverse=True)
+        user = data.users.get(uid, {"id": uid, "username": uid})
+        threads.append({
+            "id": uid,
+            "name": user.get("name") or user.get("username") or uid,
+            "username": user.get("username", uid),
+            "stranger": stranger(data, uid),
+            "user": user,
+            "items": group,
+        })
+    threads.sort(key=lambda thread: (
+        -len(thread["items"]),
+        -thread["items"][0]["created_at"].timestamp(),
+        thread["username"],
+    ))
+    if mode == "likes":
+        threads = []
+
+    interactions = []
+    for uid in set(likes_c) | set(reposts_c):
+        user = data.users.get(uid, {"id": uid, "username": uid})
+        likes, reposts = likes_c[uid], reposts_c[uid]
+        interactions.append({
+            "id": uid,
+            "name": user.get("name") or user.get("username") or uid,
+            "username": user.get("username", uid),
+            "stranger": stranger(data, uid),
+            "user": user,
+            "likes": likes,
+            "reposts": reposts,
+            "total": likes + reposts,
+        })
+    interactions.sort(key=lambda row: (-row["total"], -row["likes"], row["username"]))
+    if mode == "replies":
+        interactions = []
+    else:
+        interactions = interactions[:top]
+
+    catch_up = []
+    for uid in catch_ranked:
+        if points(uid, mode) <= 0:
+            continue
+        user = data.users.get(uid, {"id": uid, "username": uid})
+        latest = data.latest.get(uid)
+        catch_up.append({
+            "id": uid,
+            "name": user.get("name") or user.get("username") or uid,
+            "username": user.get("username", uid),
+            "stranger": stranger(data, uid),
+            "user": user,
+            "latest": latest,
+            "latest_url": status_url(data, uid, latest["id"]) if latest else "",
+        })
+        if len(catch_up) >= top:
+            break
+
+    return {
+        "totals": {
+            "replies": sum(1 for item in items if item["kind"] == "reply"),
+            "quotes": sum(1 for item in items if item["kind"] == "quote"),
+            "likes": sum(likes_c.values()),
+            "reposts": sum(reposts_c.values()),
+        },
+        "threads": threads,
+        "interactions": interactions,
+        "catch_up": catch_up,
+        "ranked": ranked,
+    }
+
+
+def user_markdown(person):
+    mark = " 👤?" if person["stranger"] else ""
+    return f"**{person['name']}** [@{person['username']}](https://x.com/{person['username']}){mark}"
+
+
+def write_chat_report(activity, path, handle, since, now, label):
+    end = now.astimezone(timezone.utc)
+    start = since.astimezone(timezone.utc)
+    totals = activity["totals"]
+    lines = [
+        f"**X Neighbours · @{handle}**",
+        f"{label} ({start.strftime('%b %-d')} – {end.strftime('%b %-d')}) · "
+        f"💬 {totals['replies']} replies · 🔁💬 {totals['quotes']} quotes · "
+        f"❤️ {totals['likes']} likes · 🔁 {totals['reposts']} reposts",
+        "👤? = you don't follow them yet",
+        "",
+        "### 💬 Replies & Quote posts",
+    ]
+    if not activity["threads"]:
+        lines.append("- none")
+    for thread in activity["threads"]:
+        lines.append(f"- {user_markdown(thread)} — {len(thread['items'])} item(s)")
+        for item in thread["items"]:
+            kind = "Reply" if item["kind"] == "reply" else "Quote"
+            state = "✅ Replied" if item["replied"] else "⏳ Not replied yet"
+            action = "reply" if item["kind"] == "reply" else "quote"
+            lines.append(
+                f"  - **{kind}** “{item['text']}” · {ago(item['created_at'], now)} · {state}"
+            )
+            lines.append(f"    - ↳ on your post: “{item['on_text']}…”")
+            lines.append(f"    - [Open {action} → reply / repost]({item['url']})")
+    lines += ["", "### ❤️ Likes & 🔁 Reposts",
+              "| User | Likes | Reposts | Total |",
+              "|---|---|---|---|"]
+    if not activity["interactions"]:
+        lines.append("| – | – | – | – |")
+    for row in activity["interactions"]:
+        lines.append(
+            f"| {row['name']} [@{row['username']}](https://x.com/{row['username']})"
+            f"{' 👤?' if row['stranger'] else ''} | {row['likes']} | {row['reposts']} | {row['total']} |"
+        )
+    lines += ["", "### 📖 Catch up with your friends",
+              "_Latest posts from the people who engaged with you most_"]
+    if not activity["catch_up"]:
+        lines.append("- none")
+    for person in activity["catch_up"]:
+        lines.append(f"- {user_markdown(person)}")
+        latest = person["latest"]
+        if not latest:
+            lines.append("  - ↳ No latest post saved.")
+            continue
+        when = ts(latest["created_at"])
+        lines.append(
+            f"  - ↳ “{snippet(latest.get('text')) or 'Post'}” · {ago(when, now)} · "
+            f"[Read post →]({person['latest_url']})"
+        )
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(lines) + "\n")
+
+
+def wrap_text(draw, text, face, width):
+    words = (text or "").split()
+    if not words:
+        return [""]
+    lines, current = [], ""
+    for word in words:
+        trial = word if not current else current + " " + word
+        if draw.textlength(trial, font=face) <= width:
+            current = trial
+        else:
+            if current:
+                lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    return lines
+
+
+def render_report(activity, path, handle, since, now, label):
+    from PIL import Image, ImageDraw
+    width = 1100
+    margin = 36
+    inner = width - margin * 2
+    ink = (17, 24, 39)
+    muted = (100, 116, 139)
+    line = (226, 232, 240)
+    blue = (37, 99, 235)
+    purple = (109, 40, 217)
+    rose = (190, 18, 60)
+    green = (4, 120, 87)
+    orange = (194, 65, 12)
+    ok = (21, 128, 61)
+    title_font = font(34)
+    sub_font = font(16, bold=False)
+    section_font = font(22)
+    name_font = font(18)
+    body_font = font(15, bold=False)
+    small_font = font(13, bold=False)
+    stat_font = font(26)
+    stat_label = font(13, bold=False)
+    dummy = ImageDraw.Draw(Image.new("RGB", (1, 1)))
+
+    blocks = []
+
+    def add(height, painter):
+        blocks.append((height, painter))
+
+    def header(_draw, _img, y):
+        _draw.text((margin, y), f"X Neighbours  ·  @{handle}", font=title_font, fill=ink)
+        end = now.astimezone(timezone.utc)
+        start = since.astimezone(timezone.utc)
+        _draw.text((margin, y + 46),
+                   f"{label}  ·  {start.strftime('%b %-d')} – {end.strftime('%b %-d')}",
+                   font=sub_font, fill=muted)
+
+    add(84, header)
+    totals = activity["totals"]
+    stats = [
+        (str(totals["replies"]), "Replies", blue),
+        (str(totals["quotes"]), "Quote posts", purple),
+        (str(totals["likes"]), "Likes", rose),
+        (str(totals["reposts"]), "Reposts", green),
+    ]
+
+    def stat_row(_draw, _img, y):
+        gap = 14
+        box_w = (inner - gap * 3) / 4
+        for index, (value, caption, color) in enumerate(stats):
+            x = margin + index * (box_w + gap)
+            _draw.rounded_rectangle((x, y, x + box_w, y + 78), radius=14, fill=(255, 255, 255),
+                                    outline=line, width=2)
+            _draw.text((x + 16, y + 10), value, font=stat_font, fill=color)
+            _draw.text((x + 16, y + 46), caption, font=stat_label, fill=muted)
+
+    add(96, stat_row)
+
+    def legend(_draw, _img, y):
+        _draw.rounded_rectangle((margin, y, margin + 22, y + 22), radius=6, fill=(255, 247, 237),
+                                outline=orange, width=2)
+        _draw.text((margin + 6, y + 2), "?", font=small_font, fill=orange)
+        _draw.text((margin + 30, y + 2), "you don't follow them yet", font=body_font, fill=muted)
+
+    add(40, legend)
+
+    def section(title, color):
+        def paint(_draw, _img, y, title=title, color=color):
+            _draw.rounded_rectangle((margin, y, width - margin, y + 42), radius=10, fill=color)
+            _draw.text((margin + 16, y + 8), title, font=section_font, fill=(255, 255, 255))
+        add(56, paint)
+
+    section("Replies & Quote posts", blue)
+    if not activity["threads"]:
+        def empty_threads(_draw, _img, y):
+            _draw.text((margin, y), "No replies or quote posts in this window.", font=body_font, fill=muted)
+        add(32, empty_threads)
+    for thread in activity["threads"]:
+        def paint_user(_draw, img, y, thread=thread):
+            avatar = fetch_avatar(thread["user"], os.path.join(os.path.dirname(path), ".avatar_cache"), 42)
+            img.paste(avatar, (margin, y), avatar)
+            _draw.text((margin + 54, y), thread["name"], font=name_font, fill=ink)
+            handle_x = margin + 54 + dummy.textlength(thread["name"] + "  ", font=name_font)
+            _draw.text((handle_x, y + 2), "@" + thread["username"], font=body_font, fill=muted)
+            if thread["stranger"]:
+                mark_x = handle_x + dummy.textlength("@" + thread["username"] + "   ", font=body_font)
+                _draw.rounded_rectangle((mark_x, y + 2, mark_x + 28, y + 22), radius=6,
+                                        fill=(255, 247, 237), outline=orange, width=1)
+                _draw.text((mark_x + 8, y + 2), "?", font=small_font, fill=orange)
+        add(52, paint_user)
+        for item in thread["items"]:
+            kind = "Reply" if item["kind"] == "reply" else "Quote"
+            kind_color = blue if item["kind"] == "reply" else purple
+            state = "Replied" if item["replied"] else "Not replied yet"
+            state_color = ok if item["replied"] else orange
+            body_lines = wrap_text(dummy, item["text"], body_font, inner - 150)
+            on_lines = wrap_text(dummy, "on your post: “" + item["on_text"] + "”", small_font, inner - 80)
+            block_h = 36 + 22 * len(body_lines) + 20 * len(on_lines) + 36
+
+            def paint_item(_draw, _img, y, item=item, kind=kind, kind_color=kind_color,
+                           state=state, state_color=state_color, body_lines=body_lines, on_lines=on_lines):
+                _draw.rounded_rectangle((margin + 54, y, width - margin, y + block_h - 8),
+                                        radius=10, fill=(255, 255, 255), outline=line, width=1)
+                _draw.rounded_rectangle((margin + 66, y + 10, margin + 66 + dummy.textlength(kind, font=small_font) + 16, y + 30),
+                                        radius=6, fill=kind_color)
+                _draw.text((margin + 74, y + 11), kind, font=small_font, fill=(255, 255, 255))
+                text_y = y + 36
+                for row in body_lines:
+                    _draw.text((margin + 66, text_y), row, font=body_font, fill=ink)
+                    text_y += 22
+                for row in on_lines:
+                    _draw.text((margin + 78, text_y), row, font=small_font, fill=muted)
+                    text_y += 20
+                meta = f"{ago(item['created_at'], now)}   ·   {state}"
+                _draw.text((margin + 66, text_y), meta, font=small_font, fill=state_color)
+            add(block_h, paint_item)
+
+    section("Likes & Reposts", rose)
+
+    def table_head(_draw, _img, y):
+        _draw.rectangle((margin, y, width - margin, y + 36), fill=(248, 250, 252))
+        columns = [(margin + 16, "User"), (inner * 0.62 + margin, "Likes"),
+                   (inner * 0.74 + margin, "Reposts"), (inner * 0.88 + margin, "Total")]
+        for x, caption in columns:
+            _draw.text((x, y + 8), caption, font=small_font, fill=muted)
+
+    add(36, table_head)
+    if not activity["interactions"]:
+        def empty_table(_draw, _img, y):
+            _draw.text((margin + 16, y + 8), "No likes or reposts in this window.", font=body_font, fill=muted)
+        add(36, empty_table)
+    for index, row in enumerate(activity["interactions"]):
+        def paint_row(_draw, img, y, row=row, index=index):
+            fill = (255, 255, 255) if index % 2 == 0 else (248, 250, 252)
+            _draw.rectangle((margin, y, width - margin, y + 48), fill=fill)
+            avatar = fetch_avatar(row["user"], os.path.join(os.path.dirname(path), ".avatar_cache"), 28)
+            img.paste(avatar, (margin + 12, y + 10), avatar)
+            _draw.text((margin + 48, y + 6), row["name"], font=name_font, fill=ink)
+            handle_text = "@" + row["username"]
+            _draw.text((margin + 48, y + 26), handle_text, font=small_font, fill=muted)
+            if row["stranger"]:
+                mark_x = margin + 48 + dummy.textlength(handle_text + " ", font=small_font)
+                _draw.text((mark_x, y + 24), "?", font=small_font, fill=orange)
+            _draw.text((inner * 0.62 + margin, y + 14), str(row["likes"]), font=body_font, fill=ink)
+            _draw.text((inner * 0.74 + margin, y + 14), str(row["reposts"]), font=body_font, fill=ink)
+            _draw.text((inner * 0.88 + margin, y + 14), str(row["total"]), font=name_font, fill=ink)
+        add(48, paint_row)
+
+    section("Catch up with your friends", green)
+
+    def catch_intro(_draw, _img, y):
+        _draw.text((margin, y), "Latest posts from the people who engaged with you most",
+                   font=body_font, fill=muted)
+
+    add(28, catch_intro)
+    if not activity["catch_up"]:
+        def empty_catch(_draw, _img, y):
+            _draw.text((margin, y), "No one to catch up with in this window.", font=body_font, fill=muted)
+        add(28, empty_catch)
+    for person in activity["catch_up"]:
+        latest = person["latest"]
+        text = snippet(latest.get("text")) if latest else "No latest post saved."
+        lines = wrap_text(dummy, text, body_font, inner - 70)
+        block_h = 36 + 22 * len(lines) + 8
+
+        def paint_catch(_draw, img, y, person=person, lines=lines, latest=latest):
+            avatar = fetch_avatar(person["user"], os.path.join(os.path.dirname(path), ".avatar_cache"), 36)
+            img.paste(avatar, (margin, y), avatar)
+            _draw.text((margin + 48, y), person["name"], font=name_font, fill=ink)
+            handle_x = margin + 48 + dummy.textlength(person["name"] + "  ", font=name_font)
+            _draw.text((handle_x, y + 2), "@" + person["username"], font=body_font, fill=muted)
+            if person["stranger"]:
+                mark_x = handle_x + dummy.textlength("@" + person["username"] + " ", font=body_font)
+                _draw.text((mark_x, y + 2), "?", font=small_font, fill=orange)
+            text_y = y + 28
+            for row in lines:
+                _draw.text((margin + 48, text_y), row, font=body_font, fill=ink)
+                text_y += 22
+            if latest:
+                when = ago(ts(latest["created_at"]), now)
+                _draw.text((margin + 48, text_y), when + "   ·   Read post", font=small_font, fill=blue)
+        add(block_h + 18, paint_catch)
+
+    height = 28 + sum(block[0] for block in blocks) + 24
+    image = Image.new("RGB", (width, height), (241, 245, 249))
+    draw = ImageDraw.Draw(image)
+    draw.rounded_rectangle((18, 18, width - 18, height - 18), radius=18, fill=(255, 255, 255))
+    y = 32
+    for block_h, painter in blocks:
+        painter(draw, image, y)
+        y += block_h
+    image.save(path, optimize=True)
+
+
+def thank_you_post(names):
+    shown = [name for name in names if name][:5]
+    mentions = " ".join(shown)
+    text = f"Thank you to my X neighbours this week — {mentions}. You made the week better."
+    if len(text) > 280:
+        text = text[:277].rstrip() + "…"
+    return text, "https://x.com/intent/post?text=" + urllib.parse.quote(text)
+
+
+def extra_sections(data, since, now, handle, top, like_weight, reply_weight, per_post, per_day):
+    lines = []
+    if per_day:
+        lines += ["### Per day", ""]
+        for day, day_start, day_end in each_utc_day(since, now):
+            activity = build_activity(data, day_start, day_end, top, like_weight, reply_weight, "both", now)
+            totals = activity["totals"]
+            lines.append(
+                f"- **{day.isoformat()}** — {totals['replies']} replies, {totals['quotes']} quotes, "
+                f"{totals['likes']} likes, {totals['reposts']} reposts"
+            )
+        lines.append("")
+    if per_post:
+        lines += ["### Per post", ""]
+        posts = []
+        for pid, post in data.posts.items():
+            if data._in_window(post.get("created_at"), since, now):
+                posts.append((ts(post["created_at"]), pid, post))
+        posts.sort(reverse=True)
+        if not posts:
+            lines.append("No posts in this window.")
+        for when, pid, post in posts:
+            likes = sum(1 for uid in data.likes.get(pid, []) if not hidden_user(data, uid))
+            reposts = sum(1 for uid in data.reposts.get(pid, []) if not hidden_user(data, uid))
+            text = snippet(post.get("text")) or "Post"
+            lines.append(
+                f"- {when.strftime('%Y-%m-%d %H:%M UTC')} — {text} — "
+                f"{likes} likes, {reposts} reposts — https://x.com/{handle}/status/{pid}"
+            )
+        lines.append("")
+    return "\n".join(lines)
+
+
+def picture_this_week(now, every_n, handle):
+    if not every_n or int(every_n) <= 0:
+        return False
+    year, week, _weekday = now.isocalendar()
+    return random.Random(f"{handle}:{year}-W{week:02d}").randrange(int(every_n)) == 0
+
+
 def main():
     here = os.path.dirname(os.path.abspath(__file__))
     parser = argparse.ArgumentParser(
-        description="Rank who liked and replied to an X account, and draw an X Neighbours image."
+        description="Build an X Neighbours report, and sometimes the neighbours picture."
     )
     parser.add_argument("--config", default=os.path.join(here, "config.json"))
     parser.add_argument("--handle")
@@ -804,9 +1164,10 @@ def main():
     parser.add_argument("--per-post", dest="per_post", action=argparse.BooleanOptionalAction,
                         default=None, help="add a per-post breakdown")
     parser.add_argument("--per-day", dest="per_day", action=argparse.BooleanOptionalAction,
-                        default=None, help="add a per-day breakdown")
-    parser.add_argument("--impressions", dest="impressions", action=argparse.BooleanOptionalAction,
-                        default=None, help="show impression totals from your own posts (default on)")
+                        default=None, help="add a per-day breakdown to the markdown")
+    parser.add_argument("--days", type=int, help="custom period length in days")
+    parser.add_argument("--picture", dest="picture", action=argparse.BooleanOptionalAction,
+                        default=None, help="include the neighbours picture (weekly default is about 1 in 3)")
     parser.add_argument("--show-names", dest="show_names", action="store_true", default=None)
     parser.add_argument("--hide-names", dest="show_names", action="store_false")
     parser.add_argument("--no-image", action="store_true")
@@ -843,7 +1204,6 @@ def main():
     cfg["show_names"] = as_bool(cfg["show_names"])
     cfg["per_post"] = as_bool(cfg.get("per_post"))
     cfg["per_day"] = as_bool(cfg.get("per_day"))
-    cfg["impressions"] = as_bool(cfg.get("impressions", True))
     if cfg.get("report") not in REPORTS:
         parser.error("report must be likes, replies, or both")
     if not args.no_image:
@@ -867,33 +1227,59 @@ def main():
     stored = data.users.get(me_id, {})
     me.update({k: v for k, v in stored.items() if v not in (None, "")})
     output = {}
-    report = cfg["report"]
-    for key in cfg["windows"]:
-        label, days, _subtitle = WINDOWS[key]
+    mode = cfg["report"]
+    windows = [("custom", args.days, f"Last {args.days} days")] if args.days else [
+        (key, days, label) for key, (label, days, _subtitle) in (
+            (name, WINDOWS[name]) for name in cfg["windows"]
+        )
+    ]
+    if args.days and args.days < 1:
+        parser.error("days must be at least 1")
+    for key, days, label in windows:
         since = now - timedelta(days=days)
-        likes, replies, suggestions, ranked, impression_payload = write_report(
-            data, label, since,
-            os.path.join(args.out, f"report_{key}.md"),
-            cfg["top"], cfg["handle"], like_weight, reply_weight,
-            report=report, per_post=cfg["per_post"], per_day=cfg["per_day"], until=now,
-            impressions=cfg["impressions"], days=days)
+        activity = build_activity(
+            data, since, now, cfg["top"], like_weight, reply_weight, mode, now)
+        md_path = os.path.join(args.out, f"report_{key}.md")
+        png_path = os.path.join(args.out, f"report_{key}.png")
+        write_chat_report(activity, md_path, cfg["handle"], since, now, label)
+        if cfg["per_post"] or cfg["per_day"]:
+            with open(md_path, "a", encoding="utf-8") as fh:
+                fh.write("\n" + extra_sections(
+                    data, since, now, cfg["handle"], cfg["top"], like_weight, reply_weight,
+                    cfg["per_post"], cfg["per_day"]) + "\n")
         if not args.no_image:
+            render_report(activity, png_path, cfg["handle"], since, now, label)
+        draw_picture = args.picture
+        if draw_picture is None and key == "week":
+            draw_picture = picture_this_week(now, cfg.get("picture_every_n_weeks", 3), cfg["handle"])
+        if draw_picture is None:
+            draw_picture = False
+        picture_path = None
+        thanks = None
+        if draw_picture and not args.no_image:
+            picture_path = os.path.join(args.out, f"x_neighbours_{key}.png")
             draw_circle(
-                data, me, ranked, os.path.join(args.out, f"x_neighbours_{key}.png"),
+                data, me, activity["ranked"], picture_path,
                 rings=cfg["rings"], show_names=cfg["show_names"],
-                subtitle=SUBTITLES[report][key], theme=cfg["theme"])
-
-        def display(uid):
-            return "@" + data.users.get(uid, {}).get("username", uid)
-
+                subtitle=SUBTITLES["both"].get(key, f"Top neighbours, {label.lower()}"),
+                theme=cfg["theme"])
+            names = ["@" + person["username"] for person in activity["catch_up"][:5]]
+            text, intent = thank_you_post(names)
+            thanks = {"text": text, "intent": intent}
+            with open(md_path, "a", encoding="utf-8") as fh:
+                fh.write(f"\n### Neighbours picture\n\n{text}\n\n[Post this thank-you]({intent})\n")
         output[key] = {
-            "likes": [(display(uid), count) for uid, count in likes.most_common(5)],
-            "replies": [(display(uid), count) for uid, count in replies.most_common(5)],
-            "follow_back": [display(uid) for uid, _count in suggestions],
-            "inner": [(display(uid), points) for uid, points in ranked.most_common(8)],
+            "replies": activity["totals"]["replies"],
+            "quotes": activity["totals"]["quotes"],
+            "likes": activity["totals"]["likes"],
+            "reposts": activity["totals"]["reposts"],
+            "catch_up": ["@" + person["username"] for person in activity["catch_up"]],
+            "report_md": md_path,
+            "report_png": None if args.no_image else png_path,
         }
-        if impression_payload:
-            output[key]["impressions"] = impression_payload
+        if picture_path:
+            output[key]["picture"] = picture_path
+            output[key]["thank_you"] = thanks
     print(json.dumps(output, ensure_ascii=False))
 
 

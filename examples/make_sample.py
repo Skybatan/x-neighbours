@@ -286,7 +286,6 @@ def main():
                 "like_count": len(likers),
                 "reply_count": 0,
                 "repost_count": 0,
-                "impression_count": IMPRESSIONS[pid],
             },
         }
 
@@ -319,11 +318,18 @@ def main():
                 minute = (mention_id + n) % 50
                 created = f"2026-11-04T{hour:02d}:{minute:02d}:00Z" if kind == "day" else f"2026-11-01T{hour:02d}:{minute:02d}:00Z"
                 target = DAY_POSTS[n % len(DAY_POSTS)][0] if kind == "day" else WEEK_POSTS[n % len(WEEK_POSTS)][0]
+                phrases = (
+                    "The empty centre of the map is the part I keep thinking about.",
+                    "Saving this sketch for the next one.",
+                    "The ring of chairs made the whole page work.",
+                    "This belongs on a kitchen wall.",
+                    "I read the margin notes twice.",
+                )
                 mentions.append({
                     "id": str(mention_id),
                     "author_id": person["id"],
                     "created_at": created,
-                    "text": f"Replying to the sample sketch ({kind} {n + 1}).",
+                    "text": phrases[mention_id % len(phrases)],
                     "in_reply_to_user_id": ME,
                     "referenced_tweets": [{"type": "replied_to", "id": target}],
                     "conversation_id": target,
@@ -384,6 +390,77 @@ def main():
     # engaged people except grok use PEOPLE relations stored on the dict.
     dump("followers_1.json", {"_comment": note, "data": followers, "meta": {"result_count": len(followers)}})
     dump("following_1.json", {"_comment": note, "data": following, "meta": {"result_count": len(following)}})
+
+    quote_plan = [
+        ("8001", "910003", "The chairs are doing all the work in this one.", "2026-11-04T16:10:00Z", "8201"),
+        ("8005", "910005", "The sunset palette is the one I would print.", "2026-11-02T18:05:00Z", "8202"),
+        ("8003", "910006", "Leaving the middle blank is the brave part.", "2026-11-04T15:40:00Z", "8203"),
+    ]
+    for on_id, author, text, created, qid in quote_plan:
+        dump(f"quotes_{on_id}.json", {
+            "_comment": note,
+            "data": [{
+                "id": qid,
+                "author_id": author,
+                "created_at": created,
+                "text": text,
+                "referenced_tweets": [{"type": "quoted", "id": on_id}],
+                "conversation_id": on_id,
+            }],
+            "includes": {"users": [public_user(profiles[author])]},
+            "meta": {"result_count": 1},
+        })
+    repost_plan = {
+        "8001": ["910001", "910003", "910007"],
+        "8002": ["910002", "910005"],
+        "8007": ["910004", "910008", "910011", "910012"],
+    }
+    for pid, ids in repost_plan.items():
+        dump(f"reposts_{pid}.json", {
+            "_comment": note,
+            "data": [public_user(profiles[uid]) for uid in ids],
+            "meta": {"result_count": len(ids)},
+        })
+    latest_lines = {
+        "910001": "A paper street with no cars, only chairs.",
+        "910002": "The cracked cup is still the one I reach for.",
+        "910003": "Tiny weather game, day 12: the clouds learned to queue.",
+        "910004": "Rooftop notes from a clear night.",
+        "910005": "Long song, short room, both recorded.",
+        "910006": "Same trail, new sentence at the gate.",
+        "910007": "Folded a timetable into a boat that actually floated.",
+        "910008": "Poster for a play that still does not exist.",
+        "910009": "Harbour bell, take three, less echo.",
+        "910011": "The forecast was boring, so the kite went up.",
+    }
+    for uid, text in latest_lines.items():
+        dump(f"latest_{uid}.json", {
+            "_comment": note,
+            "data": [{
+                "id": "83" + uid[-3:],
+                "author_id": uid,
+                "created_at": "2026-11-04T16:30:00Z",
+                "text": text,
+            }],
+            "includes": {"users": [public_user(profiles[uid])]},
+            "meta": {"result_count": 1},
+        })
+    answered = [mention for mention in mentions if mention["author_id"] in {"910001", "910002"}][:2]
+    for mention in answered:
+        posts.append({
+            "id": "89" + mention["id"],
+            "author_id": ME,
+            "created_at": "2026-11-04T17:10:00Z",
+            "text": "Thanks — this sample reply marks the note as answered.",
+            "referenced_tweets": [{"type": "replied_to", "id": mention["id"]}],
+            "public_metrics": {"like_count": 0, "reply_count": 0, "repost_count": 0},
+        })
+    dump("posts_1.json", {
+        "_comment": note,
+        "data": posts,
+        "includes": {"users": [public_user(me)]},
+        "meta": {"result_count": len(posts)},
+    })
     print(f"wrote {OUT}")
     print(f"people={len(people)} mentions={len(mentions)} avatars={len(profiles)} "
           f"followers={len(followers)} following={len(following)} now={NOW}")

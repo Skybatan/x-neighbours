@@ -1,0 +1,41 @@
+{
+  "_comment": "FICTIONAL SAMPLE. Made-up users and posts for the X Neighbours example. Not real X data.",
+  "data": [
+    {
+      "id": "910001",
+      "name": "Nova Lane",
+      "username": "nova_lane",
+      "description": "Draws paper maps of imaginary streets.",
+      "profile_image_url": "avatars/910001.png",
+      "public_metrics": {
+        "followers_count": 1840,
+        "tweet_count": 920
+      }
+    },
+    {
+      "id": "910003",
+      "name": "Pixel Otter",
+      "username": "pixel_otter",
+      "description": "Builds tiny games about weather.",
+      "profile_image_url": "avatars/910003.png",
+      "public_metrics": {
+        "followers_count": 12800,
+        "tweet_count": 2300
+      }
+    },
+    {
+      "id": "910007",
+      "name": "Drift Paper",
+      "username": "drift_paper",
+      "description": "Folds boats out of old schedules.",
+      "profile_image_url": "avatars/910007.png",
+      "public_metrics": {
+        "followers_count": 1560,
+        "tweet_count": 640
+      }
+    }
+  ],
+  "meta": {
+    "result_count": 3
+  }
+}

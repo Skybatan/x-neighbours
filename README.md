@@ -1,14 +1,18 @@
 # X Neighbours
 
-X Neighbours shows who liked and replied to an X account over the **last 7 days**. It tags each person (mutual, follows you, you follow, or neither), suggests follow-backs, and draws a square picture: your avatar in the centre, your closest neighbours in three rings around you. The last 24 hours is the same picture again, on the daily run.
+X Neighbours helps a creator catch up with the people who replied, quoted, liked, and reposted. The default result is a report card, as a PNG and as chat markdown. A bot does the reading on X. The script only reads the saved JSON. It does not follow, like, post, or send messages.
 
-A bot does the reading on X and saves the responses. `x_neighbours.py` turns those files into a markdown report and a PNG. The run is read-only. It does not follow, like, post, or send messages.
+![Sample X Neighbours report card, fictional data](docs/sample-report.png)
 
-![Sample X Neighbours picture: a fictional creator in the centre, with made-up neighbours in three rings](docs/sample-neighbours.png)
+*Sample report from `examples/sample`. Every person, post, and avatar is invented.*
 
-*Sample picture, midnight theme, three rings, rendered from the fictional dataset in `examples/sample`. Every handle and avatar on it was invented for this repo.*
+People the owner does not follow are marked 👤?. There is no followed/unfollowed split. Catch up lists the latest post from the people who engaged most. The ordering score stays in config and is not printed.
 
-The inner ring is the closest neighbours for that window, starting at the top and moving clockwise. The next rings step outward. Handles sit under the avatars.
+The ring picture is separate. The original three-ring layout is unchanged, and every avatar, including the centre, sits in a simple house frame. It is not part of the default report. A Monday run includes it about one week in three, with a thank-you post ready to send. Ask any time and it is drawn.
+
+![Sample neighbours picture with house frames, fictional data](docs/sample-neighbours.png)
+
+*Same fictional neighbourhood. Inner ring from the top, clockwise. Handles sit under the avatars.*
 
 ## Setup
 
@@ -32,10 +36,8 @@ python3 x_neighbours.py --now 2026-11-04T18:00:00Z
 
 | File | What it is |
 |---|---|
-| `report_week.md` | Top likers, top repliers, follow-back suggestions. `report_day.md` when the day window is on |
-| `x_neighbours_week.png` | The picture. `x_neighbours_day.png` when the day window is on |
-
-It also prints a short JSON summary to stdout. In the sample week, that summary names `@pixel_otter` as the top liker and `@nova_lane` as the top replier.
+| `report_week.md` and `report_week.png` | The report. `report_day.*` when the day window is on |
+| `x_neighbours_week.png` | The house-framed picture, only when this week is selected or you pass `--picture` |
 
 A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same runbook is in [skills/x-neighbours/SKILL.md](skills/x-neighbours/SKILL.md)).
 
@@ -51,8 +53,8 @@ A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same
   "reply_weight": 3,
   "exclude": ["grok"],
   "rings": 3,
-  "impressions": true,
   "show_names": true,
+  "picture_every_n_weeks": 3,
   "theme": "midnight",
   "windows": ["week"],
   "top": 10,
@@ -66,23 +68,20 @@ A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same
 |---|---|
 | `handle` | Your X handle, without @ |
 | `user_id` | Your numeric X user id, stored as a string |
-| `like_weight`, `reply_weight` | Points per like and per reply. They order the picture and the follow-back list. The liker and replier tables stay in raw count order and include each person's combined score. These two numbers are a quiet setting: they are not drawn on the picture and they are not written in the report headings. Override them with `--like-weight` and `--reply-weight` |
-| `exclude` | Handles to leave out of the rankings and the picture, such as bots. `@grok` is the default. `--exclude ''` clears the list |
+| `like_weight`, `reply_weight` | Quiet points. A reply or quote uses `reply_weight`. A like uses `like_weight`. They order Catch up and the picture. They are not printed on the report or the picture. Override with `--like-weight` and `--reply-weight` |
+| `exclude` | Handles left out, such as bots. `@grok` is the default |
 | `rings` | Rings on the picture, from 1 to 4. Default 3. The rings hold 8, then 14, then 20, then 26 people |
-| `impressions` | Show total impressions from your own posts, the change from the previous window when those posts were saved, and the top 3 posts. On by default. `--no-impressions` hides it |
-| `show_names` | Draw handles under the avatars. `--hide-names` turns them off |
-| `theme` | `midnight` (deep blue, the default), `light`, or `sunset` (purple into orange) |
-| `windows` | `week` by default. `day`, or `day` and `week` together, when you want the last 24 hours as well |
-| `top` | Rows in the top-likers and top-repliers tables |
-| `report` | `both` (default), `likes`, or `replies`. `likes` and `replies` drop the other ranking |
-| `per_post` | Add who liked or replied to each post. Off unless you ask |
-| `per_day` | Add a day-by-day breakdown. Off unless you ask |
+| `picture_every_n_weeks` | About how many Monday runs pass between pictures. Default 3, so about one week in three. `--picture` draws it now. `--no-picture` skips it |
+| `show_names` | Handles under the avatars on the picture |
+| `theme` | `midnight` (default), `light`, or `sunset` |
+| `windows` | `week` by default. `day` is the daily report |
+| `top` | Rows in Likes & Reposts, and people in Catch up. Default 10 |
+| `report` | `both` (default), `likes`, or `replies` |
+| `per_post`, `per_day` | Extra markdown sections. Off unless you ask |
 
-Other flags: `--config`, `--data`, `--out`, `--now`, `--rings`, `--top`, `--theme`, `--windows day,week`, `--report likes`, `--per-post`, `--per-day`, `--no-impressions`, `--show-names`, `--no-image`.
+Other flags: `--config`, `--data`, `--out`, `--now`, `--days`, `--rings`, `--top`, `--theme`, `--windows day,week`, `--report likes`, `--per-post`, `--per-day`, `--picture`, `--no-picture`, `--show-names`, `--no-image`.
 
-A plain run is the week picture plus both rankings, with impressions included. Likes only, replies only, per post, and per day are there when you pass the flags. They read the files already in `data/` and do not call X.
-
-Impressions come from `public_metrics.impression_count` on your own posts. That field is already in the posts fetch. The report sums the current window, compares it with the previous window when those older posts are in `data/`, and links the top 3. Viewers do not have impression counts, so nothing else is requested.
+A plain run writes the week report card only. `--days 14` is a custom period (`report_custom`).
 
 ```bash
 python3 x_neighbours.py --now 2026-11-04T18:00:00Z --report likes
@@ -110,26 +109,28 @@ Pick a UTC timestamp `T` when you start. Pass `T` to the script as `--now`. For 
 
 | # | Tool | Arguments | Save as |
 |---|---|---|---|
-| 1 | `get_users_posts` | `id={ID}`, `start_time=START`, `exclude=retweets`, `max_results=100`, `post.fields=created_at,public_metrics,in_reply_to_user_id,referenced_tweets`, `expansions=author_id`, `user.fields=username,name,profile_image_url,public_metrics` | `posts_1`, `posts_2`, … |
-| 2 | `get_users_mentions` | `id={ID}`, `start_time=START`, `max_results=100`, `post.fields=created_at,author_id,in_reply_to_user_id,referenced_tweets,conversation_id`, `expansions=author_id`, `user.fields=username,name,description,public_metrics,profile_image_url` | `mentions_1`, `mentions_2`, … |
-| 3 | `get_posts_liking_users` | For each of your posts with likes: `id=<post id>`, `max_results=100`, `user.fields=username,name,description,public_metrics,profile_image_url` | `likes_<postid>`, then `likes_<postid>_p2` if you fetch another page |
-| 4 | `get_users_me_followers` and `get_users_me_following` | `max_results=1000`, `user.fields=username,name,description,public_metrics,profile_image_url`. Reuse the files when they are under 7 days old | `followers_1`, … and `following_1`, … |
+| 1 | `get_users_posts` | `id={ID}`, `start_time=START`, `exclude=retweets`, `max_results=100`, `post.fields=created_at,public_metrics,in_reply_to_user_id,referenced_tweets,conversation_id`, `expansions=author_id`, `user.fields=username,name,profile_image_url,public_metrics` | `posts_1`, `posts_2`, … |
+| 2 | `get_users_mentions` | `id={ID}`, `start_time=START`, `max_results=100`, `post.fields=created_at,author_id,text,in_reply_to_user_id,referenced_tweets,conversation_id`, `expansions=author_id`, `user.fields=username,name,description,profile_image_url` | `mentions_1`, … |
+| 3 | `get_posts_liking_users` | Posts with likes. `user.fields=username,name,description,profile_image_url` | `likes_<postid>` |
+| 4 | `get_posts_reposted_by` | Posts with reposts. Same user fields | `reposts_<postid>` |
+| 5 | `get_posts_quoted_posts` | Posts with quotes. `post.fields=created_at,author_id,text,referenced_tweets`, `expansions=author_id` | `quotes_<postid>` |
+| 6 | `get_users_posts` | At most 10 catch-up people, `max_results=5`, `exclude=retweets` | `latest_<userid>` |
+| 7 | `get_users_me_followers` and `get_users_me_following` | `max_results=1000`. Refresh on Mondays | `followers_1`, `following_1`, … |
 
-On a Grok Bot these tools are on the X connection. Call each tool by name. A reply counts when `in_reply_to_user_id` is `{ID}`, or when a `replied_to` reference points at one of your posts. Your own posts are ignored. `public_metrics.impression_count` on those posts is the impressions total. No other call is needed for it.
+On a Grok Bot these tools are on the X connection. A reply counts when `in_reply_to_user_id` is `{ID}`, or when a `replied_to` reference points at one of your posts. The owner has replied to that item when one of their own posts replies to its id. Your own posts are ignored as neighbours.
 
 ### Keeping the read count down
 
 Stay around **30 calls a minute** and **1,000 calls a day**. Send about 12 calls, then pause.
 
-Liker lists are the expensive step, one call per post:
+Likes, reposts, and quotes are one call per post:
 
-- The last 24 hours: every post with at least one like.
-- Days 2–7: only posts with 3 or more likes. The posts you skip are usually short replies liked by one or two people.
-- One page of 100 likers is enough for almost every post. Fetch another page only when `meta.next_token` is present and you still have room in the day's budget.
+- The last 24 hours: every post with that count above 0.
+- Days 2–7: only counts of 3 or more.
+- Latest posts: at most 10 calls, one per catch-up person.
+- One page is enough for almost every post. Fetch another page only while you are inside the day's budget.
 
-Follower and following lists are long. Refresh them on the Monday run, and reuse them on the daily runs. A day run is posts, mentions, and that day's liker lists. On Monday the week run reuses that morning's daily files and only fetches the earlier part of the week. The two runs together stay inside the daily cap. The steps are in [BOT.md](BOT.md).
-
-The report's Notes section counts liker lists that came back shorter than the like count (deleted, suspended, or protected accounts) and posts whose likers were not fetched.
+Follower lists refresh on Monday only. The Monday run reuses that morning's daily files and only fetches the earlier part of the week, including likes, reposts, and quotes. The two runs share the 1,000-read cap. The steps are in [BOT.md](BOT.md).
 
 ## Try the sample
 
@@ -145,11 +146,11 @@ python3 x_neighbours.py \
   --now 2026-11-04T18:00:00Z
 ```
 
-That writes `/tmp/x-neighbours-sample/x_neighbours_week.png`, which is the picture at the top of this file, and `report_week.md`. Add `--windows day,week` for the last 24 hours as well, or `--per-post` / `--per-day` for the optional breakdowns. Rebuild the dataset with `python3 examples/make_sample.py`.
+That writes `report_week.md` and `report_week.png`. Add `--picture` for the house-framed PNG and the thank-you link. Rebuild the dataset with `python3 examples/make_sample.py`.
 
 ## Privacy
 
-- `config.json`, `data/`, `.avatar_cache/`, `report_*.md`, and `x_neighbours_*.png` are gitignored. Leave them that way.
+- `config.json`, `data/`, `.avatar_cache/`, `report_*.md`, `report_*.png`, and `x_neighbours_*.png` are gitignored. Leave them that way.
 - Real avatars are downloaded from the `profile_image_url` values in the saved JSON into `.avatar_cache/` next to the output folder.
 - Do not commit a creator's config, raw responses, avatar cache, reports, or pictures, and do not open a pull request that contains them.
 - The sample dataset is the only account data in this repo, and it is not from X.
@@ -163,4 +164,5 @@ That writes `/tmp/x-neighbours-sample/x_neighbours_week.png`, which is the pictu
 | `config.example.json` | Config template |
 | `BOT.md`, `skills/x-neighbours/SKILL.md` | Runbook for the bot |
 | `examples/sample/` | Fictional data and generated avatars |
-| `docs/sample-neighbours.png` | The sample picture used above |
+| `docs/sample-report.png` | The sample report card |
+| `docs/sample-neighbours.png` | The sample picture with house frames |

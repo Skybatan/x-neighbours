@@ -1,0 +1,30 @@
+{
+  "_comment": "FICTIONAL SAMPLE. Made-up users and posts for the X Neighbours example. Not real X data.",
+  "data": [
+    {
+      "id": "910002",
+      "name": "Amber Kiln",
+      "username": "amber_kiln",
+      "description": "Fires small cups and keeps the cracked ones.",
+      "profile_image_url": "avatars/910002.png",
+      "public_metrics": {
+        "followers_count": 640,
+        "tweet_count": 410
+      }
+    },
+    {
+      "id": "910005",
+      "name": "Moss Radio",
+      "username": "moss_radio",
+      "description": "A one-room station for long songs.",
+      "profile_image_url": "avatars/910005.png",
+      "public_metrics": {
+        "followers_count": 430,
+        "tweet_count": 260
+      }
+    }
+  ],
+  "meta": {
+    "result_count": 2
+  }
+}
