@@ -1056,17 +1056,124 @@ def on_post_line(text):
     return f"↳ on your post: “{text}”"
 
 
-def write_chat_report(activity, path, handle, since, now, label, top=10, items_per_user=3):
+CHAT_SHOW = 5
+THANK_YOU_NOTE = "Save the picture and attach it in X before posting."
+
+
+def person_marks(person):
+    bits = []
+    if person.get("good"):
+        bits.append("⭐")
+    if person.get("stranger"):
+        bits.append("👤?")
+    return (" " + " ".join(bits)) if bits else ""
+
+
+def flower_lines(row):
+    counts = []
+    if row.get("replies"):
+        counts.append(counted(row["replies"], "reply", "replies"))
+    if row.get("likes"):
+        counts.append(counted(row["likes"], "like", "likes"))
+    if row.get("reposts"):
+        counts.append(counted(row["reposts"], "repost", "reposts"))
+    if not counts:
+        counts.append("showed up")
+    name = f"**[{row['name']}](https://x.com/{row['username']})**{person_marks(row)}"
+    return [name, " · ".join(counts), ""]
+
+
+def flower_record(row):
+    return {
+        "name": row["name"],
+        "username": row["username"],
+        "good": bool(row.get("good")),
+        "stranger": bool(row.get("stranger")),
+        "replies": row.get("replies") or 0,
+        "likes": row.get("likes") or 0,
+        "reposts": row.get("reposts") or 0,
+    }
+
+
+def catch_lines(person, now):
+    latest = person.get("latest") or {}
+    text = snippet(latest.get("text")) or "Post"
+    when = ago(ts(latest["created_at"]), now) if latest.get("created_at") else ""
+    tail = f" · {when}" if when else ""
+    return [
+        f"**{person['name']}**{person_marks(person)}",
+        f"[“{text}”]({person['latest_url']}){tail}",
+        "",
+    ]
+
+
+def catch_record(person):
+    latest = person.get("latest") or {}
+    created = latest.get("created_at")
+    return {
+        "name": person["name"],
+        "username": person["username"],
+        "good": bool(person.get("good")),
+        "stranger": bool(person.get("stranger")),
+        "text": snippet(latest.get("text")) or "Post",
+        "url": person.get("latest_url") or "",
+        "created_at": created.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ") if created else "",
+    }
+
+
+def greeting_rows(threads):
+    unanswered, answered = [], []
+    for thread in threads:
+        for item in thread["items"]:
+            created = item.get("created_at")
+            row = {
+                "name": thread["name"],
+                "username": thread["username"],
+                "good": bool(thread.get("good")),
+                "stranger": bool(thread.get("stranger")),
+                "kind": item.get("kind") or "reply",
+                "text": snippet(item.get("text")) or "Post",
+                "url": item.get("url") or "",
+                "on_text": snippet(item.get("on_text") or ""),
+                "created_at": created.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ") if created else "",
+                "replied": bool(item.get("replied")),
+                "_when": created or datetime.min.replace(tzinfo=timezone.utc),
+            }
+            (answered if row["replied"] else unanswered).append(row)
+    unanswered.sort(key=lambda row: row["_when"], reverse=True)
+    answered.sort(key=lambda row: row["_when"], reverse=True)
+    return unanswered, answered
+
+
+def greeting_lines(row, now):
+    when = ""
+    if row.get("created_at"):
+        when = ago(ts(row["created_at"]), now)
+    kind = "Quote" if row.get("kind") == "quote" else "Reply"
+    name = f"**[{row['name']}](https://x.com/{row['username']})**{person_marks(row)}"
+    lines = [f"{name} · {kind} · Not replied yet", f"“{row['text']}”" + (f" · {when}" if when else "")]
+    if row.get("on_text"):
+        lines.append(f"on “{row['on_text']}”")
+    lines.append("")
+    return lines
+
+
+def public_greeting(row):
+    return {key: value for key, value in row.items() if key != "_when"}
+
+
+def write_chat_report(activity, path, handle, since, now, label, top=10, items_per_user=3,
+                      show=CHAT_SHOW):
     end = now.astimezone(timezone.utc)
     start = since.astimezone(timezone.utc)
     totals = activity["totals"]
     lines = [
         f"**X Neighbours · @{handle}**",
-        f"{label} ({start.strftime('%b %-d')} – {end.strftime('%b %-d')}) · "
-        f"💬 {counted(totals['replies'], 'reply', 'replies')} · "
-        f"🔁💬 {counted(totals['quotes'], 'quote', 'quotes')} · "
-        f"❤️ {counted(totals['likes'], 'like', 'likes')} · "
-        f"🔁 {counted(totals['reposts'], 'repost', 'reposts')}",
+        f"{label} ({start.strftime('%b %-d')} – {end.strftime('%b %-d')})",
+        f"{counted(totals['replies'], 'reply', 'replies')} · "
+        f"{counted(totals['quotes'], 'quote', 'quotes')} · "
+        f"{counted(totals['likes'], 'like', 'likes')} · "
+        f"{counted(totals['reposts'], 'repost', 'reposts')}",
     ]
     people = activity["threads"] + activity["interactions"] + activity["catch_up"]
     legend = []
@@ -1077,24 +1184,18 @@ def write_chat_report(activity, path, handle, since, now, label, top=10, items_p
     if legend:
         lines.append(" · ".join(legend))
     lines.append("")
-    rows = activity["interactions"][:top]
-    if not rows:
+    flowers = activity["interactions"]
+    if not flowers:
         lines.append("No replies, likes, or reposts in this stretch.")
     else:
-        lines += ["### 💐 Flowers from your neighbours",
-                  "| User | Replies | Likes | Reposts |",
-                  "|---|---|---|---|"]
-        for row in rows:
-            star = " ⭐" if row.get("good") else ""
-            mark = " 👤?" if row["stranger"] else ""
-            lines.append(
-                f"| {row['name']}{star} [@{row['username']}](https://x.com/{row['username']}){mark} "
-                f"| {row['replies']} | {row['likes']} | {row['reposts']} |"
-            )
-        more_rows = len(activity["interactions"]) - len(rows)
-        if more_rows:
-            lines.append(f"\n+{more_rows} more people")
-    lines.append("")
+        lines.append("### 💐 Flowers from your neighbours")
+        lines.append("")
+        for row in flowers[:show]:
+            lines.extend(flower_lines(row))
+        extra = len(flowers) - show
+        if extra > 0:
+            lines.append(f"+{extra} more in Flowers. Ask to see them.")
+            lines.append("")
     catch = activity["catch_up"]
     if not catch:
         if activity.get("all_caught_up"):
@@ -1108,57 +1209,52 @@ def write_chat_report(activity, path, handle, since, now, label, top=10, items_p
         lines.append("### Catch up with your good neighbours")
         if activity.get("catch_hint"):
             lines.append("Add people to your good neighbours list to keep up with them here.")
-            lines.append("Latest posts from the people who engaged with you most.")
-        else:
-            lines.append("Latest original posts from your good neighbours.")
-        for person in catch:
-            lines.append(f"- {user_markdown(person)}")
-            latest = person["latest"]
-            if not latest:
-                lines.append("  - No latest post saved yet.")
-                continue
-            when = ts(latest["created_at"])
-            lines.append(
-                f"  - “{snippet(latest.get('text')) or 'Post'}” · {ago(when, now)} · "
-                f"[Read post]({person['latest_url']})"
-            )
-    lines.append("")
-    threads = activity["threads"][:top]
-    if not threads:
+        lines.append("")
+        for person in catch[:show]:
+            lines.extend(catch_lines(person, now))
+        extra = len(catch) - show
+        if extra > 0:
+            lines.append(f"+{extra} more to catch up with. Ask to see them.")
+            lines.append("")
+    unanswered, answered = greeting_rows(activity["threads"])
+    if not unanswered and not answered:
         lines.append("No replies or quote posts in this stretch.")
     else:
         lines.append("### 👋 Greetings from your neighbours")
-        for thread in threads:
-            lines.append(f"- {user_markdown(thread)}")
-            shown = thread["items"][:items_per_user]
-            for item in shown:
-                kind = "Reply" if item["kind"] == "reply" else "Quote"
-                state = "Replied" if item["replied"] else "Not replied yet"
-                lines.append(
-                    f"  - **{kind}** [“{item['text']}”]({item['url']}) · "
-                    f"{ago(item['created_at'], now)} · {state}"
-                )
-                lines.append(f"    - {on_post_line(item['on_text'])}")
-            extra = len(thread["items"]) - len(shown)
-            if extra:
-                lines.append(f"  - +{extra} more")
-        more_people = len(activity["threads"]) - len(threads)
-        if more_people:
-            lines.append(f"- +{more_people} more people")
+        lines.append("")
+        if not unanswered:
+            lines.append("No replies waiting on you.")
+            lines.append("")
+        for row in unanswered[:show]:
+            lines.extend(greeting_lines(row, now))
+        extra = len(unanswered) - show
+        if extra > 0:
+            lines.append(f"+{extra} more greetings. Ask to see them.")
+            lines.append("")
+        if answered:
+            lines.append(f"{len(answered)} already answered. Ask to see them.")
+            lines.append("")
     with open(path, "w", encoding="utf-8") as fh:
-        fh.write("\n".join(lines) + "\n")
+        fh.write("\n".join(lines).rstrip() + "\n")
+    return {
+        "flowers": [flower_record(row) for row in flowers[show:]],
+        "catch_up": [catch_record(person) for person in catch[show:]],
+        "greetings_unanswered": [public_greeting(row) for row in unanswered[show:]],
+        "greetings_answered": [public_greeting(row) for row in answered],
+    }
 
 
 def write_thanks(path, thanks):
-    lines = ["### Thank your neighbours on X", ""]
-    if thanks:
-        lines.append(thanks["text"])
-        lines.append("")
-        lines.append(f"[Post your thank-you]({thanks['intent']})")
+    if not thanks:
+        text = "No neighbours to thank in this stretch.\n"
     else:
-        lines.append("No neighbours to thank in this stretch.")
+        text = (
+            f"{thanks['text']}\n\n"
+            f"[Post your thank-you]({thanks['intent']})\n\n"
+            f"{thanks.get('note') or THANK_YOU_NOTE}\n"
+        )
     with open(path, "w", encoding="utf-8") as fh:
-        fh.write("\n".join(lines) + "\n")
+        fh.write(text)
 
 
 def wrap_text(draw, text, face, width):
@@ -1601,7 +1697,12 @@ def main():
         md_path = os.path.join(args.out, f"report_{key}.md")
         png_path = os.path.join(args.out, f"report_{key}.png")
         text, intent = thank_you_post(now, zone)
-        thanks = {"text": text, "intent": intent, "link_label": "Post your thank-you"}
+        thanks = {
+            "text": text,
+            "intent": intent,
+            "link_label": "Post your thank-you",
+            "note": THANK_YOU_NOTE,
+        }
         draw_picture = args.picture is not False and not args.no_image
         picture_path = None
         if draw_picture:
@@ -1612,9 +1713,13 @@ def main():
                 subtitle=SUBTITLES["both"].get(key, f"Top neighbours, {label.lower()}"),
                 theme=cfg["theme"])
         thanks_path = os.path.join(args.out, f"report_{key}_thanks.md")
-        write_chat_report(
+        more_path = os.path.join(args.out, f"report_{key}_more.json")
+        more = write_chat_report(
             activity, md_path, cfg["handle"], since, now, label,
             top=cfg["top"], items_per_user=int(cfg.get("items_per_user") or 3))
+        with open(more_path, "w", encoding="utf-8") as fh:
+            json.dump(more, fh, ensure_ascii=False, indent=2)
+            fh.write("\n")
         write_thanks(thanks_path, thanks)
         if key == "week":
             with open(thanks_path, "a", encoding="utf-8") as fh:
@@ -1638,6 +1743,8 @@ def main():
             "until": now.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "report_md": md_path,
             "thanks_md": thanks_path,
+            "more_json": more_path,
+            "more_counts": {name: len(rows) for name, rows in more.items()},
             "thank_you": thanks,
             "messages": [
                 {"part": "sections_1_to_3", "text_file": md_path, "images": []},
