@@ -1,10 +1,12 @@
 # X Neighbours
 
-X Neighbours helps a creator catch up with the people who replied, quoted, liked, and reposted. The default result is a report card, as a PNG and as chat markdown. A bot does the reading on X. The script only reads the saved JSON. It does not follow, like, post, or send messages.
+X Neighbours helps a creator catch up with the people who replied, quoted, liked, and reposted. The default result is a short chat report (markdown). A report-card PNG is optional (`--report-card`). A bot does the reading on X. The script only reads the saved JSON. It does not follow, like, post, or send messages.
 
-![Sample X Neighbours report card, fictional data](docs/sample-report.png)
+The first run covers the last two days, so it loads quickly, and it always includes the picture. Later Mondays include the picture about one week in three. With only a few neighbours the picture uses one larger ring instead of an empty three-ring chart.
 
-*Sample report from `examples/sample`. Every person, post, and avatar is invented.*
+![A first-run picture with five fictional neighbours](docs/sample-few-neighbours.png)
+
+*Five made-up neighbours, one ring, house frames. From `examples/few`.*
 
 People the owner does not follow are marked 👤?. There is no followed/unfollowed split. Catch up lists the latest post from the people who engaged most. The ordering score stays in config and is not printed.
 
@@ -36,8 +38,8 @@ python3 x_neighbours.py --now 2026-11-04T18:00:00Z
 
 | File | What it is |
 |---|---|
-| `report_week.md` and `report_week.png` | The report. `report_day.*` when the day window is on |
-| `x_neighbours_week.png` | The house-framed picture, only when this week is selected or you pass `--picture` |
+| `report_week.md` | The text report. `report_day.md` for a day, `report_first.md` for the first run |
+| `x_neighbours_*.png` | The house-framed picture, on the first run, on some Mondays, or with `--picture` |
 
 A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same runbook is in [skills/x-neighbours/SKILL.md](skills/x-neighbours/SKILL.md)).
 
@@ -55,6 +57,8 @@ A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same
   "rings": 3,
   "show_names": true,
   "picture_every_n_weeks": 3,
+  "first_run_days": 2,
+  "items_per_user": 3,
   "theme": "midnight",
   "windows": ["week"],
   "top": 10,
@@ -71,7 +75,9 @@ A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same
 | `like_weight`, `reply_weight` | Quiet points. A reply or quote uses `reply_weight`. A like uses `like_weight`. They order Catch up and the picture. They are not printed on the report or the picture. Override with `--like-weight` and `--reply-weight` |
 | `exclude` | Handles left out, such as bots. `@grok` is the default |
 | `rings` | Rings on the picture, from 1 to 4. Default 3. The rings hold 8, then 14, then 20, then 26 people |
-| `picture_every_n_weeks` | About how many Monday runs pass between pictures. Default 3, so about one week in three. `--picture` draws it now. `--no-picture` skips it |
+| `first_run_days` | How many days the first fetch covers. Default 2. Daily stays 24 hours. Monday stays 7 days |
+| `items_per_user` | Reply and quote lines shown per person before `+N more`. Default 3 |
+| `picture_every_n_weeks` | About how many Monday runs pass between pictures after the first run. Default 3. `--picture` draws it now |
 | `show_names` | Handles under the avatars on the picture |
 | `theme` | `midnight` (default), `light`, or `sunset` |
 | `windows` | `week` by default. `day` is the daily report |
@@ -79,9 +85,9 @@ A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same
 | `report` | `both` (default), `likes`, or `replies` |
 | `per_post`, `per_day` | Extra markdown sections. Off unless you ask |
 
-Other flags: `--config`, `--data`, `--out`, `--now`, `--days`, `--rings`, `--top`, `--theme`, `--windows day,week`, `--report likes`, `--per-post`, `--per-day`, `--picture`, `--no-picture`, `--show-names`, `--no-image`.
+Other flags: `--config`, `--data`, `--out`, `--now`, `--days`, `--first-run`, `--report-card`, `--rings`, `--top`, `--theme`, `--windows day,week`, `--report likes`, `--per-post`, `--per-day`, `--picture`, `--no-picture`, `--show-names`, `--no-image`.
 
-A plain run writes the week report card only. `--days 14` is a custom period (`report_custom`).
+A plain run writes markdown only. `--first-run` uses `first_run_days` and always draws the picture. `--report-card` adds the PNG card. `--days 14` is a custom period.
 
 ```bash
 python3 x_neighbours.py --now 2026-11-04T18:00:00Z --report likes
@@ -146,7 +152,20 @@ python3 x_neighbours.py \
   --now 2026-11-04T18:00:00Z
 ```
 
-That writes `report_week.md` and `report_week.png`. Add `--picture` for the house-framed PNG and the thank-you link. Rebuild the dataset with `python3 examples/make_sample.py`.
+A short first-run sample, five fictional neighbours:
+
+```bash
+python3 x_neighbours.py \
+  --config config.example.json \
+  --handle fewcreator \
+  --user-id 800001 \
+  --data examples/few \
+  --out /tmp/x-neighbours-few \
+  --now 2026-11-04T18:00:00Z \
+  --first-run
+```
+
+That writes `report_first.md` and `x_neighbours_first.png` (the picture above). Rebuild both datasets with `python3 examples/make_sample.py`.
 
 ## Privacy
 
@@ -164,5 +183,6 @@ That writes `report_week.md` and `report_week.png`. Add `--picture` for the hous
 | `config.example.json` | Config template |
 | `BOT.md`, `skills/x-neighbours/SKILL.md` | Runbook for the bot |
 | `examples/sample/` | Fictional data and generated avatars |
-| `docs/sample-report.png` | The sample report card |
-| `docs/sample-neighbours.png` | The sample picture with house frames |
+| `docs/sample-few-neighbours.png` | First-run picture with five fictional neighbours |
+| `docs/sample-neighbours.png` | A full three-ring picture from `examples/sample` |
+| `examples/few/` | The short fictional dataset |

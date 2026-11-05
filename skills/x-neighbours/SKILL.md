@@ -31,10 +31,10 @@ The only step is to make sure **one** X account is connected. If the X tools are
 Then do the rest with the defaults. Do not ask setup questions.
 
 1. `get_users_me` with `user.fields=id,name,username,description,profile_image_url`. That is the account. Write `handle` and `user_id` into `config.json` copied from `config.example.json`. Leave every other key as in the example.
-2. Clone or `git pull --ff-only` this repo, install Pillow, and fetch the last 7 days with the tool calls below. Never commit `config.json` or `data/`.
-3. Run `python3 x_neighbours.py --now <T>` and send `report_week.png` plus the chat markdown.
-4. Create both routines with no question: every day at 9:00 AM, and Mondays at 9:00 AM, in their timezone (X profile timezone if you know it, otherwise UTC).
-5. End with one short line: any setting — time, top N, picture theme, or an extra report such as likes only, replies only, per post, per day, or a custom period — can be changed anytime just by asking.
+2. Clone or `git pull --ff-only` this repo, install Pillow, and fetch only the last `first_run_days` from config (default **2 days**, 48 hours). Use the tool calls below with that `START`. Do not fetch a full week on the first run. Never commit `config.json` or `data/`.
+3. Run `python3 x_neighbours.py --now <T> --first-run`. Send the chat markdown (`report_first.md`). Also send the house-framed picture and the thank-you link, framed as: here's a picture you can post to thank your neighbours. Do not post it yourself.
+4. Create both routines with no question: every day at 9:00 AM (last 24 hours, text only), and Mondays at 9:00 AM (last 7 days, reusing daily files, picture only on the random weeks). Use their timezone, or UTC if you don't know it.
+5. Close with one line: daily and Monday reports are set; anything can be changed by asking (time, period, top N, likes only, replies only, per post, per day, picture).
 
 Do not send a settings list.
 
@@ -140,13 +140,13 @@ Overwrite those names as you go. Do not delete the previous files until the new 
 python3 x_neighbours.py --now <T>
 ```
 
-It reads `config.json` and `data/`. For each window it writes `report_<window>.md` (chat markdown with `[@handle](https://x.com/handle)` links) and `report_<window>.png` (the report card). It does not draw the ring picture unless this is a selected week or you pass `--picture`. Stdout is JSON with totals and `catch_up`. When the picture is included, stdout also has `picture` and `thank_you` (`text` under 280 characters, and `intent` as `https://x.com/intent/post?text=...`).
+It reads `config.json` and `data/`. For each window it writes `report_<window>.md`, the chat report, with `[@handle](https://x.com/handle)` links. The report card PNG is off unless you pass `--report-card`. It draws the ring picture on `--first-run`, on about one Monday in three, or when you pass `--picture`. Stdout is JSON with totals and `catch_up`. When the picture is included, stdout also has `picture` and `thank_you` (`text` under 280 characters, and `intent` as `https://x.com/intent/post?text=...`). `--first-run` uses `first_run_days` (default 2) and always draws the picture.
 
 A custom period is `--days 14` (writes `report_custom`). Likes only, replies only, per post, and per day are `--report likes`, `--report replies`, `--per-post`, and `--per-day`. They re-read `data/` and do not need more X calls. Weight flags exist. Keep those values in config only, and never print them.
 
 ## What you send the owner
 
-Send `report_<window>.png` and the chat markdown. On a week when the picture is included, also send `x_neighbours_week.png` and the thank-you link. Do not post it yourself.
+Send the chat markdown. That is the report. On a run that wrote the picture, also send the PNG and the thank-you link, as something they can post. Do not post it yourself. Do not send a report card unless they asked.
 
 The markdown is the summary: header totals, replies and quote posts with Replied / Not replied yet, the likes and reposts table, and Catch up with a Read post link. 👤? means the owner does not follow that person. Do not add a followed/unfollowed split, a follow-back list, or impressions.
 
@@ -167,7 +167,7 @@ Both run at 9:00 AM in the owner's timezone. Count every X call from both toward
 5. Fetch likers, reposters, and quote posts for that day with the budget rule above. Skip files you already have.
 6. Fetch at most 10 latest posts (`latest_<userid>.json`).
 7. Run `python3 x_neighbours.py --now <T> --windows day --no-picture`.
-8. Send `report_day.png` and `report_day.md`. Do not include the ring picture.
+8. Send `report_day.md`. The report is the markdown. Do not send a report card, and do not include the ring picture.
 
 Leave the files in place. Later reports filter them by time.
 
@@ -180,6 +180,6 @@ If today's `posts_day_1.json` is missing, do the daily run first.
 3. If saved posts already cover `T` minus 7 days through `T` minus 24 hours, do not page posts or mentions for that span. Fetch only missing liker, reposter, and quote files for older posts whose count is 3 or more.
 4. If that span is missing, fetch it once: `get_users_posts` and `get_users_mentions` with `start_time` of `T` minus 7 days and `end_time` of `T` minus 24 hours. Save as `posts_week_1`, … and `mentions_week_1`, …. Then the same 3-or-more rule for likes, reposts, and quotes. Refresh `latest_<userid>.json` only for the catch-up ten, and only if today's file is missing.
 5. Run `python3 x_neighbours.py --now <T> --windows week`. About one week in three (`picture_every_n_weeks` in config) it also writes the house-framed picture and a thank-you intent link. Pass `--picture` when the owner asks, any day.
-6. Send `report_week.png` and `report_week.md`. When the picture was written, send that PNG and the thank-you link too. Do not post it.
+6. Send `report_week.md`. When the picture was written, send that PNG and the thank-you link too, as something they can post. Do not post it. Do not send a report card unless they asked for `--report-card`.
 
 If the Monday calls would pass about 1,000 for the day, send the day picture you already have, fetch the older posts and mentions, and stop the liker lists when the cap is close. Tell the owner which older posts were left out.

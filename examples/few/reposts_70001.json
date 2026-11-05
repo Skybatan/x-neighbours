@@ -1,0 +1,19 @@
+{
+  "_comment": "FICTIONAL SAMPLE. Five made-up neighbours for a short first run. Not real X data.",
+  "data": [
+    {
+      "id": "800102",
+      "name": "Ben Coast",
+      "username": "ben_coast",
+      "description": "Walked the long way home.",
+      "profile_image_url": "avatars/800102.png",
+      "public_metrics": {
+        "followers_count": 90,
+        "tweet_count": 21
+      }
+    }
+  ],
+  "meta": {
+    "result_count": 1
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "_comment": "FICTIONAL SAMPLE. Five made-up neighbours for a short first run. Not real X data.",
+  "data": [
+    {
+      "id": "83101",
+      "author_id": "800101",
+      "created_at": "2026-11-04T16:00:00Z",
+      "text": "Kept the window light on."
+    }
+  ],
+  "includes": {
+    "users": [
+      {
+        "id": "800101",
+        "name": "Ada Brook",
+        "username": "ada_brook",
+        "description": "Kept the window light on.",
+        "profile_image_url": "avatars/800101.png",
+        "public_metrics": {
+          "followers_count": 80,
+          "tweet_count": 20
+        }
+      }
+    ]
+  },
+  "meta": {
+    "result_count": 1
+  }
+}

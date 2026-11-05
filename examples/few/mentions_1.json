@@ -1,0 +1,62 @@
+{
+  "_comment": "FICTIONAL SAMPLE. Five made-up neighbours for a short first run. Not real X data.",
+  "data": [
+    {
+      "id": "71001",
+      "author_id": "800101",
+      "created_at": "2026-11-04T10:00:00Z",
+      "text": "I could see it from the corner.",
+      "in_reply_to_user_id": "800001",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "70001"
+        }
+      ],
+      "conversation_id": "70001"
+    },
+    {
+      "id": "71002",
+      "author_id": "800103",
+      "created_at": "2026-11-04T11:30:00Z",
+      "text": "Rain on the page, in a good way.",
+      "in_reply_to_user_id": "800001",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "70002"
+        }
+      ],
+      "conversation_id": "70002"
+    }
+  ],
+  "includes": {
+    "users": [
+      {
+        "id": "800101",
+        "name": "Ada Brook",
+        "username": "ada_brook",
+        "description": "Kept the window light on.",
+        "profile_image_url": "avatars/800101.png",
+        "public_metrics": {
+          "followers_count": 80,
+          "tweet_count": 20
+        }
+      },
+      {
+        "id": "800103",
+        "name": "Cleo Dawn",
+        "username": "cleo_dawn",
+        "description": "Wrote the morning down in pencil.",
+        "profile_image_url": "avatars/800103.png",
+        "public_metrics": {
+          "followers_count": 100,
+          "tweet_count": 22
+        }
+      }
+    ]
+  },
+  "meta": {
+    "result_count": 2
+  }
+}

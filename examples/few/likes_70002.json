@@ -1,0 +1,30 @@
+{
+  "_comment": "FICTIONAL SAMPLE. Five made-up neighbours for a short first run. Not real X data.",
+  "data": [
+    {
+      "id": "800103",
+      "name": "Cleo Dawn",
+      "username": "cleo_dawn",
+      "description": "Wrote the morning down in pencil.",
+      "profile_image_url": "avatars/800103.png",
+      "public_metrics": {
+        "followers_count": 100,
+        "tweet_count": 22
+      }
+    },
+    {
+      "id": "800105",
+      "name": "Eri Fern",
+      "username": "eri_fern",
+      "description": "Left a stone on the step.",
+      "profile_image_url": "avatars/800105.png",
+      "public_metrics": {
+        "followers_count": 120,
+        "tweet_count": 24
+      }
+    }
+  ],
+  "meta": {
+    "result_count": 2
+  }
+}
