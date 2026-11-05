@@ -12,7 +12,7 @@ The first run covers the last two days, so it loads quickly, and it always inclu
 
 *Five made-up neighbours, one ring, house frames. From `examples/few`.*
 
-People the owner does not follow are marked 👤?. There is no followed/unfollowed split. Catch up lists the latest post from the people who engaged most. The ordering score stays in config and is not printed.
+People the owner does not follow are marked 👤?. There is no followed/unfollowed split. Catch up lists each person's latest original post (not a reply or a plain repost; a quote of their own counts). People with none in the saved page are skipped. The ordering score stays in config and is not printed.
 
 The ring picture is separate. The original three-ring layout is unchanged, and every avatar, including the centre, sits in a simple house frame. It is not part of the default report. A Monday run includes it about one week in three, with a thank-you post ready to send. Ask any time and it is drawn.
 
@@ -124,7 +124,7 @@ Pick a UTC timestamp `T` when you start. Pass `T` to the script as `--now`. For 
 | 3 | `get_posts_liking_users` | Posts with likes. `user.fields=username,name,description,profile_image_url` | `likes_<postid>` |
 | 4 | `get_posts_reposted_by` | Posts with reposts. Same user fields | `reposts_<postid>` |
 | 5 | `get_posts_quoted_posts` | Posts with quotes. `post.fields=created_at,author_id,text,referenced_tweets`, `expansions=author_id` | `quotes_<postid>` |
-| 6 | `get_users_posts` | At most 10 catch-up people, `max_results=5`, `exclude=retweets` | `latest_<userid>` |
+| 6 | `get_users_posts` | At most 10 catch-up people, `max_results=10`, `exclude=replies,retweets`, `post.fields=created_at,text,author_id,in_reply_to_user_id,referenced_tweets` | `latest_<userid>` |
 | 7 | `get_users_me_followers` and `get_users_me_following` | `max_results=1000`. Refresh on Mondays | `followers_1`, `following_1`, … |
 
 On a Grok Bot these tools are on the X connection. A reply counts when `in_reply_to_user_id` is `{ID}`, or when a `replied_to` reference points at one of your posts. The owner has replied to that item when one of their own posts replies to its id. Your own posts are ignored as neighbours.

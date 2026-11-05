@@ -117,9 +117,9 @@ Same budget rule as likes, using `repost_count` and `quote_count` from the post'
 
 After the files above are saved, pick at most 10 people with the highest quiet score in config (replies and quotes use `reply_weight`, likes use `like_weight`; do not tell the owner the numbers). For each, one call:
 
-`get_users_posts` — `id` their user id, `max_results` 5, `exclude=retweets`, `post.fields=created_at,text,author_id`, `expansions=author_id`, `user.fields=username,name,profile_image_url`.
+`get_users_posts` — `id` their user id, `max_results` 10, `exclude=replies,retweets`, `post.fields=created_at,text,author_id,in_reply_to_user_id,referenced_tweets`, `expansions=author_id`, `user.fields=username,name,profile_image_url`.
 
-Save as `latest_<userid>`. Skip a file saved earlier today. Never more than 10 of these calls.
+Save the whole page as `latest_<userid>`. Catch up uses the newest original post in that page. A quote of their own counts. A reply (`in_reply_to_user_id` or `referenced_tweets` type `replied_to`) and a plain repost (`retweeted`, or text starting `RT @`) do not. If the page has no original post, the script skips that person and fills the ten from the next person. Skip a file saved earlier today. Never more than 10 of these calls.
 
 ### 6. Followers and following
 

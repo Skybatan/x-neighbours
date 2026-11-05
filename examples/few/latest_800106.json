@@ -1,0 +1,29 @@
+{
+  "_comment": "FICTIONAL SAMPLE. Five made-up neighbours for a short first run. Not real X data.",
+  "data": [
+    {
+      "id": "83106",
+      "author_id": "800106",
+      "created_at": "2026-11-04T16:00:00Z",
+      "text": "Planted the last of the bulbs."
+    }
+  ],
+  "includes": {
+    "users": [
+      {
+        "id": "800106",
+        "name": "Fay Glen",
+        "username": "fay_glen",
+        "description": "Planted the last of the bulbs.",
+        "profile_image_url": "avatars/800106.png",
+        "public_metrics": {
+          "followers_count": 130,
+          "tweet_count": 25
+        }
+      }
+    ]
+  },
+  "meta": {
+    "result_count": 1
+  }
+}
