@@ -164,9 +164,11 @@ The sections, in order, are written for a phone. Do not turn them back into a wi
 
 1. **💐 Flowers from your neighbours** — one person per block. The name is the only link. Counts sit on the next line (`2 replies · 4 likes · 1 repost`). Replies means replies plus quote posts. Biggest supporters first. No Total column and no second @handle.
 2. **Catch up with your good neighbours** — the post preview is the link. No @handle and no separate “Read post” link.
-3. **👋 Greetings from your neighbours** — unanswered first, one block each, no nested bullets. Replies you already answered are left out. The report says how many, and they can ask to see them.
+3. **👋 Greetings from your neighbours** — unanswered first, one block each, no nested bullets. The preview text is a link to that reply or quote (`url`), so the owner can open it and answer. Replies you already answered are left out. The report says how many, and they can ask to see them.
 
-Each section shows at most five entries. A last line says how many are left (`+3 more in Flowers. Ask to see them.`). Those entries are in `more_json` (`report_<window>_more.json`): `flowers`, `catch_up`, `greetings_unanswered`, and `greetings_answered`. If they ask for more, or for the answered greetings, read that file and send only the part they asked for, in the same short shape. Do not fetch X again. Do not paste the whole file. That file is this report only, not an older history.
+A Markdown hard line break (two spaces at the end of the line) separates a name from the counts under it, and a name from the post preview. Keep those breaks when you send the text. A single newline is not enough; chat will join the lines.
+
+Each section shows at most five entries. A last line says how many are left (`+3 more in Flowers. Ask to see them.`). Those entries are in `more_json` (`report_<window>_more.json`): `flowers`, `catch_up`, `greetings_unanswered`, and `greetings_answered`. If they ask for more, or for the answered greetings, send each greeting's `markdown` field. That text already links the preview to `url` and says `Replied` when `replied` is true, or `Not replied yet` when it is false. Do not relabel an answered greeting as not replied. Do not fetch X again. Do not paste the whole file. That file is this report only, not an older history.
 
 ⭐ next to a name means they are on the good neighbours list. The legend “⭐ = good neighbour” appears only when that list is non-empty. 👤? means the owner does not follow that person. Do not add a followed/unfollowed split, a follow-back list, or impressions.
 

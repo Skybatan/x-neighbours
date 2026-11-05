@@ -1069,6 +1069,11 @@ def person_marks(person):
     return (" " + " ".join(bits)) if bits else ""
 
 
+def hard_break(line):
+    """Two trailing spaces: a Markdown hard line break, not a soft wrap."""
+    return line.rstrip() + "  "
+
+
 def flower_lines(row):
     counts = []
     if row.get("replies"):
@@ -1080,7 +1085,7 @@ def flower_lines(row):
     if not counts:
         counts.append("showed up")
     name = f"**[{row['name']}](https://x.com/{row['username']})**{person_marks(row)}"
-    return [name, " · ".join(counts), ""]
+    return [hard_break(name), " · ".join(counts), ""]
 
 
 def flower_record(row):
@@ -1101,7 +1106,7 @@ def catch_lines(person, now):
     when = ago(ts(latest["created_at"]), now) if latest.get("created_at") else ""
     tail = f" · {when}" if when else ""
     return [
-        f"**{person['name']}**{person_marks(person)}",
+        hard_break(f"**{person['name']}**{person_marks(person)}"),
         f"[“{text}”]({person['latest_url']}){tail}",
         "",
     ]
@@ -1145,21 +1150,34 @@ def greeting_rows(threads):
     return unanswered, answered
 
 
+def greeting_status(row):
+    return "Replied" if row.get("replied") else "Not replied yet"
+
+
 def greeting_lines(row, now):
     when = ""
     if row.get("created_at"):
         when = ago(ts(row["created_at"]), now)
     kind = "Quote" if row.get("kind") == "quote" else "Reply"
     name = f"**[{row['name']}](https://x.com/{row['username']})**{person_marks(row)}"
-    lines = [f"{name} · {kind} · Not replied yet", f"“{row['text']}”" + (f" · {when}" if when else "")]
+    text = row.get("text") or "Post"
+    url = (row.get("url") or "").strip()
+    preview = f"[“{text}”]({url})" if url else f"“{text}”"
+    if when:
+        preview += f" · {when}"
+    lines = [hard_break(f"{name} · {kind} · {greeting_status(row)}"), preview]
     if row.get("on_text"):
+        lines[-1] = hard_break(lines[-1])
         lines.append(f"on “{row['on_text']}”")
     lines.append("")
     return lines
 
 
-def public_greeting(row):
-    return {key: value for key, value in row.items() if key != "_when"}
+def public_greeting(row, now):
+    data = {key: value for key, value in row.items() if key != "_when"}
+    data["status"] = greeting_status(row)
+    data["markdown"] = "\n".join(greeting_lines(row, now)).strip()
+    return data
 
 
 def write_chat_report(activity, path, handle, since, now, label, top=10, items_per_user=3,
@@ -1239,8 +1257,8 @@ def write_chat_report(activity, path, handle, since, now, label, top=10, items_p
     return {
         "flowers": [flower_record(row) for row in flowers[show:]],
         "catch_up": [catch_record(person) for person in catch[show:]],
-        "greetings_unanswered": [public_greeting(row) for row in unanswered[show:]],
-        "greetings_answered": [public_greeting(row) for row in answered],
+        "greetings_unanswered": [public_greeting(row, now) for row in unanswered[show:]],
+        "greetings_answered": [public_greeting(row, now) for row in answered],
     }
 
 
