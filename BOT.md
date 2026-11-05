@@ -8,7 +8,7 @@ You do the X reads. `x_neighbours.py` only reads JSON you saved. Follow every ru
 
 - Stay within about **1,000 X reads a day** and **30 a minute**. Send about 12 calls, then pause. Count as you go. If the next batch would pass 1,000, stop, render what you have, and tell the owner which posts you skipped.
 - Refresh follower and following lists **at most once a week**. Reuse `data/followers_*.json` and `data/following_*.json` when they are under 7 days old.
-- This run is **read-only**. Never follow, unfollow, like, unlike, repost, bookmark, post, reply, or DM. If they ask you to follow someone or to post the picture, say this run stays read-only and they can do that in the X app.
+- This run is **read-only**. Never follow, unfollow, like, unlike, repost, bookmark, post, reply, or DM. Never open a GitHub issue yourself. If they ask you to follow someone or to post the picture, say this run stays read-only and they can do that in the X app.
 - Leave bot accounts out. `@grok` is already in `exclude`. They can name other handles to skip anytime.
 - Never commit user data. Do not commit or push `config.json`, `data/`, `.avatar_cache/`, `report_*.md`, `report_*.png`, `x_neighbours_*.png`, `good_neighbours.json`, or `state.json`. Do not open a pull request with those files. Do not run `git add .`. For a normal run, commit nothing. `git pull` is fine: those paths are gitignored. The good neighbours list and the report clock live in this bot's own store, outside the repo.
 - Stay on this task. Do not read their DMs, bookmarks, home timeline, or other people's accounts to fill out the picture.
@@ -186,7 +186,7 @@ If today's `posts_day_1.json` is missing, do the daily run first.
 3. If saved posts already cover `T` minus 7 days through `T` minus 24 hours, do not page posts or mentions for that span. Fetch only missing liker, reposter, and quote files for older posts whose count is 3 or more.
 4. If that span is missing, fetch it once: `get_users_posts` and `get_users_mentions` with `start_time` of `T` minus 7 days and `end_time` of `T` minus 24 hours. Save as `posts_week_1`, … and `mentions_week_1`, …. Then the same 3-or-more rule for likes, reposts, and quotes. Refresh `latest_<userid>.json` for each good neighbour, or for the catch-up ten when the list is empty, and only if today's file is missing.
 5. Run `python3 x_neighbours.py --now <T> --windows week --good-neighbours <path> --state <state path>`. Do not send the ⭐ Add card on this report.
-6. Send the report with “How to send a report”: message 1 is `report_week.md` with no image, message 2 is the thank-you text and link with `x_neighbours_week.png` in that message's `images` field. Do not post it. Do not send a report card unless they asked for `--report-card`.
+6. Send the report with “How to send a report”: message 1 is `report_week.md` with no image, message 2 is the thank-you text and link with `x_neighbours_week.png` in that message's `images` field. Do not post it. Do not send a report card unless they asked for `--report-card`. After those two messages, add one line and nothing else: “Anything you'd change about X Neighbours? Tell me and I'll turn it into a feedback link.” That line is `feedback_line` in the script output. Do not fetch anything for it.
 
 If the Monday calls would pass about 1,000 for the day, send the day picture you already have, fetch the older posts and mentions, and stop the liker lists when the cap is close. Tell the owner which older posts were left out.
 
@@ -258,3 +258,33 @@ python3 x_neighbours.py --now <T> --since <fetch_since> --good-neighbours <path>
 ```
 
 The estimate, unless `fresh_hours` is set: 60 or more replies, quote posts, likes, and reposts per 24 hours is a big account (ask after 1 hour); 15 to 59 is medium (ask after 3 hours); under 15 is small (ask after 8 hours).
+
+## Feedback
+
+Offer this for any concern the owner mentions: a complaint, a wish, a nit, or a “what if”. Stay light. One offer per topic in this conversation, never a follow-up push. The Monday report already asks once, in a single line; if they answer that line, treat it as the concern and offer the link the same way.
+
+1. Answer the point in a sentence or two.
+2. Ask once, as a yes/no card: “Want to report this so it gets fixed?”
+3. If they say no, drop it. Do not ask again about that same point in this conversation.
+4. If they say yes, draft a short issue and show it before any link. Title is one line. Body has what they expected, what happened, the report type (daily, weekly, first, fresh, or other), and the version from `git rev-parse --short HEAD`.
+5. Leave out every personal detail: handles, names, post text, the good neighbours list, avatars, ids, and tokens. Describe the behaviour, not the people.
+6. When they accept the draft, build the link. Do not post it.
+
+```bash
+python3 feedback_link.py --title "Catch up hid an original post" --body "$(cat <<'EOF'
+What I expected
+Catch up should keep an original post.
+
+What happened
+A quote of their own post was left out of Catch up.
+
+Report
+- Type: daily
+- Version: abc1234
+EOF
+)"
+```
+
+The script prints JSON. `url` is `https://github.com/Skybatan/x-neighbours/issues/new?title=...&body=...&labels=feedback`, URL-encoded, and kept under 7500 characters. Send that URL. The owner taps it and submits the issue themselves. You never call the GitHub API, never run `gh issue create`, and never submit the form.
+
+If the script says the draft contains a handle or a secret, rewrite the draft without that and run it again. If `shortened` is true, tell them the draft was shortened to fit the link.
