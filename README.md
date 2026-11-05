@@ -2,6 +2,10 @@
 
 X Neighbours helps a creator catch up with the people who replied, quoted, liked, and reposted. The default result is a short chat report (markdown). A report-card PNG is optional (`--report-card`). A bot does the reading on X. The script only reads the saved JSON. It does not follow, like, post, or send messages.
 
+![Sample report with fictional people](docs/sample-report.png)
+
+*Sample report with fictional people.*
+
 The first run covers the last two days, so it loads quickly, and it always includes the picture. Later Mondays include the picture about one week in three. With only a few neighbours the picture uses one larger ring instead of an empty three-ring chart.
 
 ![A first-run picture with five fictional neighbours](docs/sample-few-neighbours.png)
@@ -183,6 +187,8 @@ That writes `report_first.md` and `x_neighbours_first.png` (the picture above). 
 | `config.example.json` | Config template |
 | `BOT.md`, `skills/x-neighbours/SKILL.md` | Runbook for the bot |
 | `examples/sample/` | Fictional data and generated avatars |
+| `docs/sample-report.png` | Sample report picture, fictional people |
+| `docs/sample-report.html` | HTML source for that picture |
 | `docs/sample-few-neighbours.png` | First-run picture with five fictional neighbours |
 | `docs/sample-neighbours.png` | A full three-ring picture from `examples/sample` |
 | `examples/few/` | The short fictional dataset |
