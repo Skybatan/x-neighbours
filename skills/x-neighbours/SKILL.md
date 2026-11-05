@@ -160,17 +160,21 @@ Send exactly two chat messages, in this order. Then, only if `add_question` is p
 
 **Message 1 — sections 1 to 3.** Send the text of `report_<window>.md` and nothing else. The `images` field of this message is empty. Do not attach the picture here.
 
-The sections, in order, are:
+The sections, in order, are written for a phone. Do not turn them back into a wide table.
 
-1. **💐 Flowers from your neighbours** — User, Replies, Likes, Reposts. Replies means replies plus quote posts. Top 10, biggest supporters first. No Total column.
-2. **Catch up with your good neighbours**
-3. **👋 Greetings from your neighbours**
+1. **💐 Flowers from your neighbours** — one person per block. The name is the only link. Counts sit on the next line (`2 replies · 4 likes · 1 repost`). Replies means replies plus quote posts. Biggest supporters first. No Total column and no second @handle.
+2. **Catch up with your good neighbours** — the post preview is the link. No @handle and no separate “Read post” link.
+3. **👋 Greetings from your neighbours** — unanswered first, one block each, no nested bullets. The preview text is a link to that reply or quote (`url`), so the owner can open it and answer. Replies you already answered are left out. The report says how many, and they can ask to see them.
+
+A Markdown hard line break (two spaces at the end of the line) separates a name from the counts under it, and a name from the post preview. Keep those breaks when you send the text. A single newline is not enough; chat will join the lines.
+
+Each section shows at most five entries. A last line says how many are left (`+3 more in Flowers. Ask to see them.`). Those entries are in `more_json` (`report_<window>_more.json`): `flowers`, `catch_up`, `greetings_unanswered`, and `greetings_answered`. If they ask for more, or for the answered greetings, send each greeting's `markdown` field. That text already links the preview to `url` and says `Replied` when `replied` is true, or `Not replied yet` when it is false. Do not relabel an answered greeting as not replied. Do not fetch X again. Do not paste the whole file. That file is this report only, not an older history.
 
 ⭐ next to a name means they are on the good neighbours list. The legend “⭐ = good neighbour” appears only when that list is non-empty. 👤? means the owner does not follow that person. Do not add a followed/unfollowed split, a follow-back list, or impressions.
 
-**Message 2 — section 4, one message, picture included.** This is a single chat message. Put the house-framed PNG in that message's `images` field. The path is `messages[1].images[0]`, the same file as `picture`. The text of the same message is `thank_you.text`, then a blank line, then the link `thank_you.intent` with the label “Post your thank-you”.
+**Message 2 — section 4, one message, picture included.** This is a single chat message. Put the house-framed PNG in that message's `images` field. The path is `messages[1].images[0]`, the same file as `picture`. The text of the same message is `thank_you.text`, then a blank line, then the link `thank_you.intent` with the label “Post your thank-you”, then a blank line, then `thank_you.note`: “Save the picture and attach it in X before posting.” No @handles in this message.
 
-The picture belongs inside this message. Do not send the picture as its own message. Do not send the picture as a later attachment. Do not send the text first and the picture second. If the owner cannot see the picture in the same bubble as the thank-you sentence, the send was wrong.
+The picture belongs inside this message. Do not send the picture as its own message. Do not send the picture as a later attachment. Do not send the text first and the picture second. If the owner cannot see the picture in the same bubble as the thank-you sentence, the send was wrong. The link only opens a composer with the words. It does not attach the picture. Never say that tapping the link posts the image.
 
 Do not post the thank-you yourself.
 
@@ -253,7 +257,7 @@ Adding someone does not follow them. This run stays read-only on X.
 
 When the list is non-empty, Catch up with your good neighbours shows only those people, each one's latest original post the owner has not already liked, replied to, reposted, or quoted, and skips anyone with no such post. They are not inserted into the other sections just because they are on the list. When the list is empty, Catch up stays the top 10 from the period, with the same skip, and the report adds: “Add people to your good neighbours list to keep up with them here.” If everyone left is already engaged, the section is “You're all caught up with your good neighbours 🎉”.
 
-After a daily report, a first run, and a fresh on-demand report, the script lists up to five people from Flowers who are not on the list yet, in that table's order. They are in `suggest_good_neighbours`. If nobody is left, `add_question` is absent and you skip the card. Send one multi-select card, short label **⭐ Add**, option labels `⭐ @handle`, plus a free-text option. A weekly report does not ask. The first-run closing line mentions the list once, besides that card.
+After a daily report, a first run, and a fresh on-demand report, the script lists up to five people from Flowers who are not on the list yet, in Flowers order. They are in `suggest_good_neighbours`. If nobody is left, `add_question` is absent and you skip the card. Send one multi-select card, short label **⭐ Add**, option labels `⭐ @handle`, plus a free-text option. A weekly report does not ask. The first-run closing line mentions the list once, besides that card.
 
 ## When they just say hello
 

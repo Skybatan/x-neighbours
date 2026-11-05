@@ -16,7 +16,7 @@ People the owner does not follow are marked 👤?. There is no followed/unfollow
 
 The thank-you sentence is “My X neighbours circle, November 5!” plus a short thanks, using the report date in `timezone` (UTC if that key is blank). It does not mention any username.
 
-Every report has four parts: Flowers from your neighbours, Catch up with your good neighbours, Greetings from your neighbours, then Thank your neighbours on X. The house-framed picture sits in that last part, with a ready-to-post thank-you that names nobody. The original three-ring layout is unchanged, and every avatar, including the centre, sits in a simple house frame. `--no-picture` skips the image.
+Every report has four parts, written so a phone can read them without sideways scrolling: Flowers as stacked people, Catch up as short post previews, Greetings with unanswered replies first, then Thank your neighbours on X. The first three sections show five entries and say how many are left. The house-framed picture sits in that last message with the thank-you words. The link does not attach the picture; the owner saves it and attaches it in X. The original three-ring layout is unchanged, and every avatar, including the centre, sits in a simple house frame. `--no-picture` skips the image.
 
 ![Sample neighbours picture with house frames, fictional data](docs/sample-neighbours.png)
 
@@ -87,7 +87,7 @@ A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same
 | `show_names` | Handles under the avatars on the picture |
 | `theme` | `midnight` (default), `light`, or `sunset` |
 | `windows` | `week` by default. `day` is the daily report |
-| `top` | Rows in Flowers (user, replies, likes, reposts), and people in Catch up when the good neighbours list is empty. Default 10 |
+| `top` | How many people are ranked for Flowers and for Catch up when the good neighbours list is empty. The chat still shows five at a time. Default 10 |
 | `timezone` | IANA name for the thank-you date, such as `Europe/Stockholm`. Blank means UTC |
 | `fresh_hours` | Optional. How many hours until the bot may offer a new report. Omit it and the bot estimates: 1 hour at 60 or more interactions a day, 3 hours from 15 to 59, 8 hours under 15 |
 | `good_neighbours` | Optional path to the personal list. Prefer `--good-neighbours`, because the file lives outside the repo. A missing file is an empty list. At most 20 people |
