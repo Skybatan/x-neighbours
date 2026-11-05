@@ -31,6 +31,7 @@ import urllib.parse
 import urllib.request
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 
 def load(pattern):
@@ -677,6 +678,9 @@ DEFAULTS = {
     "per_post": False,
     "per_day": False,
     "good_neighbours": None,
+    "timezone": "",
+    "fresh_hours": None,
+    "state": None,
 }
 WINDOWS = {
     "day": ("last 24 hours", 1, "Top neighbours of the last 24 hours"),
@@ -942,8 +946,18 @@ def build_activity(data, since, until, top, like_weight, reply_weight, mode, now
     }
 
 
+def owner_zone(name):
+    text = (name or "").strip()
+    if not text:
+        return timezone.utc
+    try:
+        return ZoneInfo(text)
+    except Exception as exc:
+        raise SystemExit(f"Unknown timezone: {name}") from exc
+
+
 def suggest_good_neighbours(activity, neighbours, limit=5, top=10):
-    """Up to five people from the Likes & Reposts table who are not on the list."""
+    """Up to five people from Flowers who are not already good neighbours."""
     ids, names = good_neighbour_ids(neighbours or [])
     picked = []
     for row in activity["interactions"][:top]:
@@ -973,8 +987,7 @@ def on_post_line(text):
     return f"↳ on your post: “{text}”"
 
 
-def write_chat_report(activity, path, handle, since, now, label, top=10, items_per_user=3,
-                      thanks=None):
+def write_chat_report(activity, path, handle, since, now, label, top=10, items_per_user=3):
     end = now.astimezone(timezone.utc)
     start = since.astimezone(timezone.utc)
     totals = activity["totals"]
@@ -999,7 +1012,7 @@ def write_chat_report(activity, path, handle, since, now, label, top=10, items_p
     if not rows:
         lines.append("No replies, likes, or reposts in this stretch.")
     else:
-        lines += ["### Likes & Reposts",
+        lines += ["### 💐 Flowers from your neighbours",
                   "| User | Replies | Likes | Reposts |",
                   "|---|---|---|---|"]
         for row in rows:
@@ -1012,29 +1025,6 @@ def write_chat_report(activity, path, handle, since, now, label, top=10, items_p
         more_rows = len(activity["interactions"]) - len(rows)
         if more_rows:
             lines.append(f"\n+{more_rows} more people")
-    lines.append("")
-    threads = activity["threads"][:top]
-    if not threads:
-        lines.append("No replies or quote posts in this stretch.")
-    else:
-        lines.append("### Replies & Quote posts")
-        for thread in threads:
-            lines.append(f"- {user_markdown(thread)}")
-            shown = thread["items"][:items_per_user]
-            for item in shown:
-                kind = "Reply" if item["kind"] == "reply" else "Quote"
-                state = "Replied" if item["replied"] else "Not replied yet"
-                lines.append(
-                    f"  - **{kind}** [“{item['text']}”]({item['url']}) · "
-                    f"{ago(item['created_at'], now)} · {state}"
-                )
-                lines.append(f"    - {on_post_line(item['on_text'])}")
-            extra = len(thread["items"]) - len(shown)
-            if extra:
-                lines.append(f"  - +{extra} more")
-        more_people = len(activity["threads"]) - len(threads)
-        if more_people:
-            lines.append(f"- +{more_people} more people")
     lines.append("")
     catch = activity["catch_up"]
     if not catch:
@@ -1062,7 +1052,34 @@ def write_chat_report(activity, path, handle, since, now, label, top=10, items_p
                 f"[Read post]({person['latest_url']})"
             )
     lines.append("")
-    lines.append("### Thank your neighbours on X")
+    threads = activity["threads"][:top]
+    if not threads:
+        lines.append("No replies or quote posts in this stretch.")
+    else:
+        lines.append("### 👋 Greetings from your neighbours")
+        for thread in threads:
+            lines.append(f"- {user_markdown(thread)}")
+            shown = thread["items"][:items_per_user]
+            for item in shown:
+                kind = "Reply" if item["kind"] == "reply" else "Quote"
+                state = "Replied" if item["replied"] else "Not replied yet"
+                lines.append(
+                    f"  - **{kind}** [“{item['text']}”]({item['url']}) · "
+                    f"{ago(item['created_at'], now)} · {state}"
+                )
+                lines.append(f"    - {on_post_line(item['on_text'])}")
+            extra = len(thread["items"]) - len(shown)
+            if extra:
+                lines.append(f"  - +{extra} more")
+        more_people = len(activity["threads"]) - len(threads)
+        if more_people:
+            lines.append(f"- +{more_people} more people")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(lines) + "\n")
+
+
+def write_thanks(path, thanks):
+    lines = ["### Thank your neighbours on X", ""]
     if thanks:
         lines.append(thanks["text"])
         lines.append("")
@@ -1175,7 +1192,7 @@ def render_report(activity, path, handle, since, now, label, top=10, thanks=None
             _draw.text((margin + 16, y + 8), title, font=section_font, fill=(255, 255, 255))
         add(56, paint)
 
-    section("Likes & Reposts", rose)
+    section("Flowers from your neighbours", rose)
 
     def table_head(_draw, _img, y):
         _draw.rectangle((margin, y, width - margin, y + 36), fill=(248, 250, 252))
@@ -1208,7 +1225,48 @@ def render_report(activity, path, handle, since, now, label, top=10, thanks=None
             _draw.text((inner * 0.86 + margin, y + 14), str(row["reposts"]), font=body_font, fill=ink)
         add(48, paint_row)
 
-    section("Replies & Quote posts", blue)
+    section("Catch up with your good neighbours", green)
+
+    def catch_intro(_draw, _img, y):
+        if activity.get("has_good_neighbours"):
+            text = "Latest original posts from your good neighbours"
+        else:
+            text = "Add people to your good neighbours list to keep up with them here."
+        _draw.text((margin, y), text, font=body_font, fill=muted)
+
+    add(28, catch_intro)
+    if not activity["catch_up"]:
+        def empty_catch(_draw, _img, y):
+            if activity.get("has_good_neighbours"):
+                text = "No recent original posts from your good neighbours."
+            else:
+                text = "No one to catch up with in this window."
+            _draw.text((margin, y), text, font=body_font, fill=muted)
+        add(28, empty_catch)
+    for person in activity["catch_up"]:
+        latest = person["latest"]
+        text = snippet(latest.get("text")) if latest else "No latest post saved."
+        lines = wrap_text(dummy, text, body_font, inner - 70)
+        block_h = 36 + 22 * len(lines) + 8
+
+        def paint_catch(_draw, img, y, person=person, lines=lines, latest=latest):
+            avatar = fetch_avatar(person["user"], os.path.join(os.path.dirname(path), ".avatar_cache"), 36)
+            img.paste(avatar, (margin, y), avatar)
+            handle_x = draw_name(_draw, margin + 48, y, person, name_font) + 8
+            _draw.text((handle_x, y + 2), "@" + person["username"], font=body_font, fill=muted)
+            if person["stranger"]:
+                mark_x = handle_x + dummy.textlength("@" + person["username"] + " ", font=body_font)
+                _draw.text((mark_x, y + 2), "?", font=small_font, fill=orange)
+            text_y = y + 28
+            for row in lines:
+                _draw.text((margin + 48, text_y), row, font=body_font, fill=ink)
+                text_y += 22
+            if latest:
+                when = ago(ts(latest["created_at"]), now)
+                _draw.text((margin + 48, text_y), when + "   ·   Read post", font=small_font, fill=blue)
+        add(block_h + 18, paint_catch)
+
+    section("Greetings from your neighbours", blue)
     if not activity["threads"]:
         def empty_threads(_draw, _img, y):
             _draw.text((margin, y), "No replies or quote posts in this window.", font=body_font, fill=muted)
@@ -1252,47 +1310,6 @@ def render_report(activity, path, handle, since, now, label, top=10, thanks=None
                 _draw.text((margin + 66, text_y), meta, font=small_font, fill=state_color)
             add(block_h, paint_item)
 
-    section("Catch up with your good neighbours", green)
-
-    def catch_intro(_draw, _img, y):
-        if activity.get("has_good_neighbours"):
-            text = "Latest original posts from your good neighbours"
-        else:
-            text = "Add people to your good neighbours list to keep up with them here."
-        _draw.text((margin, y), text, font=body_font, fill=muted)
-
-    add(28, catch_intro)
-    if not activity["catch_up"]:
-        def empty_catch(_draw, _img, y):
-            if activity.get("has_good_neighbours"):
-                text = "No recent original posts from your good neighbours."
-            else:
-                text = "No one to catch up with in this window."
-            _draw.text((margin, y), text, font=body_font, fill=muted)
-        add(28, empty_catch)
-    for person in activity["catch_up"]:
-        latest = person["latest"]
-        text = snippet(latest.get("text")) if latest else "No latest post saved."
-        lines = wrap_text(dummy, text, body_font, inner - 70)
-        block_h = 36 + 22 * len(lines) + 8
-
-        def paint_catch(_draw, img, y, person=person, lines=lines, latest=latest):
-            avatar = fetch_avatar(person["user"], os.path.join(os.path.dirname(path), ".avatar_cache"), 36)
-            img.paste(avatar, (margin, y), avatar)
-            handle_x = draw_name(_draw, margin + 48, y, person, name_font) + 8
-            _draw.text((handle_x, y + 2), "@" + person["username"], font=body_font, fill=muted)
-            if person["stranger"]:
-                mark_x = handle_x + dummy.textlength("@" + person["username"] + " ", font=body_font)
-                _draw.text((mark_x, y + 2), "?", font=small_font, fill=orange)
-            text_y = y + 28
-            for row in lines:
-                _draw.text((margin + 48, text_y), row, font=body_font, fill=ink)
-                text_y += 22
-            if latest:
-                when = ago(ts(latest["created_at"]), now)
-                _draw.text((margin + 48, text_y), when + "   ·   Read post", font=small_font, fill=blue)
-        add(block_h + 18, paint_catch)
-
     section("Thank your neighbours on X", (180, 83, 9))
     thank_text = (thanks or {}).get("text") or "Thank you to my X neighbours."
     thumb = None
@@ -1328,12 +1345,14 @@ def render_report(activity, path, handle, since, now, label, top=10, thanks=None
     image.save(path, optimize=True)
 
 
-def thank_you_post(names):
-    shown = [name for name in names if name][:5]
-    mentions = " ".join(shown)
-    text = f"Thank you to my X neighbours — {mentions}."
-    if len(text) > 280:
-        text = text[:277].rstrip() + "…"
+def thank_you_post(when, zone):
+    """Thank-you text with the report date. It never names anyone."""
+    local = when.astimezone(zone)
+    day = local.strftime("%B %-d")
+    text = (
+        f"My X neighbours circle, {day}! Thank you all for being here "
+        "and taking the time to reply to my posts. I really appreciate it!"
+    )
     return text, "https://x.com/intent/post?text=" + urllib.parse.quote(text)
 
 
@@ -1395,6 +1414,11 @@ def main():
     parser.add_argument("--per-day", dest="per_day", action=argparse.BooleanOptionalAction,
                         default=None, help="add a per-day breakdown to the markdown")
     parser.add_argument("--days", type=int, help="custom period length in days")
+    parser.add_argument("--since", help="UTC ISO start for a fresh report since the last one")
+    parser.add_argument("--state", help="path to state.json in the bot store")
+    parser.add_argument("--timezone", help="IANA timezone for the thank-you date, such as Europe/Stockholm")
+    parser.add_argument("--fresh-hours", dest="fresh_hours", type=float,
+                        help="owner override for how many hours a report stays fresh")
     parser.add_argument("--first-run", action="store_true",
                         help="report the last first_run_days and always draw the picture")
     parser.add_argument("--report-card", action="store_true",
@@ -1465,7 +1489,14 @@ def main():
     me.update({k: v for k, v in stored.items() if v not in (None, "")})
     output = {}
     mode = cfg["report"]
-    if args.first_run:
+    if args.since:
+        since_at = ts(args.since)
+        if since_at.tzinfo is None:
+            since_at = since_at.replace(tzinfo=timezone.utc)
+        if since_at >= now:
+            parser.error("--since must be earlier than --now")
+        windows = [("fresh", since_at, "Since your last report")]
+    elif args.first_run:
         first_days = int(cfg.get("first_run_days") or 2)
         if first_days < 1:
             parser.error("first_run_days must be at least 1")
@@ -1482,18 +1513,16 @@ def main():
                 (name, WINDOWS[name]) for name in cfg["windows"]
             )
         ]
-    for key, days, label in windows:
-        since = now - timedelta(days=days)
+    zone = owner_zone(cfg.get("timezone"))
+    for key, span, label in windows:
+        since = span if isinstance(span, datetime) else now - timedelta(days=span)
         activity = build_activity(
             data, since, now, cfg["top"], like_weight, reply_weight, mode, now,
             good_neighbours=neighbours)
         md_path = os.path.join(args.out, f"report_{key}.md")
         png_path = os.path.join(args.out, f"report_{key}.png")
-        thanked = ["@" + row["username"] for row in activity["interactions"][:5]]
-        if not thanked:
-            thanked = ["@" + person["username"] for person in activity["catch_up"][:5]]
-        text, intent = thank_you_post(thanked)
-        thanks = {"text": text, "intent": intent}
+        text, intent = thank_you_post(now, zone)
+        thanks = {"text": text, "intent": intent, "link_label": "Post your thank-you"}
         draw_picture = args.picture is not False and not args.no_image
         picture_path = None
         if draw_picture:
@@ -1503,10 +1532,11 @@ def main():
                 rings=cfg["rings"], show_names=cfg["show_names"],
                 subtitle=SUBTITLES["both"].get(key, f"Top neighbours, {label.lower()}"),
                 theme=cfg["theme"])
+        thanks_path = os.path.join(args.out, f"report_{key}_thanks.md")
         write_chat_report(
             activity, md_path, cfg["handle"], since, now, label,
-            top=cfg["top"], items_per_user=int(cfg.get("items_per_user") or 3),
-            thanks=thanks)
+            top=cfg["top"], items_per_user=int(cfg.get("items_per_user") or 3))
+        write_thanks(thanks_path, thanks)
         if cfg["per_post"] or cfg["per_day"]:
             with open(md_path, "a", encoding="utf-8") as fh:
                 fh.write("\n" + extra_sections(
@@ -1522,26 +1552,43 @@ def main():
             "likes": activity["totals"]["likes"],
             "reposts": activity["totals"]["reposts"],
             "catch_up": ["@" + person["username"] for person in activity["catch_up"]],
+            "since": since.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "until": now.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "report_md": md_path,
+            "thanks_md": thanks_path,
             "thank_you": thanks,
+            "messages": [
+                {"part": "sections_1_to_3", "text_file": md_path, "images": []},
+                {
+                    "part": "section_4",
+                    "text_file": thanks_path,
+                    "text": thanks["text"],
+                    "link_label": "Post your thank-you",
+                    "intent": thanks["intent"],
+                    "images": [picture_path] if picture_path else [],
+                },
+            ],
         }
-        if key in ("day", "first"):
+        if cfg.get("state"):
+            import report_state
+            report_state.record(
+                cfg["state"], at=now, since=since, until=now,
+                replies=activity["totals"]["replies"],
+                quotes=activity["totals"]["quotes"],
+                likes=activity["totals"]["likes"],
+                reposts=activity["totals"]["reposts"],
+                override=cfg.get("fresh_hours"))
+        if key != "week":
             suggestions = suggest_good_neighbours(
                 activity, neighbours, top=cfg["top"])
             if suggestions:
                 output[key]["suggest_good_neighbours"] = suggestions
                 output[key]["add_question"] = {
                     "label": "⭐ Add",
-                    "prompt": "Want to add any of these to your good neighbours?",
+                    "prompt": "Add to good neighbours?",
                     "options": [person["label"] for person in suggestions],
                     "free_text": "Or name anyone else",
                 }
-                lines = ["", "⭐ Add", "",
-                         "Want to add any of these to your good neighbours? "
-                         "Pick any, or name someone else."]
-                lines += [f"- {person['label']}" for person in suggestions]
-                with open(md_path, "a", encoding="utf-8") as fh:
-                    fh.write("\n".join(lines) + "\n")
         if args.report_card and not args.no_image:
             output[key]["report_png"] = png_path
         if picture_path:

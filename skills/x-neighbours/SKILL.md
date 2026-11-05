@@ -18,7 +18,7 @@ You do the X reads. `x_neighbours.py` only reads JSON you saved. Follow every ru
 - Refresh follower and following lists **at most once a week**. Reuse `data/followers_*.json` and `data/following_*.json` when they are under 7 days old.
 - This run is **read-only**. Never follow, unfollow, like, unlike, repost, bookmark, post, reply, or DM. If they ask you to follow someone or to post the picture, say this run stays read-only and they can do that in the X app.
 - Leave bot accounts out. `@grok` is already in `exclude`. They can name other handles to skip anytime.
-- Never commit user data. Do not commit or push `config.json`, `data/`, `.avatar_cache/`, `report_*.md`, `report_*.png`, `x_neighbours_*.png`, or `good_neighbours.json`. Do not open a pull request with those files. Do not run `git add .`. For a normal run, commit nothing. `git pull` is fine: those paths are gitignored. The good neighbours list lives in this bot's own store, outside the repo.
+- Never commit user data. Do not commit or push `config.json`, `data/`, `.avatar_cache/`, `report_*.md`, `report_*.png`, `x_neighbours_*.png`, `good_neighbours.json`, or `state.json`. Do not open a pull request with those files. Do not run `git add .`. For a normal run, commit nothing. `git pull` is fine: those paths are gitignored. The good neighbours list and the report clock live in this bot's own store, outside the repo.
 - Stay on this task. Do not read their DMs, bookmarks, home timeline, or other people's accounts to fill out the picture.
 - If the X tools are missing, ask the owner to connect X in this chat. Do not ask for a password, API key, or bearer token, and do not open x.com to log them in.
 
@@ -30,9 +30,9 @@ The only step is to make sure **one** X account is connected. If the X tools are
 
 Then do the rest with the defaults. Do not ask setup questions.
 
-1. `get_users_me` with `user.fields=id,name,username,description,profile_image_url`. That is the account. Write `handle` and `user_id` into `config.json` copied from `config.example.json`. Leave every other key as in the example.
+1. `get_users_me` with `user.fields=id,name,username,description,profile_image_url`. That is the account. Write `handle` and `user_id` into `config.json` copied from `config.example.json`. If you know their timezone, set `timezone` to an IANA name such as `Europe/Stockholm`. Leave `fresh_hours` unset unless they ask for a fixed interval. Leave every other key as in the example.
 2. Clone or `git pull --ff-only` this repo, install Pillow, and fetch only the last `first_run_days` from config (default **2 days**, 48 hours). Use the tool calls below with that `START`. Do not fetch a full week on the first run. Never commit `config.json` or `data/`.
-3. Run `python3 x_neighbours.py --now <T> --first-run --good-neighbours <path>` with the store path below. Send `report_first.md`. Right after that text, send the house-framed picture and the thank-you link from the report (“Post your thank-you”). Do not post it yourself. If stdout has `add_question`, also send that one card (see Good neighbours). Do not ask again in prose.
+3. Run `python3 x_neighbours.py --now <T> --first-run --good-neighbours <path> --state <state path>`. Send the report as two messages, exactly as in “How to send a report”. Do not post the thank-you yourself. If stdout has `add_question`, send that one card after those two messages. Do not ask again in prose.
 4. Create both routines with no question: every day at 9:00 AM (last 24 hours, picture included), and Mondays at 9:00 AM (last 7 days, reusing daily files, picture included). Use their timezone, or UTC if you don't know it.
 5. Close with one line: daily and Monday reports are set; anything can be changed by asking (time, period, top N, likes only, replies only, per post, per day); say 'add @someone to my good neighbours' to keep up with them here.
 
@@ -137,22 +137,34 @@ Overwrite those names as you go. Do not delete the previous files until the new 
 ## Run the script
 
 ```bash
-python3 x_neighbours.py --now <T> --good-neighbours <path>
+python3 x_neighbours.py --now <T> --good-neighbours <path> --state <state path>
 ```
 
-`<path>` is the store file in Good neighbours. It reads `config.json` and `data/`. For each window it writes `report_<window>.md`, the chat report, with `[@handle](https://x.com/handle)` links, and `x_neighbours_<window>.png`, the house-framed picture. The report card PNG is off unless you pass `--report-card`. Stdout is JSON with totals, `catch_up`, `picture`, and `thank_you` (`text` under 280 characters, and `intent` as `https://x.com/intent/post?text=...`). A day window and the first run also include `suggest_good_neighbours` and `add_question` when there is someone to offer. `--first-run` uses `first_run_days` (default 2). A missing good neighbours file is an empty list. `--no-picture` skips the image; the default is to draw it every time.
+`<path>` is `good_neighbours.json` in the store. `<state path>` is `state.json` beside it. The script reads `config.json` and `data/`. For each window it writes `report_<window>.md` (sections 1–3) and `report_<window>_thanks.md` (section 4), plus `x_neighbours_<window>.png`, the house-framed picture. The report card PNG is off unless you pass `--report-card`. Stdout is JSON with totals, `catch_up`, `picture`, `thank_you`, and `messages`. `thank_you.text` is the thank-you sentence. It names no one. `thank_you.intent` is the post link. A day window, a first run, and a fresh on-demand report include `suggest_good_neighbours` and `add_question` when someone in Flowers is not on the list yet. A week window does not. `--first-run` uses `first_run_days` (default 2). A missing good neighbours file is an empty list. `--no-picture` skips the image; the default is to draw it every time. `--since <ISO>` is a report that starts at that time.
 
 A custom period is `--days 14` (writes `report_custom`). Likes only, replies only, per post, and per day are `--report likes`, `--report replies`, `--per-post`, and `--per-day`. They re-read `data/` and do not need more X calls. Weight flags exist. Keep those values in config only, and never print them.
 
-## What you send the owner
+## How to send a report
 
-Send the chat markdown. That is the report. Right after the text, send the house-framed picture and the thank-you link in “Thank your neighbours on X”. Do not post it yourself. Do not send a report card unless they asked.
+Send exactly two chat messages, in this order. Then, only if `add_question` is present, one question card. Do not post, like, or DM anyone. Do not send a report card unless they asked.
 
-The markdown order is: Likes & Reposts (User, Replies, Likes, Reposts; replies means replies plus quote posts; top 10; no Total column), then Replies & Quote posts, then Catch up with your good neighbours, then Thank your neighbours on X. ⭐ next to a name means they are on the good neighbours list. The legend “⭐ = good neighbour” appears only when that list is non-empty. 👤? means the owner does not follow that person. Do not add a followed/unfollowed split, a follow-back list, or impressions.
+**Message 1 — sections 1 to 3.** Send the text of `report_<window>.md` and nothing else. The `images` field of this message is empty. Do not attach the picture here.
 
-On a daily report and on the first run, if `add_question` is present, send one multi-select question card after the picture. The short label is **⭐ Add**. The options are the `label` values (`⭐ @handle`), and there is one free-text option (“Or name anyone else”). Do not also paste that list as links, and do not look anyone else up on X to invent suggestions. Do not send the card on the Monday report. When they pick someone, add them with `good_neighbours.py`. Use the id and name already in `suggest_good_neighbours`. Call `get_users_by_username` only for a handle that is not in that list.
+The sections, in order, are:
 
-Use the names from this run. Do not post, like, or DM anyone.
+1. **💐 Flowers from your neighbours** — User, Replies, Likes, Reposts. Replies means replies plus quote posts. Top 10, biggest supporters first. No Total column.
+2. **Catch up with your good neighbours**
+3. **👋 Greetings from your neighbours**
+
+⭐ next to a name means they are on the good neighbours list. The legend “⭐ = good neighbour” appears only when that list is non-empty. 👤? means the owner does not follow that person. Do not add a followed/unfollowed split, a follow-back list, or impressions.
+
+**Message 2 — section 4, one message, picture included.** This is a single chat message. Put the house-framed PNG in that message's `images` field. The path is `messages[1].images[0]`, the same file as `picture`. The text of the same message is `thank_you.text`, then a blank line, then the link `thank_you.intent` with the label “Post your thank-you”.
+
+The picture belongs inside this message. Do not send the picture as its own message. Do not send the picture as a later attachment. Do not send the text first and the picture second. If the owner cannot see the picture in the same bubble as the thank-you sentence, the send was wrong.
+
+Do not post the thank-you yourself.
+
+**Then the ⭐ Add card, or nothing.** If `add_question` is absent, stop. If it is present, send one multi-select question card after message 2. The short label is **⭐ Add**. The prompt is “Add to good neighbours?”. The options are the `label` values (`⭐ @handle`), in Flowers order, at most five, and only people who are not on the list. There is one free-text option (“Or name anyone else”). Do not also paste that list into message 1 or message 2. Do not look anyone else up on X to invent suggestions. Do not send the card on the Monday report. When they pick someone, add them with `good_neighbours.py`. Use the id and name already in `suggest_good_neighbours`. Call `get_users_by_username` only for a handle that is not in that list.
 
 ## Routines
 
@@ -168,8 +180,8 @@ Both run at 9:00 AM in the owner's timezone. Count every X call from both toward
 4. Fetch posts and mentions from `START`. Save them as `posts_day_1`, `posts_day_2`, … and `mentions_day_1`, ….
 5. Fetch likers, reposters, and quote posts for that day with the budget rule above. Skip files you already have.
 6. Fetch latest posts (`latest_<userid>.json`) for each good neighbour, or for the ranked ten when the list is empty.
-7. Run `python3 x_neighbours.py --now <T> --windows day --good-neighbours <path>`.
-8. Send `report_day.md`. Right after the text, send `x_neighbours_day.png` and the thank-you link. Do not post it. Do not send a report card. If stdout has `add_question`, send that one ⭐ Add card. If they pick someone, add them with `good_neighbours.py`.
+7. Run `python3 x_neighbours.py --now <T> --windows day --good-neighbours <path> --state <state path>`.
+8. Send the report with “How to send a report”: message 1 is `report_day.md` with no image, message 2 is the thank-you text and link with `x_neighbours_day.png` in that message's `images` field. Then the ⭐ Add card if `add_question` is present. If they pick someone, add them with `good_neighbours.py`.
 
 Leave the files in place. Later reports filter them by time.
 
@@ -181,16 +193,18 @@ If today's `posts_day_1.json` is missing, do the daily run first.
 2. Reuse today's posts, mentions, likes, reposts, quotes, and latest-post files. Do not request the last 24 hours again.
 3. If saved posts already cover `T` minus 7 days through `T` minus 24 hours, do not page posts or mentions for that span. Fetch only missing liker, reposter, and quote files for older posts whose count is 3 or more.
 4. If that span is missing, fetch it once: `get_users_posts` and `get_users_mentions` with `start_time` of `T` minus 7 days and `end_time` of `T` minus 24 hours. Save as `posts_week_1`, … and `mentions_week_1`, …. Then the same 3-or-more rule for likes, reposts, and quotes. Refresh `latest_<userid>.json` for each good neighbour, or for the catch-up ten when the list is empty, and only if today's file is missing.
-5. Run `python3 x_neighbours.py --now <T> --windows week --good-neighbours <path>`. It writes the house-framed picture and the thank-you link. Do not send the ⭐ Add card on this report.
-6. Send `report_week.md`. Right after the text, send `x_neighbours_week.png` and the thank-you link, as something they can post. Do not post it. Do not send a report card unless they asked for `--report-card`.
+5. Run `python3 x_neighbours.py --now <T> --windows week --good-neighbours <path> --state <state path>`. Do not send the ⭐ Add card on this report.
+6. Send the report with “How to send a report”: message 1 is `report_week.md` with no image, message 2 is the thank-you text and link with `x_neighbours_week.png` in that message's `images` field. Do not post it. Do not send a report card unless they asked for `--report-card`.
 
 If the Monday calls would pass about 1,000 for the day, send the day picture you already have, fetch the older posts and mentions, and stop the liker lists when the cap is close. Tell the owner which older posts were left out.
 
 ## Good neighbours
 
-The list is personal. Keep it outside the repo, in this bot's own persistent store:
+The list is personal. Keep it outside the repo, in this bot's own persistent store, next to the report clock:
 
 `/cursor/stores/<store-id>/x-neighbours/good_neighbours.json`
+
+`/cursor/stores/<store-id>/x-neighbours/state.json`
 
 `<store-id>` is this bot's store, the directory under `/cursor/stores/` that belongs to this bot. Create `x-neighbours` when you add the first person. Pass that path as `--good-neighbours` on every run. A missing file is an empty list. Never commit the file.
 
@@ -229,4 +243,26 @@ Adding someone does not follow them. This run stays read-only on X.
 
 When the list is non-empty, Catch up with your good neighbours shows only those people, each one's latest original post, and skips anyone with no recent original post. They are not inserted into the other sections just because they are on the list. When the list is empty, Catch up stays the top 10 from the period and the report adds: “Add people to your good neighbours list to keep up with them here.”
 
-After a daily report, and after the first run, the script lists up to five people from the Likes & Reposts table who are not on the list yet. They are in `suggest_good_neighbours` and in the ⭐ Add footer. Send one multi-select card, short label **⭐ Add**, option labels `⭐ @handle`, plus a free-text option. A weekly report does not ask. The first-run closing line mentions the list once, besides that card.
+After a daily report, a first run, and a fresh on-demand report, the script lists up to five people from Flowers who are not on the list yet, in that table's order. They are in `suggest_good_neighbours`. If nobody is left, `add_question` is absent and you skip the card. Send one multi-select card, short label **⭐ Add**, option labels `⭐ @handle`, plus a free-text option. A weekly report does not ask. The first-run closing line mentions the list once, besides that card.
+
+## When they just say hello
+
+If the owner opens the chat or sends a greeting with no specific request (no report, no picture, no list change, no settings), check freshness and do nothing else until they answer.
+
+```bash
+python3 report_state.py --file <state path> check
+```
+
+If `config.json` has `fresh_hours`, add `--hours` after `check`. Otherwise leave it off and the script estimates from the last report.
+
+If `ask` is false, reply with one line that the last report is still fresh (`age_label`) and stop. Do not fetch.
+
+If `ask` is true, send one yes/no question card with `question` and stop. Do not fetch, and do not send a report, until they answer. The usual question is “Your last report was 2 hours ago. Want a fresh one?”
+
+If they say no, stop. If they say yes, run a fresh report. `START` is `fetch_since` from that check (the end of the last report, or 24 hours ago when there is no report, and never more than 7 days). Pass it as `--since`. Use the same read budget as a daily run when the gap is under 24 hours, and the days-2-to-7 budget when it is longer. Then send the report with “How to send a report” and pass `--state` so the clock updates.
+
+```bash
+python3 x_neighbours.py --now <T> --since <fetch_since> --good-neighbours <path> --state <state path>
+```
+
+The estimate, unless `fresh_hours` is set: 60 or more replies, quote posts, likes, and reposts per 24 hours is a big account (ask after 1 hour); 15 to 59 is medium (ask after 3 hours); under 15 is small (ask after 8 hours).
