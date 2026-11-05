@@ -1,6 +1,6 @@
 # X Neighbours — bot runbook
 
-You run this for the owner of this bot. It ranks who liked and replied to them on X over the last day and the last week, tags each person, suggests follow-backs, and draws a picture: their avatar in the centre, their closest neighbours in rings.
+You run this for the owner of this bot. It shows who replied, quoted, liked, and reposted, then who to catch up with. The ring picture is separate, with a house frame around every avatar, and only some Mondays include it.
 
 You do the X reads. `x_neighbours.py` only reads JSON you saved. Follow every rule in this file on every run.
 
@@ -8,9 +8,9 @@ You do the X reads. `x_neighbours.py` only reads JSON you saved. Follow every ru
 
 - Stay within about **1,000 X reads a day** and **30 a minute**. Send about 12 calls, then pause. Count as you go. If the next batch would pass 1,000, stop, render what you have, and tell the owner which posts you skipped.
 - Refresh follower and following lists **at most once a week**. Reuse `data/followers_*.json` and `data/following_*.json` when they are under 7 days old.
-- This run is **read-only**. Never follow, unfollow, like, unlike, repost, bookmark, post, reply, or DM. Follow-back suggestions are text for the owner. If they ask you to follow those people or to post the picture, say this run stays read-only and they can do that in the X app.
-- Leave bot accounts out. `@grok` is already in `exclude`. After the first picture, they can name other handles to skip.
-- Never commit user data. Do not commit or push `config.json`, `data/`, `.avatar_cache/`, `report_*.md`, or `x_neighbours_*.png`. Do not open a pull request with those files. Do not run `git add .`. For a normal run, commit nothing. `git pull` is fine: those paths are gitignored.
+- This run is **read-only**. Never follow, unfollow, like, unlike, repost, bookmark, post, reply, or DM. If they ask you to follow someone or to post the picture, say this run stays read-only and they can do that in the X app.
+- Leave bot accounts out. `@grok` is already in `exclude`. They can name other handles to skip anytime.
+- Never commit user data. Do not commit or push `config.json`, `data/`, `.avatar_cache/`, `report_*.md`, `report_*.png`, or `x_neighbours_*.png`. Do not open a pull request with those files. Do not run `git add .`. For a normal run, commit nothing. `git pull` is fine: those paths are gitignored.
 - Stay on this task. Do not read their DMs, bookmarks, home timeline, or other people's accounts to fill out the picture.
 - If the X tools are missing, ask the owner to connect X in this chat. Do not ask for a password, API key, or bearer token, and do not open x.com to log them in.
 
@@ -18,62 +18,17 @@ Weights are a quiet setting. The meaning of `like_weight` and `reply_weight` liv
 
 ## First run
 
-Ask **only** whether X is connected. If the X tools are missing, ask them to tap **Connect** on the X card in this chat. Do not ask for a password, API key, or bearer token, and do not open x.com to log them in. Stop until X is connected.
+The only step is to make sure **one** X account is connected. If the X tools are missing, ask them to tap **Connect** on the X card in this chat. Do not ask for a password, API key, or bearer token, and do not open x.com to log them in. Stop until that one account is connected.
 
-Then generate the report immediately with the defaults. Do not ask about theme, rings, windows, weights, or who to exclude.
+Then do the rest with the defaults. Do not ask setup questions.
 
-1. Call `get_users_me` with `user.fields=id,name,username,description,public_metrics,profile_image_url`. That handle and id are the account this run is for, because followers and following come from that login. Do not point the script at a different user id. Do not wait for them to confirm it.
-2. Clone or update the repo, install Pillow, and copy the example config. Write only `handle` and `user_id`. Leave every other key as it is in `config.example.json`.
+1. `get_users_me` with `user.fields=id,name,username,description,profile_image_url`. That is the account. Write `handle` and `user_id` into `config.json` copied from `config.example.json`. Leave every other key as in the example.
+2. Clone or `git pull --ff-only` this repo, install Pillow, and fetch the last 7 days with the tool calls below. Never commit `config.json` or `data/`.
+3. Run `python3 x_neighbours.py --now <T>` and send `report_week.png` plus the chat markdown.
+4. Create both routines with no question: every day at 9:00 AM, and Mondays at 9:00 AM, in their timezone (X profile timezone if you know it, otherwise UTC).
+5. End with one short line: any setting — time, top N, picture theme, or an extra report such as likes only, replies only, per post, per day, or a custom period — can be changed anytime just by asking.
 
-```bash
-git clone https://github.com/Skybatan/x-neighbours.git
-cd x-neighbours
-python3 -m pip install -r requirements.txt
-cp config.example.json config.json
-```
-
-If the repo is already there, `git status` first. Unstage anything under `data/` or named `config.json` if it was staged. Then `git pull --ff-only`. Do not commit local files to make the pull succeed.
-
-Defaults you are keeping: rings 3, theme `midnight`, names on, impressions on, window `week`, exclude `grok`, top 10, report `both`, per-post off, per-day off. Store `user_id` as a string.
-
-3. Fetch the last 7 days (the tool calls below) and run:
-
-```bash
-python3 x_neighbours.py --now <T>
-```
-
-4. Send `x_neighbours_week.png` and the short summary. The picture goes out before any settings question.
-5. Create **both** routines below, with no question. Use 9:00 AM in the owner's timezone. If you do not know it, use the timezone on their X profile when that is present, otherwise UTC, and name the zone you used in the settings message. Do not wait to ask.
-6. After the picture, in **one** message, list every setting below with its current default. Say they can change any of them, or turn either routine off, just by asking. Do not send these as separate questions, and do not block the picture on an answer.
-
-Use this shape, in your own words, with these defaults:
-
-- Theme: midnight. Also light or sunset.
-- Rings: 3 (1 to 4; the rings hold 8, then 14, then 20, then 26).
-- Names on the picture: on.
-- Impressions: on. Totals come from their own posts. They can turn them off.
-- Window for a manual run: the last 7 days.
-- Leave out: @grok. They can name other handles.
-- Table length: 10.
-- Scoring weights: a quiet setting, kept off the picture and out of the summary. They can ask to change it. Do not print the numbers.
-- More reports, only when they ask: likes only, replies only, per post (who liked or replied to each post), and per day.
-- Daily routine: already on, every day at 9:00 AM, last 24 hours.
-- Weekly routine: already on, Mondays at 9:00 AM, last 7 days, and that is when follower lists refresh.
-
-To check the install on the fictional sample, without sending that picture as if it were theirs:
-
-```bash
-python3 x_neighbours.py --help
-python3 x_neighbours.py \
-  --config config.example.json \
-  --handle samplecreator \
-  --user-id 900001 \
-  --data examples/sample \
-  --out /tmp/x-neighbours-sample \
-  --now 2026-11-04T18:00:00Z
-```
-
-You should get a three-ring PNG. The inner ring starts with `@nova_lane`. Those accounts are made up.
+Do not send a settings list.
 
 ## Each run
 
@@ -107,7 +62,7 @@ Call the tools by these names on the owner's X connection. Page with `pagination
 
 Save as `posts_1`, `posts_2`, and so on. On a scheduled run, use `posts_day_*` or `posts_week_*` as the Routines section says. The script loads every `posts_*.json`.
 
-`public_metrics` on these posts includes `impression_count` for the owner. That is the impressions figure. Do not make another call for it.
+Also request `conversation_id` in `post.fields` so a later reply from the owner can be matched to the item.
 
 ### 2. Mentions
 
@@ -142,7 +97,23 @@ Save as `likes_<postid>`. If `meta.next_token` is present and the day's budget a
 
 Skip a post you already saved likers for earlier the same day.
 
-### 4. Followers and following
+### 4. Reposts and quote posts
+
+Same budget rule as likes, using `repost_count` and `quote_count` from the post's `public_metrics`. Last 24 hours: every post with that count above 0. Days 2–7: only counts of 3 or more. Skip a file you already saved.
+
+`get_posts_reposted_by` — `id` the post id, `max_results` 100, `user.fields=username,name,description,public_metrics,profile_image_url`. Save as `reposts_<postid>`.
+
+`get_posts_quoted_posts` — `id` the post id, `max_results` 100, `post.fields=created_at,author_id,text,referenced_tweets,conversation_id`, `expansions=author_id`, `user.fields=username,name,description,profile_image_url`. Save as `quotes_<postid>`.
+
+### 5. Latest post for the catch-up list
+
+After the files above are saved, pick at most 10 people with the highest quiet score in config (replies and quotes use `reply_weight`, likes use `like_weight`; do not tell the owner the numbers). For each, one call:
+
+`get_users_posts` — `id` their user id, `max_results` 5, `exclude=retweets`, `post.fields=created_at,text,author_id`, `expansions=author_id`, `user.fields=username,name,profile_image_url`.
+
+Save as `latest_<userid>`. Skip a file saved earlier today. Never more than 10 of these calls.
+
+### 6. Followers and following
 
 Do this only when `data/followers_1.json` or `data/following_1.json` is missing or older than 7 days, and on the weekly run below.
 
@@ -161,44 +132,17 @@ Overwrite those names as you go. Do not delete the previous files until the new 
 python3 x_neighbours.py --now <T>
 ```
 
-It reads `config.json` and `data/`. It writes `report_day.md`, `report_week.md`, `x_neighbours_day.png`, and `x_neighbours_week.png` for the windows in config. Stdout is JSON:
+It reads `config.json` and `data/`. For each window it writes `report_<window>.md` (chat markdown with `[@handle](https://x.com/handle)` links) and `report_<window>.png` (the report card). It does not draw the ring picture unless this is a selected week or you pass `--picture`. Stdout is JSON with totals and `catch_up`. When the picture is included, stdout also has `picture` and `thank_you` (`text` under 280 characters, and `intent` as `https://x.com/intent/post?text=...`).
 
-```json
-{
-  "week": {
-    "likes": [["@handle", 8]],
-    "replies": [["@handle", 4]],
-    "follow_back": ["@handle"],
-    "inner": [["@handle", 17]],
-    "impressions": {
-      "total": 56300,
-      "previous": 40000,
-      "change": 16300,
-      "top": [{"impressions": 15000, "text": "Named the streets after kitchen objects.", "url": "https://x.com/samplecreator/status/8007"}]
-    }
-  }
-}
-```
-
-`likes` and `replies` are raw counts. `follow_back` is people they do not follow. `inner` is the picture order. Do not quote `inner`'s point totals to the owner. Relationship tags (`mutual`, `follows-you`, `you-follow`, `neither`) are in the report tables and the follow-back lines. `impressions` is present when the saved posts include `impression_count`. `previous` and `change` are present only when the previous window is in those files. The numbers above are from the fictional sample.
-
-Flags, when the owner asks: `--handle`, `--user-id`, `--data`, `--out`, `--rings`, `--top`, `--theme`, `--windows day` or `--windows day,week`, `--report likes`, `--report replies`, `--per-post`, `--per-day`, `--no-impressions`, `--show-names`, `--hide-names`, `--exclude`, `--no-image`, `--config`. A plain run stays on the defaults: both rankings, impressions on, no per-post, no per-day, week window, three rings. These modes re-read `data/` and do not need more X calls. Weight flags exist. Keep those values in config only.
+A custom period is `--days 14` (writes `report_custom`). Likes only, replies only, per post, and per day are `--report likes`, `--report replies`, `--per-post`, and `--per-day`. They re-read `data/` and do not need more X calls. Weight flags exist. Keep those values in config only, and never print them.
 
 ## What you send the owner
 
-Send the PNG for each window they asked for, week picture first. Then a short note in your own words:
+Send `report_<window>.png` and the chat markdown. On a week when the picture is included, also send `x_neighbours_week.png` and the thank-you link. Do not post it yourself.
 
-- who liked them most, with the like counts
-- who replied most, with the reply counts
-- total impressions, the change from the previous window when `impressions.previous` is present, and the top 3 posts with their links
-- up to five follow-back suggestions, each with its relationship tag
-- one line if Notes says liker lists were missing or short
+The markdown is the summary: header totals, replies and quote posts with Replied / Not replied yet, the likes and reposts table, and Catch up with a Read post link. 👤? means the owner does not follow that person. Do not add a followed/unfollowed split, a follow-back list, or impressions.
 
-A note shaped like the fictional sample reads: "@pixel_otter liked you the most this week (8) and @nova_lane replied the most (4). Your posts were seen 56,300 times, up 16,300 (41%) from the previous 7 days. Most seen: Named the streets after kitchen objects (15,000), the quiet sketch (12,000), and the blank circle (9,100). Often here, and you don't follow them yet: @pixel_otter (follows you), @moss_radio (neither), @cedar_loop (neither), @drift_paper (follows you), @paper_kite (follows you)."
-
-Use the real names from this run. Do not include the weight settings. Do not post the picture, like anything, or DM anyone.
-
-On the first run, the settings message from the First run section follows this note. On later runs, send the picture and the summary. Repeat the full settings list only when they ask what they can change.
+Use the names from this run. Do not post, like, or DM anyone.
 
 ## Routines
 
@@ -212,9 +156,10 @@ Both run at 9:00 AM in the owner's timezone. Count every X call from both toward
 2. Do not refresh followers or following.
 3. Pick `T`. `START` is `T` minus 24 hours.
 4. Fetch posts and mentions from `START`. Save them as `posts_day_1`, `posts_day_2`, … and `mentions_day_1`, ….
-5. Fetch likers for that day's posts with `like_count` greater than 0. Skip a post that already has `likes_<postid>.json`.
-6. Run `python3 x_neighbours.py --now <T> --windows day`.
-7. Send `x_neighbours_day.png` and the short summary, including impressions.
+5. Fetch likers, reposters, and quote posts for that day with the budget rule above. Skip files you already have.
+6. Fetch at most 10 latest posts (`latest_<userid>.json`).
+7. Run `python3 x_neighbours.py --now <T> --windows day --no-picture`.
+8. Send `report_day.png` and `report_day.md`. Do not include the ring picture.
 
 Leave the files in place. Later reports filter them by time.
 
@@ -223,10 +168,10 @@ Leave the files in place. Later reports filter them by time.
 If today's `posts_day_1.json` is missing, do the daily run first.
 
 1. Refresh followers and following. This is the only day that does.
-2. Reuse today's posts, mentions, and liker files. Do not request the last 24 hours again.
-3. If saved posts already cover `T` minus 7 days through `T` minus 24 hours, do not page posts or mentions for that span. Fetch likers only for older posts with 3 or more likes that do not already have a likes file.
-4. If that span is missing, fetch it once: `get_users_posts` and `get_users_mentions` with `start_time` of `T` minus 7 days and `end_time` of `T` minus 24 hours. Save as `posts_week_1`, … and `mentions_week_1`, …. Then the same liker rule: 3 or more likes, skip files you already have.
-5. Run `python3 x_neighbours.py --now <T> --windows week`.
-6. Send `x_neighbours_week.png` and the short summary, including impressions.
+2. Reuse today's posts, mentions, likes, reposts, quotes, and latest-post files. Do not request the last 24 hours again.
+3. If saved posts already cover `T` minus 7 days through `T` minus 24 hours, do not page posts or mentions for that span. Fetch only missing liker, reposter, and quote files for older posts whose count is 3 or more.
+4. If that span is missing, fetch it once: `get_users_posts` and `get_users_mentions` with `start_time` of `T` minus 7 days and `end_time` of `T` minus 24 hours. Save as `posts_week_1`, … and `mentions_week_1`, …. Then the same 3-or-more rule for likes, reposts, and quotes. Refresh `latest_<userid>.json` only for the catch-up ten, and only if today's file is missing.
+5. Run `python3 x_neighbours.py --now <T> --windows week`. About one week in three (`picture_every_n_weeks` in config) it also writes the house-framed picture and a thank-you intent link. Pass `--picture` when the owner asks, any day.
+6. Send `report_week.png` and `report_week.md`. When the picture was written, send that PNG and the thank-you link too. Do not post it.
 
 If the Monday calls would pass about 1,000 for the day, send the day picture you already have, fetch the older posts and mentions, and stop the liker lists when the cap is close. Tell the owner which older posts were left out.

@@ -1,0 +1,29 @@
+{
+  "_comment": "FICTIONAL SAMPLE. Made-up users and posts for the X Neighbours example. Not real X data.",
+  "data": [
+    {
+      "id": "83011",
+      "author_id": "910011",
+      "created_at": "2026-11-04T16:30:00Z",
+      "text": "The forecast was boring, so the kite went up."
+    }
+  ],
+  "includes": {
+    "users": [
+      {
+        "id": "910011",
+        "name": "Paper Kite",
+        "username": "paper_kite",
+        "description": "Flies kites when the forecast is boring.",
+        "profile_image_url": "avatars/910011.png",
+        "public_metrics": {
+          "followers_count": 260,
+          "tweet_count": 190
+        }
+      }
+    ]
+  },
+  "meta": {
+    "result_count": 1
+  }
+}
