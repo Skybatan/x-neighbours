@@ -148,7 +148,7 @@ A custom period is `--days 14` (writes `report_custom`). Likes only, replies onl
 
 Send the chat markdown. That is the report. On a run that wrote the picture, also send the PNG and the thank-you link, as something they can post. Do not post it yourself. Do not send a report card unless they asked.
 
-The markdown is the summary: header totals, replies and quote posts with Replied / Not replied yet, the likes and reposts table, and Catch up with a Read post link. 👤? means the owner does not follow that person. Do not add a followed/unfollowed split, a follow-back list, or impressions.
+The markdown is the summary: header totals, replies and quote posts with Replied / Not replied yet, the likes and reposts table (user, likes, and reposts), and Catch up with a Read post link. 👤? means the owner does not follow that person. Do not add a followed/unfollowed split, a follow-back list, or impressions.
 
 Use the names from this run. Do not post, like, or DM anyone.
 

@@ -81,7 +81,7 @@ A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same
 | `show_names` | Handles under the avatars on the picture |
 | `theme` | `midnight` (default), `light`, or `sunset` |
 | `windows` | `week` by default. `day` is the daily report |
-| `top` | Rows in Likes & Reposts, and people in Catch up. Default 10 |
+| `top` | Rows in Likes & Reposts (user, likes, reposts), and people in Catch up. Default 10 |
 | `report` | `both` (default), `likes`, or `replies` |
 | `per_post`, `per_day` | Extra markdown sections. Off unless you ask |
 

@@ -904,13 +904,13 @@ def write_chat_report(activity, path, handle, since, now, label, top=10, items_p
         lines.append("No likes or reposts in this stretch.")
     else:
         lines += ["### Likes & Reposts",
-                  "| User | Likes | Reposts | Total |",
-                  "|---|---|---|---|"]
+                  "| User | Likes | Reposts |",
+                  "|---|---|---|"]
         for row in rows:
             mark = " 👤?" if row["stranger"] else ""
             lines.append(
                 f"| {row['name']} [@{row['username']}](https://x.com/{row['username']}){mark} "
-                f"| {row['likes']} | {row['reposts']} | {row['total']} |"
+                f"| {row['likes']} | {row['reposts']} |"
             )
         more_rows = len(activity["interactions"]) - len(rows)
         if more_rows:
@@ -1076,8 +1076,8 @@ def render_report(activity, path, handle, since, now, label):
 
     def table_head(_draw, _img, y):
         _draw.rectangle((margin, y, width - margin, y + 36), fill=(248, 250, 252))
-        columns = [(margin + 16, "User"), (inner * 0.62 + margin, "Likes"),
-                   (inner * 0.74 + margin, "Reposts"), (inner * 0.88 + margin, "Total")]
+        columns = [(margin + 16, "User"), (inner * 0.72 + margin, "Likes"),
+                   (inner * 0.86 + margin, "Reposts")]
         for x, caption in columns:
             _draw.text((x, y + 8), caption, font=small_font, fill=muted)
 
@@ -1098,9 +1098,8 @@ def render_report(activity, path, handle, since, now, label):
             if row["stranger"]:
                 mark_x = margin + 48 + dummy.textlength(handle_text + " ", font=small_font)
                 _draw.text((mark_x, y + 24), "?", font=small_font, fill=orange)
-            _draw.text((inner * 0.62 + margin, y + 14), str(row["likes"]), font=body_font, fill=ink)
-            _draw.text((inner * 0.74 + margin, y + 14), str(row["reposts"]), font=body_font, fill=ink)
-            _draw.text((inner * 0.88 + margin, y + 14), str(row["total"]), font=name_font, fill=ink)
+            _draw.text((inner * 0.72 + margin, y + 14), str(row["likes"]), font=body_font, fill=ink)
+            _draw.text((inner * 0.86 + margin, y + 14), str(row["reposts"]), font=body_font, fill=ink)
         add(48, paint_row)
 
     section("Catch up with your friends", green)
