@@ -2,6 +2,43 @@
   "_comment": "FICTIONAL SAMPLE. Five made-up neighbours for a short first run. Not real X data.",
   "data": [
     {
+      "id": "83101r",
+      "author_id": "800101",
+      "created_at": "2026-11-04T17:30:00Z",
+      "text": "Just a reply, not for Catch up.",
+      "in_reply_to_user_id": "800199",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "999"
+        }
+      ]
+    },
+    {
+      "id": "83101t",
+      "author_id": "800101",
+      "created_at": "2026-11-04T17:00:00Z",
+      "text": "RT @someone: a plain repost",
+      "referenced_tweets": [
+        {
+          "type": "retweeted",
+          "id": "888"
+        }
+      ]
+    },
+    {
+      "id": "83101q",
+      "author_id": "800101",
+      "created_at": "2026-11-04T16:40:00Z",
+      "text": "Quoting my own note about the window.",
+      "referenced_tweets": [
+        {
+          "type": "quoted",
+          "id": "777"
+        }
+      ]
+    },
+    {
       "id": "83101",
       "author_id": "800101",
       "created_at": "2026-11-04T16:00:00Z",
@@ -24,6 +61,6 @@
     ]
   },
   "meta": {
-    "result_count": 1
+    "result_count": 4
   }
 }

@@ -22,9 +22,20 @@
         "followers_count": 120,
         "tweet_count": 24
       }
+    },
+    {
+      "id": "800106",
+      "name": "Fay Glen",
+      "username": "fay_glen",
+      "description": "Planted the last of the bulbs.",
+      "profile_image_url": "avatars/800106.png",
+      "public_metrics": {
+        "followers_count": 130,
+        "tweet_count": 25
+      }
     }
   ],
   "meta": {
-    "result_count": 2
+    "result_count": 3
   }
 }

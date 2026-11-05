@@ -235,7 +235,18 @@ class Data:
                 post["id"] = str(post["id"])
                 if post.get("author_id") is not None:
                     post["author_id"] = str(post["author_id"])
-                posts.append(post)
+                if post.get("in_reply_to_user_id") is not None:
+                    post["in_reply_to_user_id"] = str(post["in_reply_to_user_id"])
+                refs = []
+                for ref in post.get("referenced_tweets") or []:
+                    ref = dict(ref)
+                    if ref.get("id") is not None:
+                        ref["id"] = str(ref["id"])
+                    refs.append(ref)
+                if refs:
+                    post["referenced_tweets"] = refs
+                if is_original_post(post):
+                    posts.append(post)
             if not posts:
                 continue
             posts.sort(key=lambda post: ts(post["created_at"]), reverse=True)
@@ -299,6 +310,25 @@ class Data:
                 if self.users.get(uid, {}).get("username", "").lower() in excluded:
                     del counts[uid]
         return likes, replies
+
+
+def is_original_post(post):
+    """A catch-up post is their own writing: not a reply and not a plain repost.
+
+    Quote posts are kept. A quote that is also a reply is a reply.
+    """
+    if not post:
+        return False
+    if post.get("in_reply_to_user_id"):
+        return False
+    text = post.get("text") or ""
+    if text.startswith("RT @"):
+        return False
+    for ref in post.get("referenced_tweets") or []:
+        kind = (ref.get("type") or "").lower()
+        if kind in ("replied_to", "retweeted"):
+            return False
+    return True
 
 
 def like_count(post):
@@ -822,6 +852,8 @@ def build_activity(data, since, until, top, like_weight, reply_weight, mode, now
             continue
         user = data.users.get(uid, {"id": uid, "username": uid})
         latest = data.latest.get(uid)
+        if not is_original_post(latest):
+            continue
         catch_up.append({
             "id": uid,
             "name": user.get("name") or user.get("username") or uid,
@@ -829,7 +861,7 @@ def build_activity(data, since, until, top, like_weight, reply_weight, mode, now
             "stranger": stranger(data, uid),
             "user": user,
             "latest": latest,
-            "latest_url": status_url(data, uid, latest["id"]) if latest else "",
+            "latest_url": status_url(data, uid, latest["id"]),
         })
         if len(catch_up) >= top:
             break

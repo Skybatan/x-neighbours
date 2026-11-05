@@ -2,6 +2,31 @@
   "_comment": "FICTIONAL SAMPLE. Made-up users and posts for the X Neighbours example. Not real X data.",
   "data": [
     {
+      "id": "84011",
+      "author_id": "910011",
+      "created_at": "2026-11-04T17:40:00Z",
+      "text": "A reply that Catch up should skip.",
+      "in_reply_to_user_id": "1",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "1"
+        }
+      ]
+    },
+    {
+      "id": "85011",
+      "author_id": "910011",
+      "created_at": "2026-11-04T17:20:00Z",
+      "text": "RT @someone: not an original post",
+      "referenced_tweets": [
+        {
+          "type": "retweeted",
+          "id": "2"
+        }
+      ]
+    },
+    {
       "id": "83011",
       "author_id": "910011",
       "created_at": "2026-11-04T16:30:00Z",

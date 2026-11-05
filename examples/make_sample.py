@@ -436,12 +436,15 @@ def main():
     for uid, text in latest_lines.items():
         dump(f"latest_{uid}.json", {
             "_comment": note,
-            "data": [{
-                "id": "83" + uid[-3:],
-                "author_id": uid,
-                "created_at": "2026-11-04T16:30:00Z",
-                "text": text,
-            }],
+            "data": [
+                {"id": "84" + uid[-3:], "author_id": uid, "created_at": "2026-11-04T17:40:00Z",
+                 "text": "A reply that Catch up should skip.", "in_reply_to_user_id": "1",
+                 "referenced_tweets": [{"type": "replied_to", "id": "1"}]},
+                {"id": "85" + uid[-3:], "author_id": uid, "created_at": "2026-11-04T17:20:00Z",
+                 "text": "RT @someone: not an original post",
+                 "referenced_tweets": [{"type": "retweeted", "id": "2"}]},
+                {"id": "83" + uid[-3:], "author_id": uid, "created_at": "2026-11-04T16:30:00Z", "text": text},
+            ],
             "includes": {"users": [public_user(profiles[uid])]},
             "meta": {"result_count": 1},
         })
@@ -480,6 +483,7 @@ def write_few():
         ("800103", "cleo_dawn", "Cleo Dawn", "neither", "Wrote the morning down in pencil."),
         ("800104", "dax_elm", "Dax Elm", "you-follow", "Fixed the gate, then the kettle."),
         ("800105", "eri_fern", "Eri Fern", "follows-you", "Left a stone on the step."),
+        ("800106", "fay_glen", "Fay Glen", "mutual", "Planted the last of the bulbs."),
     ]
     users = {}
     me = user_obj("fewcreator", me_id, "Few Creator",
@@ -506,7 +510,7 @@ def write_few():
          "public_metrics": {"like_count": 3, "reply_count": 1, "repost_count": 1}},
         {"id": "70002", "author_id": me_id, "created_at": "2026-11-03T21:00:00Z",
          "text": "The street is quiet after rain.",
-         "public_metrics": {"like_count": 2, "reply_count": 1, "repost_count": 0}},
+         "public_metrics": {"like_count": 3, "reply_count": 1, "repost_count": 0}},
         {"id": "89001", "author_id": me_id, "created_at": "2026-11-04T12:00:00Z",
          "text": "Glad the light helped.",
          "referenced_tweets": [{"type": "replied_to", "id": "71001"}],
@@ -529,8 +533,8 @@ def write_few():
     })
     save("likes_70001.json", {"_comment": note, "data": [public_user(users[uid]) for uid in ("800101", "800102", "800104")],
                               "meta": {"result_count": 3}})
-    save("likes_70002.json", {"_comment": note, "data": [public_user(users[uid]) for uid in ("800103", "800105")],
-                              "meta": {"result_count": 2}})
+    save("likes_70002.json", {"_comment": note, "data": [public_user(users[uid]) for uid in ("800103", "800105", "800106")],
+                              "meta": {"result_count": 3}})
     save("reposts_70001.json", {"_comment": note, "data": [public_user(users["800102"])], "meta": {"result_count": 1}})
     save("quotes_70002.json", {
         "_comment": note,
@@ -543,11 +547,34 @@ def write_few():
         "meta": {"result_count": 1},
     })
     for uid, _username, _name, _relation, latest in people:
+        original = {"id": "83" + uid[-3:], "author_id": uid, "created_at": "2026-11-04T16:00:00Z", "text": latest}
+        posts = [original]
+        # Ada's newest items are a reply and a plain repost. The quote is the latest original.
+        if uid == "800101":
+            posts = [
+                {"id": "83101r", "author_id": uid, "created_at": "2026-11-04T17:30:00Z",
+                 "text": "Just a reply, not for Catch up.", "in_reply_to_user_id": "800199",
+                 "referenced_tweets": [{"type": "replied_to", "id": "999"}]},
+                {"id": "83101t", "author_id": uid, "created_at": "2026-11-04T17:00:00Z",
+                 "text": "RT @someone: a plain repost",
+                 "referenced_tweets": [{"type": "retweeted", "id": "888"}]},
+                {"id": "83101q", "author_id": uid, "created_at": "2026-11-04T16:40:00Z",
+                 "text": "Quoting my own note about the window.",
+                 "referenced_tweets": [{"type": "quoted", "id": "777"}]},
+                original,
+            ]
+        # Ben only replied and reposted. Catch up should skip him for Fay.
+        if uid == "800102":
+            posts = [
+                {"id": "83102r", "author_id": uid, "created_at": "2026-11-04T17:20:00Z",
+                 "text": "Replying, not posting.", "in_reply_to_user_id": "800199",
+                 "referenced_tweets": [{"type": "replied_to", "id": "998"}]},
+            ]
         save(f"latest_{uid}.json", {
             "_comment": note,
-            "data": [{"id": "83" + uid[-3:], "author_id": uid, "created_at": "2026-11-04T16:00:00Z", "text": latest}],
+            "data": posts,
             "includes": {"users": [public_user(users[uid])]},
-            "meta": {"result_count": 1},
+            "meta": {"result_count": len(posts)},
         })
     followers, following = [], []
     for uid, _username, _name, relation, _latest in people:
