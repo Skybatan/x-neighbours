@@ -1,22 +1,23 @@
 <!doctype html><html><head><meta charset="utf-8"><style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{width:900px;background:#eef1f6;font-family:-apple-system,"Segoe UI",Roboto,"Noto Sans","Noto Color Emoji",sans-serif;color:#0f1419;padding:28px}
-.card{background:#fff;border-radius:20px;box-shadow:0 6px 24px rgba(0,0,0,.08);padding:24px 28px}
+body{width:720px;background:#eef1f6;font-family:-apple-system,"Segoe UI",Roboto,"Noto Sans","Noto Color Emoji",sans-serif;color:#0f1419;padding:20px}
+.card{background:#fff;border-radius:20px;box-shadow:0 6px 24px rgba(0,0,0,.08);padding:22px 24px}
 .hdr{display:flex;flex-direction:column;align-items:flex-start;gap:12px;border-bottom:1px solid #e6e9ef;padding-bottom:16px}
-.title{font-size:26px;font-weight:800}.title span{color:#536471;font-weight:600}
+.title{font-size:24px;font-weight:800}.title span{color:#536471;font-weight:600}
 .period{font-size:14px;color:#536471;margin-top:4px}
 .legend{font-size:13px;color:#536471}
-.tot{display:flex;gap:10px}.pill{white-space:nowrap;background:#f4f6f9;border-radius:999px;padding:8px 14px;font-size:15px;font-weight:700}
-.cols{display:flex;flex-direction:column;gap:16px;margin-top:18px}
-.sec{border-radius:14px;padding:16px;border-top:5px solid}
+.tot{display:flex;gap:8px;flex-wrap:wrap}.pill{white-space:nowrap;background:#f4f6f9;border-radius:999px;padding:7px 12px;font-size:14px;font-weight:700}
+.cols{display:flex;flex-direction:column;gap:14px;margin-top:16px}
+.sec{border-radius:14px;padding:14px 16px;border-top:5px solid}
 .blue{border-color:#1d9bf0;background:#f3f9fe}.red{border-color:#f91880;background:#fff4f8}
 .green{border-color:#00ba7c;background:#f1fbf7}.amber{border-color:#d97706;background:#fff8ef}
-.sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.st{font-size:18px;font-weight:800}
-.call{font-size:12px;font-weight:700;color:#fff;border-radius:999px;padding:4px 10px}
+.sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px}
+.st{font-size:17px;font-weight:800}
+.call{font-size:12px;font-weight:700;color:#fff;border-radius:999px;padding:4px 10px;white-space:nowrap}
 .blue .call{background:#1d9bf0}.red .call{background:#f91880}.green .call{background:#00ba7c}.amber .call{background:#d97706}
 .av{width:34px;height:34px;border-radius:50%;color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex:none}
-.user{display:flex;gap:10px;margin-bottom:12px}.uname{font-weight:700;font-size:15px}.uname small{color:#536471;font-weight:500}
+.user{display:flex;gap:10px;margin-bottom:12px}.user:last-child{margin-bottom:0}
+.uname{font-weight:700;font-size:15px}.uname small{color:#536471;font-weight:500}
 .item{font-size:15px;margin-top:4px;line-height:1.4}.lbl{font-weight:700;color:#1d9bf0}
 .on{color:#536471;font-size:13px;padding-left:14px}
 .ok{color:#00ba7c;font-weight:700;font-size:12.5px;padding-left:14px}.no{color:#e0245e;font-weight:700;font-size:12.5px;padding-left:14px}
@@ -25,26 +26,40 @@ body{width:900px;background:#eef1f6;font-family:-apple-system,"Segoe UI",Roboto,
 table{width:100%;border-collapse:collapse;font-size:14px}th{color:#536471;font-size:12px;text-align:right;padding:4px}th:first-child{text-align:left}
 td{padding:7px 4px;text-align:right;border-top:1px solid #f5d5e3}td:first-child{text-align:left}
 .tc{display:flex;align-items:center;gap:8px}.mini{width:24px;height:24px;font-size:10px}
-.cu{display:flex;gap:10px;align-items:center;margin-top:10px;font-size:14px}.cu .t{flex:1;line-height:1.35}
+.cu{display:flex;gap:10px;align-items:center;margin-top:10px;font-size:14px}.cu:first-of-type{margin-top:4px}.cu .t{flex:1;line-height:1.35}
 .rp{color:#00ba7c;font-weight:700;font-size:13px;white-space:nowrap}
 .thanks{display:flex;gap:16px;align-items:center}
 .house{width:132px;flex:none}
 .roof{width:0;height:0;border-left:66px solid transparent;border-right:66px solid transparent;border-bottom:32px solid #b45309;margin:0 auto}
 .walls{width:108px;height:72px;margin:0 auto;background:#fff;border:3px solid #b45309;border-radius:4px;display:flex;align-items:center;justify-content:center;gap:6px}
-.note{font-size:14px;line-height:1.4}
+.note{font-size:14px;line-height:1.45;flex:1;min-width:0}
+.pick{margin-top:14px;padding:12px 14px;border-radius:14px;border:1px dashed #d0d7de;background:#fafbfc}
+.pick-q{font-size:13.5px;font-weight:700;color:#0f1419;margin-bottom:8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px 6px 6px;border-radius:999px;border:1.5px solid #cfd6dd;background:#fff;font-size:13px;font-weight:600;color:#0f1419}
+.chip .box{width:16px;height:16px;border-radius:4px;border:1.5px solid #9aa5b1;background:#fff;flex:none}
+.chip .av{width:20px;height:20px;font-size:9px}
+.pick-hint{font-size:11.5px;color:#8b98a5;margin-top:8px}
 .foot{text-align:center;color:#8b98a5;font-size:12.5px;margin-top:12px}
 </style></head><body><div class="card">
 <div class="hdr"><div><div class="title">X Neighbours <span>· @samplecreator</span></div><div class="period">Last 2 days</div>
 <div class="legend">⭐ = good neighbour · 👤? = you don't follow them yet</div></div>
 <div class="tot"><div class="pill">💬 6 replies</div><div class="pill">🗨️ 2 quote posts</div><div class="pill">❤️ 48 likes</div><div class="pill">🔁 11 reposts</div></div></div>
 <div class="cols">
-<div class="sec red"><div class="sh"><div class="st">1 · Likes &amp; Reposts</div><div class="call">Who showed up</div></div>
+
+<div class="sec red"><div class="sh"><div class="st">1 · 💐 Flowers from your neighbours</div><div class="call">Who showed up</div></div>
 <table><tr><th>User</th><th>Replies</th><th>❤️ Likes</th><th>🔁 Reposts</th></tr>
 <tr><td><div class="tc"><div class="av mini" style="background:#c2410c">AK</div>Amber Kiln <span class="star">⭐</span></div></td><td>4</td><td>9</td><td>3</td></tr>
 <tr><td><div class="tc"><div class="av mini" style="background:#7856ff">NL</div>Nova Lane</div></td><td>3</td><td>7</td><td>2</td></tr>
 <tr><td><div class="tc"><div class="av mini" style="background:#2563eb">MW</div>Moss Wren <span class="str">👤?</span></div></td><td>1</td><td>5</td><td>1</td></tr>
 <tr><td><div class="tc"><div class="av mini" style="background:#ff7a00">PO</div>Pixel Otter</div></td><td>1</td><td>4</td><td>0</td></tr></table></div>
-<div class="sec blue"><div class="sh"><div class="st">2 · Replies &amp; Quote posts</div><div class="call">Reply back from here</div></div>
+
+<div class="sec green"><div class="sh"><div class="st">2 · Catch up with your good neighbours</div><div class="call">Read their posts</div></div>
+<div class="cu"><div class="av mini" style="background:#c2410c">AK</div><div class="t"><b>Amber Kiln <span class="star">⭐</span></b> — “Just opened my first pottery studio!”</div><div class="rp">Read post →</div></div>
+<div class="cu"><div class="av mini" style="background:#7856ff">NL</div><div class="t"><b>Nova Lane</b> — “Week 3 of learning to paint 🎨”</div><div class="rp">Read post →</div></div>
+<div class="cu"><div class="av mini" style="background:#ff7a00">PO</div><div class="t"><b>Pixel Otter</b> — “Looking for book recs, go!”</div><div class="rp">Read post →</div></div></div>
+
+<div class="sec blue"><div class="sh"><div class="st">3 · 👋 Greetings from your neighbours</div><div class="call">Reply back from here</div></div>
 <div class="user"><div class="av" style="background:#7856ff">NL</div><div><div class="uname">Nova Lane <small>@nova_lane</small></div>
 <div class="item"><span class="lbl">Reply</span> “This thread saved my weekend, thank you!”</div><div class="on">↳ on your post: “5 tiny habits for calmer mornings”</div><div class="ok">✓ Replied</div></div></div>
 <div class="user"><div class="av" style="background:#ff7a00">PO</div><div><div class="uname">Pixel Otter <small>@pixel_otter</small></div>
@@ -52,14 +67,23 @@ td{padding:7px 4px;text-align:right;border-top:1px solid #f5d5e3}td:first-child{
 <div class="user"><div class="av" style="background:#0f9d8a">CL</div><div><div class="uname">Cedar Loop <small>@cedarloop</small><span class="str">👤? not following</span></div>
 <div class="item"><span class="lbl">Reply</span> “First time here, love this idea!”</div><div class="on">↳ on your post: “5 tiny habits for calmer mornings”</div><div class="ok">✓ Replied</div></div></div>
 </div>
-<div class="sec green"><div class="sh"><div class="st">3 · Catch up with your good neighbours</div><div class="call">Read their posts</div></div>
-<div class="cu"><div class="av mini" style="background:#c2410c">AK</div><div class="t"><b>Amber Kiln <span class="star">⭐</span></b> — “Just opened my first pottery studio!”</div><div class="rp">Read post →</div></div>
-<div class="cu"><div class="av mini" style="background:#7856ff">NL</div><div class="t"><b>Nova Lane</b> — “Week 3 of learning to paint 🎨”</div><div class="rp">Read post →</div></div>
-<div class="cu"><div class="av mini" style="background:#ff7a00">PO</div><div class="t"><b>Pixel Otter</b> — “Looking for book recs, go!”</div><div class="rp">Read post →</div></div></div>
+
 <div class="sec amber"><div class="sh"><div class="st">4 · Thank your neighbours on X</div><div class="call">Post your thank-you</div></div>
 <div class="thanks"><div class="house"><div class="roof"></div><div class="walls"><div class="av mini" style="background:#c2410c">AK</div><div class="av mini" style="background:#7856ff">NL</div><div class="av mini" style="background:#ff7a00">PO</div></div></div>
-<div class="note">Thank you to my X neighbours — @amber_kiln @nova_lane @pixel_otter.</div></div>
+<div class="note">My X neighbours circle, November 5! Thank you all for being here and taking the time to reply to my posts. I really appreciate it!</div></div>
 </div>
+
 </div>
+
+<div class="pick">
+<div class="pick-q">⭐ Add to good neighbours?</div>
+<div class="chips">
+<span class="chip"><span class="box"></span><span class="av" style="background:#7856ff">NL</span>Nova Lane</span>
+<span class="chip"><span class="box"></span><span class="av" style="background:#2563eb">MW</span>Moss Wren</span>
+<span class="chip"><span class="box"></span><span class="av" style="background:#ff7a00">PO</span>Pixel Otter</span>
+</div>
+<div class="pick-hint">Follow-up in chat · Amber Kiln already ⭐, so she’s not listed</div>
+</div>
+
 <div class="foot">Sample report with fictional people · no impressions, no scores — just the people who showed up for you</div>
 </div></body></html>

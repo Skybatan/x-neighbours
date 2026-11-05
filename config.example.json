@@ -13,5 +13,6 @@
   "top": 10,
   "report": "both",
   "per_post": false,
-  "per_day": false
+  "per_day": false,
+  "timezone": ""
 }

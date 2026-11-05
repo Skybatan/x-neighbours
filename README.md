@@ -14,7 +14,9 @@ The first run covers the last two days, so it loads quickly. Every report includ
 
 People the owner does not follow are marked 👤?. There is no followed/unfollowed split. Catch up with your good neighbours lists each person's latest original post (not a reply or a plain repost; a quote of their own counts). People with none in the saved page are skipped. When the owner has a good neighbours list, that section shows only those people. When the list is empty, it stays the top people from the period and adds one hint line. A ⭐ marks a good neighbour in the other sections too. The ordering score stays in config and is not printed.
 
-The ring picture is part of every report, under Thank your neighbours on X, with a ready-to-post thank-you link. The original three-ring layout is unchanged, and every avatar, including the centre, sits in a simple house frame. `--no-picture` skips the image.
+The thank-you sentence is “My X neighbours circle, November 5!” plus a short thanks, using the report date in `timezone` (UTC if that key is blank). It does not mention any username.
+
+Every report has four parts: Flowers from your neighbours, Catch up with your good neighbours, Greetings from your neighbours, then Thank your neighbours on X. The house-framed picture sits in that last part, with a ready-to-post thank-you that names nobody. The original three-ring layout is unchanged, and every avatar, including the centre, sits in a simple house frame. `--no-picture` skips the image.
 
 ![Sample neighbours picture with house frames, fictional data](docs/sample-neighbours.png)
 
@@ -42,8 +44,9 @@ python3 x_neighbours.py --now 2026-11-04T18:00:00Z
 
 | File | What it is |
 |---|---|
-| `report_week.md` | The text report. `report_day.md` for a day, `report_first.md` for the first run |
-| `x_neighbours_*.png` | The house-framed picture, included with every report |
+| `report_week.md` | Sections 1–3. `report_day.md` for a day, `report_first.md` for the first run, `report_fresh.md` since the last report |
+| `report_*_thanks.md` | Section 4, the thank-you text and link. The picture is sent in the same chat message |
+| `x_neighbours_*.png` | The house-framed picture, included inside section 4 |
 
 A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same runbook is in [skills/x-neighbours/SKILL.md](skills/x-neighbours/SKILL.md)).
 
@@ -67,7 +70,8 @@ A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same
   "top": 10,
   "report": "both",
   "per_post": false,
-  "per_day": false
+  "per_day": false,
+  "timezone": ""
 }
 ```
 
@@ -83,12 +87,14 @@ A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same
 | `show_names` | Handles under the avatars on the picture |
 | `theme` | `midnight` (default), `light`, or `sunset` |
 | `windows` | `week` by default. `day` is the daily report |
-| `top` | Rows in Likes & Reposts (user, replies, likes, reposts), and people in Catch up when the good neighbours list is empty. Default 10 |
+| `top` | Rows in Flowers (user, replies, likes, reposts), and people in Catch up when the good neighbours list is empty. Default 10 |
+| `timezone` | IANA name for the thank-you date, such as `Europe/Stockholm`. Blank means UTC |
+| `fresh_hours` | Optional. How many hours until the bot may offer a new report. Omit it and the bot estimates: 1 hour at 60 or more interactions a day, 3 hours from 15 to 59, 8 hours under 15 |
 | `good_neighbours` | Optional path to the personal list. Prefer `--good-neighbours`, because the file lives outside the repo. A missing file is an empty list. At most 20 people |
 | `report` | `both` (default), `likes`, or `replies` |
 | `per_post`, `per_day` | Extra markdown sections. Off unless you ask |
 
-Other flags: `--config`, `--data`, `--out`, `--now`, `--days`, `--first-run`, `--report-card`, `--rings`, `--top`, `--theme`, `--windows day,week`, `--report likes`, `--per-post`, `--per-day`, `--picture`, `--no-picture`, `--show-names`, `--no-image`, `--good-neighbours PATH`.
+Other flags: `--config`, `--data`, `--out`, `--now`, `--since`, `--days`, `--first-run`, `--report-card`, `--rings`, `--top`, `--theme`, `--windows day,week`, `--report likes`, `--per-post`, `--per-day`, `--picture`, `--no-picture`, `--show-names`, `--no-image`, `--good-neighbours PATH`, `--state PATH`, `--timezone`, `--fresh-hours`.
 
 A plain run writes the markdown report and the neighbours picture. `--first-run` uses `first_run_days`. `--report-card` adds the PNG card. `--days 14` is a custom period. `--no-picture` skips the image.
 
@@ -182,11 +188,11 @@ python3 x_neighbours.py \
   --windows day
 ```
 
-`examples/few/sample-report.md` is that daily report: Likes & Reposts first (with a Replies column), then Replies & Quote posts, then Catch up with your good neighbours, then Thank your neighbours on X, and a ⭐ Add list. Rebuild both datasets with `python3 examples/make_sample.py`. The list file is not rewritten by that script. Add someone with `python3 good_neighbours.py --file PATH add handle --id ID --name "Name"`.
+`examples/few/sample-report.md` is sections 1–3 of that daily report: Flowers, then Catch up with your good neighbours, then Greetings. `examples/few/sample-thanks.md` is section 4. The ⭐ Add card is separate and only lists Flowers people who are not on the list. Rebuild both datasets with `python3 examples/make_sample.py`. The list file is not rewritten by that script. Add someone with `python3 good_neighbours.py --file PATH add handle --id ID --name "Name"`. The freshness clock is `python3 report_state.py --file PATH check`.
 
 ## Privacy
 
-- `config.json`, `data/`, `.avatar_cache/`, `report_*.md`, `report_*.png`, `x_neighbours_*.png`, and a `good_neighbours.json` copied into the repo root are gitignored. Leave them that way. The real list belongs in the bot's store, not in this repo. `examples/few/good_neighbours.json` is fictional and is the only copy that is tracked.
+- `config.json`, `data/`, `.avatar_cache/`, `report_*.md`, `report_*.png`, `x_neighbours_*.png`, and a `good_neighbours.json` or `state.json` copied into the repo root are gitignored. Leave them that way. The real list and the report clock belong in the bot's store, not in this repo. `examples/few/good_neighbours.json` is fictional and is the only copy that is tracked.
 - Real avatars are downloaded from the `profile_image_url` values in the saved JSON into `.avatar_cache/` next to the output folder.
 - Do not commit a creator's config, raw responses, avatar cache, reports, or pictures, and do not open a pull request that contains them.
 - The sample dataset is the only account data in this repo, and it is not from X.
@@ -197,6 +203,7 @@ python3 x_neighbours.py \
 |---|---|
 | `x_neighbours.py` | Reports and pictures |
 | `good_neighbours.py` | Add, remove, or list the personal good neighbours file |
+| `report_state.py` | Read or update the freshness clock in the bot store |
 | `save_raw.py` | Store one tool result under `data/` |
 | `config.example.json` | Config template |
 | `BOT.md`, `skills/x-neighbours/SKILL.md` | Runbook for the bot |
@@ -207,4 +214,5 @@ python3 x_neighbours.py \
 | `docs/sample-neighbours.png` | A full three-ring picture from `examples/sample` |
 | `examples/few/` | The short fictional dataset |
 | `examples/few/good_neighbours.json` | Fictional good neighbours list |
-| `examples/few/sample-report.md` | Daily report from that list, with ⭐ and the follow-up question |
+| `examples/few/sample-report.md` | Sections 1–3 of a daily report from that list |
+| `examples/few/sample-thanks.md` | Section 4, the thank-you with no usernames |
