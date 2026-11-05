@@ -1,0 +1,45 @@
+{
+  "_comment": "FICTIONAL SAMPLE. The owner's own recent reply, quote, and repost. Not real X data.",
+  "data": [
+    {
+      "id": "89010",
+      "author_id": "800001",
+      "created_at": "2026-11-04T16:10:00Z",
+      "text": "A reply the report should not quote.",
+      "conversation_id": "83106",
+      "referenced_tweets": [
+        {
+          "type": "replied_to",
+          "id": "83106"
+        }
+      ]
+    },
+    {
+      "id": "89011",
+      "author_id": "800001",
+      "created_at": "2026-11-04T15:00:00Z",
+      "text": "Quoting a note.",
+      "referenced_tweets": [
+        {
+          "type": "quoted",
+          "id": "83105"
+        }
+      ]
+    },
+    {
+      "id": "89012",
+      "author_id": "800001",
+      "created_at": "2026-11-04T14:00:00Z",
+      "text": "RT @someone: a repost",
+      "referenced_tweets": [
+        {
+          "type": "retweeted",
+          "id": "83104"
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "result_count": 3
+  }
+}

@@ -105,15 +105,25 @@ Same budget rule as likes, using `repost_count` and `quote_count` from the post'
 
 `get_posts_quoted_posts` — `id` the post id, `max_results` 100, `post.fields=created_at,author_id,text,referenced_tweets,conversation_id`, `expansions=author_id`, `user.fields=username,name,description,profile_image_url`. Save as `quotes_<postid>`.
 
-### 5. Latest post for the catch-up list
+### 5. Posts the owner already engaged with
+
+Do this once per run, before the catch-up pages, and only if today's files are missing. At most three calls. If a call fails or the tool is missing, skip it and continue. Do not mention the failure.
+
+`get_users_liked_posts` — `id` `{ID}`, `max_results` 20, `post.fields=id,created_at,author_id`. Save as `my_likes_1`. If `meta.next_token` is present, save one more page as `my_likes_2`, then stop.
+
+`get_users_posts` — `id` `{ID}`, `max_results` 20, no `exclude` (replies and reposts have to be in the page), `post.fields=created_at,text,author_id,in_reply_to_user_id,referenced_tweets,conversation_id`. Save as `my_posts_1`. One page only.
+
+Those files, plus replies already in `posts_*.json`, are how Catch up hides a post the owner liked, replied to, reposted, or quoted. A reply's `referenced_tweets` id of type `replied_to`, its `conversation_id`, a quote's `quoted` id, and a repost's `retweeted` id all count.
+
+### 6. Latest post for the catch-up list
 
 Read the good neighbours file first (see Good neighbours). If it lists people, fetch a latest page for each of them, at most 20, and do not also fetch the ranked ten. If the file is missing or the list is empty, pick at most 10 people with the highest quiet score in config (replies and quotes use `reply_weight`, likes use `like_weight`; do not tell the owner the numbers). For each person, one call:
 
 `get_users_posts` — `id` their user id, `max_results` 10, `exclude=replies,retweets`, `post.fields=created_at,text,author_id,in_reply_to_user_id,referenced_tweets`, `expansions=author_id`, `user.fields=username,name,profile_image_url`.
 
-Save the whole page as `latest_<userid>`. Catch up uses the newest original post in that page. A quote of their own counts. A reply (`in_reply_to_user_id` or `referenced_tweets` type `replied_to`) and a plain repost (`retweeted`, or text starting `RT @`) do not. If the page has no original post, the script skips that person. With an empty list it fills the ten from the next person. With a list it does not fill from anyone else. Skip a file saved earlier today.
+Save the whole page as `latest_<userid>`. Catch up walks that page newest first and keeps the first original post the owner has not already liked, replied to, reposted, or quoted. A quote of their own counts. A reply (`in_reply_to_user_id` or `referenced_tweets` type `replied_to`) and a plain repost (`retweeted`, or text starting `RT @`) do not. If every original post in the page is already engaged, the script skips that person. If nobody is left, the section is one line: “You're all caught up with your good neighbours 🎉”. With an empty list it fills the ten from the next person who still has an unengaged original post. With a list it does not fill from anyone else. Skip a file saved earlier today.
 
-### 6. Followers and following
+### 7. Followers and following
 
 Do this only when `data/followers_1.json` or `data/following_1.json` is missing or older than 7 days, and on the weekly run below.
 
@@ -171,7 +181,7 @@ Both run at 9:00 AM in the owner's timezone. Count every X call from both toward
 3. Pick `T`. `START` is `T` minus 24 hours.
 4. Fetch posts and mentions from `START`. Save them as `posts_day_1`, `posts_day_2`, … and `mentions_day_1`, ….
 5. Fetch likers, reposters, and quote posts for that day with the budget rule above. Skip files you already have.
-6. Fetch latest posts (`latest_<userid>.json`) for each good neighbour, or for the ranked ten when the list is empty.
+6. If today's `my_likes_1.json` or `my_posts_1.json` is missing, fetch those small pages (section 5). Then fetch latest posts (`latest_<userid>.json`) for each good neighbour, or for the ranked ten when the list is empty.
 7. Run `python3 x_neighbours.py --now <T> --windows day --good-neighbours <path> --state <state path>`.
 8. Send the report with “How to send a report”: message 1 is `report_day.md` with no image, message 2 is the thank-you text and link with `x_neighbours_day.png` in that message's `images` field. Then the ⭐ Add card if `add_question` is present. If they pick someone, add them with `good_neighbours.py`.
 
@@ -182,7 +192,7 @@ Leave the files in place. Later reports filter them by time.
 If today's `posts_day_1.json` is missing, do the daily run first.
 
 1. Refresh followers and following. This is the only day that does.
-2. Reuse today's posts, mentions, likes, reposts, quotes, and latest-post files. Do not request the last 24 hours again.
+2. Reuse today's posts, mentions, likes, reposts, quotes, `my_likes_*.json`, `my_posts_1.json`, and latest-post files. Do not request the last 24 hours again.
 3. If saved posts already cover `T` minus 7 days through `T` minus 24 hours, do not page posts or mentions for that span. Fetch only missing liker, reposter, and quote files for older posts whose count is 3 or more.
 4. If that span is missing, fetch it once: `get_users_posts` and `get_users_mentions` with `start_time` of `T` minus 7 days and `end_time` of `T` minus 24 hours. Save as `posts_week_1`, … and `mentions_week_1`, …. Then the same 3-or-more rule for likes, reposts, and quotes. Refresh `latest_<userid>.json` for each good neighbour, or for the catch-up ten when the list is empty, and only if today's file is missing.
 5. Run `python3 x_neighbours.py --now <T> --windows week --good-neighbours <path> --state <state path>`. Do not send the ⭐ Add card on this report.
@@ -233,7 +243,7 @@ To remove someone, run `remove`. To show the list, run `list` and send the names
 
 Adding someone does not follow them. This run stays read-only on X.
 
-When the list is non-empty, Catch up with your good neighbours shows only those people, each one's latest original post, and skips anyone with no recent original post. They are not inserted into the other sections just because they are on the list. When the list is empty, Catch up stays the top 10 from the period and the report adds: “Add people to your good neighbours list to keep up with them here.”
+When the list is non-empty, Catch up with your good neighbours shows only those people, each one's latest original post the owner has not already liked, replied to, reposted, or quoted, and skips anyone with no such post. They are not inserted into the other sections just because they are on the list. When the list is empty, Catch up stays the top 10 from the period, with the same skip, and the report adds: “Add people to your good neighbours list to keep up with them here.” If everyone left is already engaged, the section is “You're all caught up with your good neighbours 🎉”.
 
 After a daily report, a first run, and a fresh on-demand report, the script lists up to five people from Flowers who are not on the list yet, in that table's order. They are in `suggest_good_neighbours`. If nobody is left, `add_question` is absent and you skip the card. Send one multi-select card, short label **⭐ Add**, option labels `⭐ @handle`, plus a free-text option. A weekly report does not ask. The first-run closing line mentions the list once, besides that card.
 
