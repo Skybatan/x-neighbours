@@ -48,7 +48,7 @@ python3 x_neighbours.py --now 2026-11-04T18:00:00Z
 | `report_*_thanks.md` | Section 4, the thank-you text and link. The picture is sent in the same chat message |
 | `x_neighbours_*.png` | The house-framed picture, included inside section 4 |
 
-A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same runbook is in [skills/x-neighbours/SKILL.md](skills/x-neighbours/SKILL.md)).
+A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same runbook is in [skills/x-neighbours/SKILL.md](skills/x-neighbours/SKILL.md)). Any concern in chat can become a short GitHub issue: the bot drafts it and hands over a prefilled link, once per topic, and the owner submits it. The Monday report ends with one line inviting that. The draft leaves out handles, names, and post text.
 
 ## Config
 
@@ -204,6 +204,8 @@ python3 x_neighbours.py \
 | `x_neighbours.py` | Reports and pictures |
 | `good_neighbours.py` | Add, remove, or list the personal good neighbours file |
 | `report_state.py` | Read or update the freshness clock in the bot store |
+| `feedback_link.py` | Build a prefilled GitHub issue link. It does not post the issue |
+| `.github/ISSUE_TEMPLATE/feedback.md` | Issue template labelled `feedback` |
 | `save_raw.py` | Store one tool result under `data/` |
 | `config.example.json` | Config template |
 | `BOT.md`, `skills/x-neighbours/SKILL.md` | Runbook for the bot |

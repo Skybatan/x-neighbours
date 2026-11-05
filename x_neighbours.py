@@ -1345,6 +1345,12 @@ def render_report(activity, path, handle, since, now, label, top=10, thanks=None
     image.save(path, optimize=True)
 
 
+WEEKLY_FEEDBACK = (
+    "Anything you'd change about X Neighbours? "
+    "Tell me and I'll turn it into a feedback link."
+)
+
+
 def thank_you_post(when, zone):
     """Thank-you text with the report date. It never names anyone."""
     local = when.astimezone(zone)
@@ -1537,6 +1543,9 @@ def main():
             activity, md_path, cfg["handle"], since, now, label,
             top=cfg["top"], items_per_user=int(cfg.get("items_per_user") or 3))
         write_thanks(thanks_path, thanks)
+        if key == "week":
+            with open(thanks_path, "a", encoding="utf-8") as fh:
+                fh.write("\n" + WEEKLY_FEEDBACK + "\n")
         if cfg["per_post"] or cfg["per_day"]:
             with open(md_path, "a", encoding="utf-8") as fh:
                 fh.write("\n" + extra_sections(
@@ -1578,7 +1587,9 @@ def main():
                 likes=activity["totals"]["likes"],
                 reposts=activity["totals"]["reposts"],
                 override=cfg.get("fresh_hours"))
-        if key != "week":
+        if key == "week":
+            output[key]["feedback_line"] = WEEKLY_FEEDBACK
+        else:
             suggestions = suggest_good_neighbours(
                 activity, neighbours, top=cfg["top"])
             if suggestions:
