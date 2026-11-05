@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "neighbours": [
+    {
+      "id": "800101",
+      "username": "ada_brook",
+      "name": "Ada Brook",
+      "added": "2026-11-01"
+    },
+    {
+      "id": "800102",
+      "username": "ben_coast",
+      "name": "Ben Coast",
+      "added": "2026-11-02"
+    },
+    {
+      "id": "800106",
+      "username": "fay_glen",
+      "name": "Fay Glen",
+      "added": "2026-11-03"
+    }
+  ]
+}

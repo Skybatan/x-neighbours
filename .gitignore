@@ -8,6 +8,9 @@ report_*.md
 report_*.png
 x_neighbours_*.png
 
+# A personal list copied into the working tree. The fictional example stays tracked.
+/good_neighbours.json
+
 __pycache__/
 *.py[cod]
 .venv/

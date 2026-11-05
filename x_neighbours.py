@@ -18,13 +18,13 @@ Usage:
                       [--data data] [--out .] [--now 2026-11-04T18:00:00Z]
                       [--rings 3] [--top 10]
                       [--report likes|replies|both] [--per-post] [--per-day]
+                      [--good-neighbours PATH]
 """
 import argparse
 import glob
 import json
 import math
 import os
-import random
 import re
 import sys
 import urllib.parse
@@ -668,7 +668,6 @@ DEFAULTS = {
     "exclude": ["grok"],
     "rings": 3,
     "show_names": True,
-    "picture_every_n_weeks": 3,
     "first_run_days": 2,
     "items_per_user": 3,
     "theme": "midnight",
@@ -677,6 +676,7 @@ DEFAULTS = {
     "report": "both",
     "per_post": False,
     "per_day": False,
+    "good_neighbours": None,
 }
 WINDOWS = {
     "day": ("last 24 hours", 1, "Top neighbours of the last 24 hours"),
@@ -733,7 +733,42 @@ def status_url(data, uid, post_id):
     return f"https://x.com/{handle}/status/{post_id}"
 
 
-def build_activity(data, since, until, top, like_weight, reply_weight, mode, now):
+def load_good_neighbours(path):
+    """Personal list. A missing file is an empty list. At most 20 people."""
+    if not path or not os.path.isfile(path):
+        return []
+    with open(path, encoding="utf-8") as fh:
+        doc = json.load(fh)
+    rows = doc.get("neighbours") if isinstance(doc, dict) else None
+    if not isinstance(rows, list):
+        return []
+    people = []
+    for item in rows:
+        if not isinstance(item, dict) or not item.get("id") or not item.get("username"):
+            continue
+        people.append({
+            "id": str(item["id"]),
+            "username": str(item["username"]).lstrip("@"),
+            "name": item.get("name") or str(item["username"]).lstrip("@"),
+            "added": item.get("added") or "",
+        })
+        if len(people) >= 20:
+            break
+    return people
+
+
+def good_neighbour_ids(neighbours):
+    ids = {person["id"] for person in neighbours}
+    names = {person["username"].lower() for person in neighbours}
+    return ids, names
+
+
+def is_good_neighbour(uid, username, ids, names):
+    return uid in ids or (username or "").lower() in names
+
+
+def build_activity(data, since, until, top, like_weight, reply_weight, mode, now,
+                   good_neighbours=None):
     items = []
     seen = set()
 
@@ -798,6 +833,22 @@ def build_activity(data, since, until, top, like_weight, reply_weight, mode, now
             likes = reposts = 0
         return (likes + reposts) * like_weight + (replies + quotes) * reply_weight
 
+    good = good_neighbours or []
+    good_ids, good_names = good_neighbour_ids(good)
+
+    def describe(uid, fallback=None):
+        user = data.users.get(uid) or fallback or {"id": uid, "username": uid, "name": uid}
+        username = user.get("username") or (fallback or {}).get("username") or uid
+        name = user.get("name") or (fallback or {}).get("name") or username
+        return {
+            "id": uid,
+            "name": name,
+            "username": username,
+            "stranger": uid not in data.following,
+            "good": is_good_neighbour(uid, username, good_ids, good_names),
+            "user": user if user.get("id") else {**user, "id": uid, "username": username, "name": name},
+        }
+
     people = set(likes_c) | set(reposts_c) | set(reply_c) | set(quote_c)
     ranked = Counter()
     order = sorted(people, key=lambda uid: (-points(uid, "both"), -reply_c[uid] - quote_c[uid], uid))
@@ -811,13 +862,8 @@ def build_activity(data, since, until, top, like_weight, reply_weight, mode, now
     threads = []
     for uid, group in groups.items():
         group.sort(key=lambda item: item["created_at"], reverse=True)
-        user = data.users.get(uid, {"id": uid, "username": uid})
         threads.append({
-            "id": uid,
-            "name": user.get("name") or user.get("username") or uid,
-            "username": user.get("username", uid),
-            "stranger": stranger(data, uid),
-            "user": user,
+            **describe(uid),
             "items": group,
         })
     threads.sort(key=lambda thread: (
@@ -829,42 +875,56 @@ def build_activity(data, since, until, top, like_weight, reply_weight, mode, now
         threads = []
 
     interactions = []
-    for uid in set(likes_c) | set(reposts_c):
-        user = data.users.get(uid, {"id": uid, "username": uid})
-        likes, reposts = likes_c[uid], reposts_c[uid]
-        interactions.append({
-            "id": uid,
-            "name": user.get("name") or user.get("username") or uid,
-            "username": user.get("username", uid),
-            "stranger": stranger(data, uid),
-            "user": user,
-            "likes": likes,
-            "reposts": reposts,
-            "total": likes + reposts,
-        })
-    interactions.sort(key=lambda row: (-row["total"], -row["likes"], row["username"]))
-    if mode == "replies":
-        interactions = []
-
-    catch_up = []
-    for uid in catch_ranked:
-        if points(uid, mode) <= 0:
+    for uid in people:
+        reply_n = 0 if mode == "likes" else reply_c[uid] + quote_c[uid]
+        like_n = 0 if mode == "replies" else likes_c[uid]
+        repost_n = 0 if mode == "replies" else reposts_c[uid]
+        if mode == "likes" and like_n + repost_n == 0:
             continue
-        user = data.users.get(uid, {"id": uid, "username": uid})
+        if mode == "replies" and reply_n == 0:
+            continue
+        if reply_n + like_n + repost_n <= 0:
+            continue
+        interactions.append({
+            **describe(uid),
+            "replies": reply_n,
+            "likes": like_n,
+            "reposts": repost_n,
+        })
+    interactions.sort(key=lambda row: (
+        -(row["replies"] + row["likes"] + row["reposts"]),
+        -row["replies"],
+        -row["likes"],
+        -row["reposts"],
+        row["username"],
+    ))
+
+    def catch_person(uid, fallback=None):
         latest = data.latest.get(uid)
         if not is_original_post(latest):
-            continue
-        catch_up.append({
-            "id": uid,
-            "name": user.get("name") or user.get("username") or uid,
-            "username": user.get("username", uid),
-            "stranger": stranger(data, uid),
-            "user": user,
+            return None
+        return {
+            **describe(uid, fallback),
             "latest": latest,
             "latest_url": status_url(data, uid, latest["id"]),
-        })
-        if len(catch_up) >= top:
-            break
+        }
+
+    catch_up = []
+    if good:
+        for neighbour in good:
+            person = catch_person(neighbour["id"], neighbour)
+            if person:
+                catch_up.append(person)
+    else:
+        for uid in catch_ranked:
+            if points(uid, mode) <= 0:
+                continue
+            person = catch_person(uid)
+            if not person:
+                continue
+            catch_up.append(person)
+            if len(catch_up) >= top:
+                break
 
     return {
         "totals": {
@@ -877,12 +937,33 @@ def build_activity(data, since, until, top, like_weight, reply_weight, mode, now
         "interactions": interactions,
         "catch_up": catch_up,
         "ranked": ranked,
+        "has_good_neighbours": bool(good),
+        "catch_hint": not good,
     }
 
 
+def suggest_good_neighbours(activity, neighbours, limit=5, top=10):
+    """Up to five people from the Likes & Reposts table who are not on the list."""
+    ids, names = good_neighbour_ids(neighbours or [])
+    picked = []
+    for row in activity["interactions"][:top]:
+        if is_good_neighbour(row["id"], row["username"], ids, names):
+            continue
+        picked.append({
+            "id": row["id"],
+            "username": row["username"],
+            "name": row["name"],
+            "label": f"⭐ @{row['username']}",
+        })
+        if len(picked) >= limit:
+            break
+    return picked
+
+
 def user_markdown(person):
-    mark = " 👤?" if person["stranger"] else ""
-    return f"**{person['name']}** [@{person['username']}](https://x.com/{person['username']}){mark}"
+    star = " ⭐" if person.get("good") else ""
+    mark = " 👤?" if person.get("stranger") else ""
+    return f"**{person['name']}**{star} [@{person['username']}](https://x.com/{person['username']}){mark}"
 
 
 def on_post_line(text):
@@ -892,7 +973,8 @@ def on_post_line(text):
     return f"↳ on your post: “{text}”"
 
 
-def write_chat_report(activity, path, handle, since, now, label, top=10, items_per_user=3):
+def write_chat_report(activity, path, handle, since, now, label, top=10, items_per_user=3,
+                      thanks=None):
     end = now.astimezone(timezone.utc)
     start = since.astimezone(timezone.utc)
     totals = activity["totals"]
@@ -905,8 +987,31 @@ def write_chat_report(activity, path, handle, since, now, label, top=10, items_p
         f"🔁 {counted(totals['reposts'], 'repost', 'reposts')}",
     ]
     people = activity["threads"] + activity["interactions"] + activity["catch_up"]
+    legend = []
     if any(person["stranger"] for person in people):
-        lines.append("👤? = you don't follow them yet")
+        legend.append("👤? = you don't follow them yet")
+    if activity.get("has_good_neighbours"):
+        legend.append("⭐ = good neighbour")
+    if legend:
+        lines.append(" · ".join(legend))
+    lines.append("")
+    rows = activity["interactions"][:top]
+    if not rows:
+        lines.append("No replies, likes, or reposts in this stretch.")
+    else:
+        lines += ["### Likes & Reposts",
+                  "| User | Replies | Likes | Reposts |",
+                  "|---|---|---|---|"]
+        for row in rows:
+            star = " ⭐" if row.get("good") else ""
+            mark = " 👤?" if row["stranger"] else ""
+            lines.append(
+                f"| {row['name']}{star} [@{row['username']}](https://x.com/{row['username']}){mark} "
+                f"| {row['replies']} | {row['likes']} | {row['reposts']} |"
+            )
+        more_rows = len(activity["interactions"]) - len(rows)
+        if more_rows:
+            lines.append(f"\n+{more_rows} more people")
     lines.append("")
     threads = activity["threads"][:top]
     if not threads:
@@ -931,29 +1036,20 @@ def write_chat_report(activity, path, handle, since, now, label, top=10, items_p
         if more_people:
             lines.append(f"- +{more_people} more people")
     lines.append("")
-    rows = activity["interactions"][:top]
-    if not rows:
-        lines.append("No likes or reposts in this stretch.")
-    else:
-        lines += ["### Likes & Reposts",
-                  "| User | Likes | Reposts |",
-                  "|---|---|---|"]
-        for row in rows:
-            mark = " 👤?" if row["stranger"] else ""
-            lines.append(
-                f"| {row['name']} [@{row['username']}](https://x.com/{row['username']}){mark} "
-                f"| {row['likes']} | {row['reposts']} |"
-            )
-        more_rows = len(activity["interactions"]) - len(rows)
-        if more_rows:
-            lines.append(f"\n+{more_rows} more people")
-    lines.append("")
-    catch = activity["catch_up"][:top]
+    catch = activity["catch_up"]
     if not catch:
-        lines.append("No one to catch up with in this stretch.")
+        if activity.get("catch_hint"):
+            lines.append("No one to catch up with in this stretch.")
+            lines.append("Add people to your good neighbours list to keep up with them here.")
+        else:
+            lines.append("No recent original posts from your good neighbours.")
     else:
-        lines += ["### Catch up with your friends",
-                  "Latest posts from the people who engaged with you most."]
+        lines.append("### Catch up with your good neighbours")
+        if activity.get("catch_hint"):
+            lines.append("Add people to your good neighbours list to keep up with them here.")
+            lines.append("Latest posts from the people who engaged with you most.")
+        else:
+            lines.append("Latest original posts from your good neighbours.")
         for person in catch:
             lines.append(f"- {user_markdown(person)}")
             latest = person["latest"]
@@ -965,6 +1061,14 @@ def write_chat_report(activity, path, handle, since, now, label, top=10, items_p
                 f"  - “{snippet(latest.get('text')) or 'Post'}” · {ago(when, now)} · "
                 f"[Read post]({person['latest_url']})"
             )
+    lines.append("")
+    lines.append("### Thank your neighbours on X")
+    if thanks:
+        lines.append(thanks["text"])
+        lines.append("")
+        lines.append(f"[Post your thank-you]({thanks['intent']})")
+    else:
+        lines.append("No neighbours to thank in this stretch.")
     with open(path, "w", encoding="utf-8") as fh:
         fh.write("\n".join(lines) + "\n")
 
@@ -987,7 +1091,8 @@ def wrap_text(draw, text, face, width):
     return lines
 
 
-def render_report(activity, path, handle, since, now, label):
+def render_report(activity, path, handle, since, now, label, top=10, thanks=None,
+                  picture_path=None):
     from PIL import Image, ImageDraw
     width = 1100
     margin = 36
@@ -1049,15 +1154,59 @@ def render_report(activity, path, handle, since, now, label):
         _draw.rounded_rectangle((margin, y, margin + 22, y + 22), radius=6, fill=(255, 247, 237),
                                 outline=orange, width=2)
         _draw.text((margin + 6, y + 2), "?", font=small_font, fill=orange)
-        _draw.text((margin + 30, y + 2), "you don't follow them yet", font=body_font, fill=muted)
+        caption = "you don't follow them yet"
+        if activity.get("has_good_neighbours"):
+            caption += "      ★ = good neighbour"
+        _draw.text((margin + 30, y + 2), caption, font=body_font, fill=muted)
 
     add(40, legend)
+
+    def draw_name(_draw, x, y, person, face):
+        _draw.text((x, y), person["name"], font=face, fill=ink)
+        used = dummy.textlength(person["name"], font=face)
+        if person.get("good"):
+            _draw.text((x + used + 6, y), "★", font=face, fill=(180, 83, 9))
+            used += 6 + dummy.textlength("★", font=face)
+        return x + used
 
     def section(title, color):
         def paint(_draw, _img, y, title=title, color=color):
             _draw.rounded_rectangle((margin, y, width - margin, y + 42), radius=10, fill=color)
             _draw.text((margin + 16, y + 8), title, font=section_font, fill=(255, 255, 255))
         add(56, paint)
+
+    section("Likes & Reposts", rose)
+
+    def table_head(_draw, _img, y):
+        _draw.rectangle((margin, y, width - margin, y + 36), fill=(248, 250, 252))
+        columns = [(margin + 16, "User"), (inner * 0.58 + margin, "Replies"),
+                   (inner * 0.72 + margin, "Likes"), (inner * 0.86 + margin, "Reposts")]
+        for x, caption in columns:
+            _draw.text((x, y + 8), caption, font=small_font, fill=muted)
+
+    add(36, table_head)
+    table_rows = activity["interactions"][:top]
+    if not table_rows:
+        def empty_table(_draw, _img, y):
+            _draw.text((margin + 16, y + 8), "No replies, likes, or reposts in this window.",
+                       font=body_font, fill=muted)
+        add(36, empty_table)
+    for index, row in enumerate(table_rows):
+        def paint_row(_draw, img, y, row=row, index=index):
+            fill = (255, 255, 255) if index % 2 == 0 else (248, 250, 252)
+            _draw.rectangle((margin, y, width - margin, y + 48), fill=fill)
+            avatar = fetch_avatar(row["user"], os.path.join(os.path.dirname(path), ".avatar_cache"), 28)
+            img.paste(avatar, (margin + 12, y + 10), avatar)
+            draw_name(_draw, margin + 48, y + 6, row, name_font)
+            handle_text = "@" + row["username"]
+            _draw.text((margin + 48, y + 26), handle_text, font=small_font, fill=muted)
+            if row["stranger"]:
+                mark_x = margin + 48 + dummy.textlength(handle_text + " ", font=small_font)
+                _draw.text((mark_x, y + 24), "?", font=small_font, fill=orange)
+            _draw.text((inner * 0.58 + margin, y + 14), str(row["replies"]), font=body_font, fill=ink)
+            _draw.text((inner * 0.72 + margin, y + 14), str(row["likes"]), font=body_font, fill=ink)
+            _draw.text((inner * 0.86 + margin, y + 14), str(row["reposts"]), font=body_font, fill=ink)
+        add(48, paint_row)
 
     section("Replies & Quote posts", blue)
     if not activity["threads"]:
@@ -1068,8 +1217,7 @@ def render_report(activity, path, handle, since, now, label):
         def paint_user(_draw, img, y, thread=thread):
             avatar = fetch_avatar(thread["user"], os.path.join(os.path.dirname(path), ".avatar_cache"), 42)
             img.paste(avatar, (margin, y), avatar)
-            _draw.text((margin + 54, y), thread["name"], font=name_font, fill=ink)
-            handle_x = margin + 54 + dummy.textlength(thread["name"] + "  ", font=name_font)
+            handle_x = draw_name(_draw, margin + 54, y, thread, name_font) + 8
             _draw.text((handle_x, y + 2), "@" + thread["username"], font=body_font, fill=muted)
             if thread["stranger"]:
                 mark_x = handle_x + dummy.textlength("@" + thread["username"] + "   ", font=body_font)
@@ -1104,46 +1252,23 @@ def render_report(activity, path, handle, since, now, label):
                 _draw.text((margin + 66, text_y), meta, font=small_font, fill=state_color)
             add(block_h, paint_item)
 
-    section("Likes & Reposts", rose)
-
-    def table_head(_draw, _img, y):
-        _draw.rectangle((margin, y, width - margin, y + 36), fill=(248, 250, 252))
-        columns = [(margin + 16, "User"), (inner * 0.72 + margin, "Likes"),
-                   (inner * 0.86 + margin, "Reposts")]
-        for x, caption in columns:
-            _draw.text((x, y + 8), caption, font=small_font, fill=muted)
-
-    add(36, table_head)
-    if not activity["interactions"]:
-        def empty_table(_draw, _img, y):
-            _draw.text((margin + 16, y + 8), "No likes or reposts in this window.", font=body_font, fill=muted)
-        add(36, empty_table)
-    for index, row in enumerate(activity["interactions"]):
-        def paint_row(_draw, img, y, row=row, index=index):
-            fill = (255, 255, 255) if index % 2 == 0 else (248, 250, 252)
-            _draw.rectangle((margin, y, width - margin, y + 48), fill=fill)
-            avatar = fetch_avatar(row["user"], os.path.join(os.path.dirname(path), ".avatar_cache"), 28)
-            img.paste(avatar, (margin + 12, y + 10), avatar)
-            _draw.text((margin + 48, y + 6), row["name"], font=name_font, fill=ink)
-            handle_text = "@" + row["username"]
-            _draw.text((margin + 48, y + 26), handle_text, font=small_font, fill=muted)
-            if row["stranger"]:
-                mark_x = margin + 48 + dummy.textlength(handle_text + " ", font=small_font)
-                _draw.text((mark_x, y + 24), "?", font=small_font, fill=orange)
-            _draw.text((inner * 0.72 + margin, y + 14), str(row["likes"]), font=body_font, fill=ink)
-            _draw.text((inner * 0.86 + margin, y + 14), str(row["reposts"]), font=body_font, fill=ink)
-        add(48, paint_row)
-
-    section("Catch up with your friends", green)
+    section("Catch up with your good neighbours", green)
 
     def catch_intro(_draw, _img, y):
-        _draw.text((margin, y), "Latest posts from the people who engaged with you most",
-                   font=body_font, fill=muted)
+        if activity.get("has_good_neighbours"):
+            text = "Latest original posts from your good neighbours"
+        else:
+            text = "Add people to your good neighbours list to keep up with them here."
+        _draw.text((margin, y), text, font=body_font, fill=muted)
 
     add(28, catch_intro)
     if not activity["catch_up"]:
         def empty_catch(_draw, _img, y):
-            _draw.text((margin, y), "No one to catch up with in this window.", font=body_font, fill=muted)
+            if activity.get("has_good_neighbours"):
+                text = "No recent original posts from your good neighbours."
+            else:
+                text = "No one to catch up with in this window."
+            _draw.text((margin, y), text, font=body_font, fill=muted)
         add(28, empty_catch)
     for person in activity["catch_up"]:
         latest = person["latest"]
@@ -1154,8 +1279,7 @@ def render_report(activity, path, handle, since, now, label):
         def paint_catch(_draw, img, y, person=person, lines=lines, latest=latest):
             avatar = fetch_avatar(person["user"], os.path.join(os.path.dirname(path), ".avatar_cache"), 36)
             img.paste(avatar, (margin, y), avatar)
-            _draw.text((margin + 48, y), person["name"], font=name_font, fill=ink)
-            handle_x = margin + 48 + dummy.textlength(person["name"] + "  ", font=name_font)
+            handle_x = draw_name(_draw, margin + 48, y, person, name_font) + 8
             _draw.text((handle_x, y + 2), "@" + person["username"], font=body_font, fill=muted)
             if person["stranger"]:
                 mark_x = handle_x + dummy.textlength("@" + person["username"] + " ", font=body_font)
@@ -1168,6 +1292,30 @@ def render_report(activity, path, handle, since, now, label):
                 when = ago(ts(latest["created_at"]), now)
                 _draw.text((margin + 48, text_y), when + "   ·   Read post", font=small_font, fill=blue)
         add(block_h + 18, paint_catch)
+
+    section("Thank your neighbours on X", (180, 83, 9))
+    thank_text = (thanks or {}).get("text") or "Thank you to my X neighbours."
+    thumb = None
+    if picture_path and os.path.isfile(picture_path):
+        with Image.open(picture_path) as src:
+            thumb = src.convert("RGB")
+            thumb.thumbnail((220, 220))
+    text_width = inner - (thumb.width + 24 if thumb else 0)
+    thank_lines = wrap_text(dummy, thank_text, body_font, text_width)
+    thank_h = max(thumb.height + 16 if thumb else 0, 22 * len(thank_lines) + 36)
+
+    def paint_thanks(_draw, img, y, thank_lines=thank_lines, thumb=thumb):
+        text_x = margin
+        if thumb is not None:
+            img.paste(thumb, (margin, y))
+            text_x = margin + thumb.width + 16
+        text_y = y
+        for row in thank_lines:
+            _draw.text((text_x, text_y), row, font=body_font, fill=ink)
+            text_y += 22
+        _draw.text((text_x, text_y + 8), "Post your thank-you", font=small_font, fill=blue)
+
+    add(thank_h, paint_thanks)
 
     height = 28 + sum(block[0] for block in blocks) + 24
     image = Image.new("RGB", (width, height), (241, 245, 249))
@@ -1222,13 +1370,6 @@ def extra_sections(data, since, now, handle, top, like_weight, reply_weight, per
     return "\n".join(lines)
 
 
-def picture_this_week(now, every_n, handle):
-    if not every_n or int(every_n) <= 0:
-        return False
-    year, week, _weekday = now.isocalendar()
-    return random.Random(f"{handle}:{year}-W{week:02d}").randrange(int(every_n)) == 0
-
-
 def main():
     here = os.path.dirname(os.path.abspath(__file__))
     parser = argparse.ArgumentParser(
@@ -1259,10 +1400,12 @@ def main():
     parser.add_argument("--report-card", action="store_true",
                         help="also write the report card PNG (off by default)")
     parser.add_argument("--picture", dest="picture", action=argparse.BooleanOptionalAction,
-                        default=None, help="include the neighbours picture (weekly default is about 1 in 3)")
+                        default=None, help="include the neighbours picture (default: every report)")
     parser.add_argument("--show-names", dest="show_names", action="store_true", default=None)
     parser.add_argument("--hide-names", dest="show_names", action="store_false")
     parser.add_argument("--no-image", action="store_true")
+    parser.add_argument("--good-neighbours", dest="good_neighbours",
+                        help="path to the personal good neighbours JSON; a missing file is an empty list")
     args = parser.parse_args()
     cfg = dict(DEFAULTS)
     if os.path.exists(args.config):
@@ -1316,6 +1459,7 @@ def main():
         now = now.replace(tzinfo=timezone.utc)
     data = Data(args.data, me_id)
     data.exclude = {handle.lower() for handle in cfg["exclude"]}
+    neighbours = load_good_neighbours(cfg.get("good_neighbours"))
     me = {"id": me_id, "username": cfg["handle"]}
     stored = data.users.get(me_id, {})
     me.update({k: v for k, v in stored.items() if v not in (None, "")})
@@ -1341,38 +1485,37 @@ def main():
     for key, days, label in windows:
         since = now - timedelta(days=days)
         activity = build_activity(
-            data, since, now, cfg["top"], like_weight, reply_weight, mode, now)
+            data, since, now, cfg["top"], like_weight, reply_weight, mode, now,
+            good_neighbours=neighbours)
         md_path = os.path.join(args.out, f"report_{key}.md")
         png_path = os.path.join(args.out, f"report_{key}.png")
-        write_chat_report(
-            activity, md_path, cfg["handle"], since, now, label,
-            top=cfg["top"], items_per_user=int(cfg.get("items_per_user") or 3))
-        if cfg["per_post"] or cfg["per_day"]:
-            with open(md_path, "a", encoding="utf-8") as fh:
-                fh.write("\n" + extra_sections(
-                    data, since, now, cfg["handle"], cfg["top"], like_weight, reply_weight,
-                    cfg["per_post"], cfg["per_day"]) + "\n")
-        if args.report_card and not args.no_image:
-            render_report(activity, png_path, cfg["handle"], since, now, label)
-        draw_picture = args.picture
-        if draw_picture is None and key == "week":
-            draw_picture = picture_this_week(now, cfg.get("picture_every_n_weeks", 3), cfg["handle"])
-        if draw_picture is None:
-            draw_picture = False
+        thanked = ["@" + row["username"] for row in activity["interactions"][:5]]
+        if not thanked:
+            thanked = ["@" + person["username"] for person in activity["catch_up"][:5]]
+        text, intent = thank_you_post(thanked)
+        thanks = {"text": text, "intent": intent}
+        draw_picture = args.picture is not False and not args.no_image
         picture_path = None
-        thanks = None
-        if draw_picture and not args.no_image:
+        if draw_picture:
             picture_path = os.path.join(args.out, f"x_neighbours_{key}.png")
             draw_circle(
                 data, me, activity["ranked"], picture_path,
                 rings=cfg["rings"], show_names=cfg["show_names"],
                 subtitle=SUBTITLES["both"].get(key, f"Top neighbours, {label.lower()}"),
                 theme=cfg["theme"])
-            names = ["@" + person["username"] for person in activity["catch_up"][:5]]
-            text, intent = thank_you_post(names)
-            thanks = {"text": text, "intent": intent}
+        write_chat_report(
+            activity, md_path, cfg["handle"], since, now, label,
+            top=cfg["top"], items_per_user=int(cfg.get("items_per_user") or 3),
+            thanks=thanks)
+        if cfg["per_post"] or cfg["per_day"]:
             with open(md_path, "a", encoding="utf-8") as fh:
-                fh.write(f"\n### Neighbours picture\n\n{text}\n\n[Post this thank-you]({intent})\n")
+                fh.write("\n" + extra_sections(
+                    data, since, now, cfg["handle"], cfg["top"], like_weight, reply_weight,
+                    cfg["per_post"], cfg["per_day"]) + "\n")
+        if args.report_card and not args.no_image:
+            render_report(
+                activity, png_path, cfg["handle"], since, now, label,
+                top=cfg["top"], thanks=thanks, picture_path=picture_path)
         output[key] = {
             "replies": activity["totals"]["replies"],
             "quotes": activity["totals"]["quotes"],
@@ -1380,12 +1523,29 @@ def main():
             "reposts": activity["totals"]["reposts"],
             "catch_up": ["@" + person["username"] for person in activity["catch_up"]],
             "report_md": md_path,
+            "thank_you": thanks,
         }
+        if key in ("day", "first"):
+            suggestions = suggest_good_neighbours(
+                activity, neighbours, top=cfg["top"])
+            if suggestions:
+                output[key]["suggest_good_neighbours"] = suggestions
+                output[key]["add_question"] = {
+                    "label": "⭐ Add",
+                    "prompt": "Want to add any of these to your good neighbours?",
+                    "options": [person["label"] for person in suggestions],
+                    "free_text": "Or name anyone else",
+                }
+                lines = ["", "⭐ Add", "",
+                         "Want to add any of these to your good neighbours? "
+                         "Pick any, or name someone else."]
+                lines += [f"- {person['label']}" for person in suggestions]
+                with open(md_path, "a", encoding="utf-8") as fh:
+                    fh.write("\n".join(lines) + "\n")
         if args.report_card and not args.no_image:
             output[key]["report_png"] = png_path
         if picture_path:
             output[key]["picture"] = picture_path
-            output[key]["thank_you"] = thanks
     print(json.dumps(output, ensure_ascii=False))
 
 
