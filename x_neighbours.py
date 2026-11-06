@@ -1036,7 +1036,8 @@ def suggest_good_neighbours(activity, neighbours, limit=5, top=10):
             "id": row["id"],
             "username": row["username"],
             "name": row["name"],
-            "label": f"⭐ @{row['username']}",
+            "label": suggestion_label(row),
+            "avatar": avatar_url(row),
         })
         if len(picked) >= limit:
             break
@@ -1058,6 +1059,71 @@ def on_post_line(text):
 
 CHAT_SHOW = 5
 THANK_YOU_NOTE = "Save the picture and attach it in X before posting."
+
+
+def elapsed_phrase(since, now):
+    """Compact elapsed time. Uses the clock difference, not a calendar date."""
+    seconds = max(0, (now - since).total_seconds())
+    minutes = int(round(seconds / 60))
+    if minutes < 60:
+        minutes = max(minutes, 1 if seconds else 0)
+        if minutes == 1:
+            return "1 min ago"
+        return f"{minutes} min ago"
+    hours, mins = divmod(minutes, 60)
+    if hours < 48:
+        hr = "1 hr" if hours == 1 else f"{hours} hr"
+        if mins == 0:
+            return f"{hr} ago"
+        mn = "1 min" if mins == 1 else f"{mins} min"
+        return f"{hr} {mn} ago"
+    days, rem_h = divmod(hours, 24)
+    if rem_h == 0:
+        return "1 day ago" if days == 1 else f"{days} days ago"
+    hr = "1 hr" if rem_h == 1 else f"{rem_h} hr"
+    day = "1 day" if days == 1 else f"{days} days"
+    return f"{day} {hr} ago"
+
+
+def period_line(window, since, now, label):
+    if window == "fresh":
+        return f"Since your last report · {elapsed_phrase(since, now)}"
+    if window == "day":
+        return "Last 24 hours"
+    if window == "week":
+        return "Last 7 days"
+    if window == "first":
+        span = label or "Last 2 days"
+        if span.lower().startswith("last "):
+            span = span[0].lower() + span[1:]
+        return f"First report · {span}"
+    if window == "custom":
+        return label or "Custom period"
+    return label or "This report"
+
+
+def count_line(totals):
+    return (
+        f"💬 {totals.get('replies') or 0} · "
+        f"🔁💬 {totals.get('quotes') or 0} · "
+        f"❤️ {totals.get('likes') or 0} · "
+        f"🔁 {totals.get('reposts') or 0}"
+    )
+
+
+def avatar_url(person):
+    """Profile image from saved user data. Not rendered in the chat text."""
+    user = person.get("user") or {}
+    url = user.get("profile_image_url") or person.get("profile_image_url") or ""
+    return url or None
+
+
+def suggestion_label(row):
+    name = row.get("name") or row.get("username") or ""
+    label = f"{name} (@{row['username']})"
+    if row.get("good"):
+        return f"⭐ {label}"
+    return label
 
 
 def person_marks(person):
@@ -1097,6 +1163,7 @@ def flower_record(row):
         "replies": row.get("replies") or 0,
         "likes": row.get("likes") or 0,
         "reposts": row.get("reposts") or 0,
+        "avatar": avatar_url(row),
     }
 
 
@@ -1123,6 +1190,7 @@ def catch_record(person):
         "text": snippet(latest.get("text")) or "Post",
         "url": person.get("latest_url") or "",
         "created_at": created.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ") if created else "",
+        "avatar": avatar_url(person),
     }
 
 
@@ -1142,6 +1210,7 @@ def greeting_rows(threads):
                 "on_text": snippet(item.get("on_text") or ""),
                 "created_at": created.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ") if created else "",
                 "replied": bool(item.get("replied")),
+                "avatar": avatar_url(thread),
                 "_when": created or datetime.min.replace(tzinfo=timezone.utc),
             }
             (answered if row["replied"] else unanswered).append(row)
@@ -1181,17 +1250,11 @@ def public_greeting(row, now):
 
 
 def write_chat_report(activity, path, handle, since, now, label, top=10, items_per_user=3,
-                      show=CHAT_SHOW):
-    end = now.astimezone(timezone.utc)
-    start = since.astimezone(timezone.utc)
+                      show=CHAT_SHOW, window="day"):
     totals = activity["totals"]
     lines = [
-        f"**X Neighbours · @{handle}**",
-        f"{label} ({start.strftime('%b %-d')} – {end.strftime('%b %-d')})",
-        f"{counted(totals['replies'], 'reply', 'replies')} · "
-        f"{counted(totals['quotes'], 'quote', 'quotes')} · "
-        f"{counted(totals['likes'], 'like', 'likes')} · "
-        f"{counted(totals['reposts'], 'repost', 'reposts')}",
+        period_line(window, since, now, label),
+        count_line(totals),
     ]
     people = activity["threads"] + activity["interactions"] + activity["catch_up"]
     legend = []
@@ -1206,7 +1269,7 @@ def write_chat_report(activity, path, handle, since, now, label, top=10, items_p
     if not flowers:
         lines.append("No replies, likes, or reposts in this stretch.")
     else:
-        lines.append("### 💐 Flowers from your neighbours")
+        lines.append("### 💐 Flowers")
         lines.append("")
         for row in flowers[:show]:
             lines.extend(flower_lines(row))
@@ -1224,7 +1287,7 @@ def write_chat_report(activity, path, handle, since, now, label, top=10, items_p
         else:
             lines.append("No recent original posts from your good neighbours.")
     else:
-        lines.append("### Catch up with your good neighbours")
+        lines.append("### 🏡 What's new")
         if activity.get("catch_hint"):
             lines.append("Add people to your good neighbours list to keep up with them here.")
         lines.append("")
@@ -1232,13 +1295,13 @@ def write_chat_report(activity, path, handle, since, now, label, top=10, items_p
             lines.extend(catch_lines(person, now))
         extra = len(catch) - show
         if extra > 0:
-            lines.append(f"+{extra} more to catch up with. Ask to see them.")
+            lines.append(f"+{extra} more in What's new. Ask to see them.")
             lines.append("")
     unanswered, answered = greeting_rows(activity["threads"])
     if not unanswered and not answered:
         lines.append("No replies or quote posts in this stretch.")
     else:
-        lines.append("### 👋 Greetings from your neighbours")
+        lines.append("### 👋 Replies")
         lines.append("")
         if not unanswered:
             lines.append("No replies waiting on you.")
@@ -1247,7 +1310,7 @@ def write_chat_report(activity, path, handle, since, now, label, top=10, items_p
             lines.extend(greeting_lines(row, now))
         extra = len(unanswered) - show
         if extra > 0:
-            lines.append(f"+{extra} more greetings. Ask to see them.")
+            lines.append(f"+{extra} more replies. Ask to see them.")
             lines.append("")
         if answered:
             lines.append(f"{len(answered)} already answered. Ask to see them.")
@@ -1377,7 +1440,7 @@ def render_report(activity, path, handle, since, now, label, top=10, thanks=None
             _draw.text((margin + 16, y + 8), title, font=section_font, fill=(255, 255, 255))
         add(56, paint)
 
-    section("Flowers from your neighbours", rose)
+    section("Flowers", rose)
 
     def table_head(_draw, _img, y):
         _draw.rectangle((margin, y, width - margin, y + 36), fill=(248, 250, 252))
@@ -1410,7 +1473,7 @@ def render_report(activity, path, handle, since, now, label, top=10, thanks=None
             _draw.text((inner * 0.86 + margin, y + 14), str(row["reposts"]), font=body_font, fill=ink)
         add(48, paint_row)
 
-    section("Catch up with your good neighbours", green)
+    section("What's new", green)
 
     def catch_intro(_draw, _img, y):
         if activity.get("has_good_neighbours"):
@@ -1453,7 +1516,7 @@ def render_report(activity, path, handle, since, now, label, top=10, thanks=None
                 _draw.text((margin + 48, text_y), when + "   ·   Read post", font=small_font, fill=blue)
         add(block_h + 18, paint_catch)
 
-    section("Greetings from your neighbours", blue)
+    section("Replies", blue)
     if not activity["threads"]:
         def empty_threads(_draw, _img, y):
             _draw.text((margin, y), "No replies or quote posts in this window.", font=body_font, fill=muted)
@@ -1693,13 +1756,15 @@ def main():
         first_days = int(cfg.get("first_run_days") or 2)
         if first_days < 1:
             parser.error("first_run_days must be at least 1")
-        windows = [("first", first_days, f"Last {first_days} days")]
+        first_label = "Last 24 hours" if first_days == 1 else f"Last {first_days} days"
+        windows = [("first", first_days, first_label)]
         if args.picture is None:
             args.picture = True
     elif args.days:
         if args.days < 1:
             parser.error("days must be at least 1")
-        windows = [("custom", args.days, f"Last {args.days} days")]
+        custom_label = "Last 24 hours" if args.days == 1 else f"Last {args.days} days"
+        windows = [("custom", args.days, custom_label)]
     else:
         windows = [
             (key, days, label) for key, (label, days, _subtitle) in (
@@ -1734,7 +1799,8 @@ def main():
         more_path = os.path.join(args.out, f"report_{key}_more.json")
         more = write_chat_report(
             activity, md_path, cfg["handle"], since, now, label,
-            top=cfg["top"], items_per_user=int(cfg.get("items_per_user") or 3))
+            top=cfg["top"], items_per_user=int(cfg.get("items_per_user") or 3),
+            window=key)
         with open(more_path, "w", encoding="utf-8") as fh:
             json.dump(more, fh, ensure_ascii=False, indent=2)
             fh.write("\n")

@@ -154,9 +154,16 @@ Send exactly two chat messages, in this order. Then, only if `add_question` is p
 
 The sections, in order, are written for a phone. Do not turn them back into a wide table.
 
-1. **💐 Flowers from your neighbours** — one person per block. The name is the only link. Counts sit on the next line (`2 replies · 4 likes · 1 repost`). Replies means replies plus quote posts. Biggest supporters first. No Total column and no second @handle.
-2. **Catch up with your good neighbours** — the post preview is the link. No @handle and no separate “Read post” link.
-3. **👋 Greetings from your neighbours** — unanswered first, one block each, no nested bullets. The preview text is a link to that reply or quote (`url`), so the owner can open it and answer. Replies you already answered are left out. The report says how many, and they can ask to see them.
+The first two lines of `report_<window>.md` are the header. Do not add a date range such as Nov 5 – Nov 5.
+
+1. The interval. A fresh report is `Since your last report · 30 min ago`, using the real time since the previous report (`min`, `hr`, `day`). A daily report is `Last 24 hours`. A Monday report is `Last 7 days`. A first run is `First report · last 2 days` (or last 24 hours when `first_run_days` is 1).
+2. Emoji counts only, including zeros: `💬 3 · 🔁💬 0 · ❤️ 0 · 🔁 0`. No words beside those numbers.
+
+Then the sections, written for a phone. Do not turn them back into a wide table. The headings are short:
+
+1. **💐 Flowers** — one person per block. The name is the only link. Counts sit on the next line (`2 replies · 4 likes · 1 repost`). Replies means replies plus quote posts. Biggest supporters first. No Total column and no second @handle.
+2. **🏡 What's new** — the post preview is the link. No @handle and no separate “Read post” link. Same people as Catch up: good neighbours when the list has anyone, otherwise the top people from the period.
+3. **👋 Replies** — unanswered first, one block each, no nested bullets. The preview text is a link to that reply or quote (`url`), so the owner can open it and answer. Replies you already answered are left out. The report says how many, and they can ask to see them.
 
 A Markdown hard line break (two spaces at the end of the line) separates a name from the counts under it, and a name from the post preview. Keep those breaks when you send the text. A single newline is not enough; chat will join the lines.
 
@@ -170,7 +177,9 @@ The picture belongs inside this message. Do not send the picture as its own mess
 
 Do not post the thank-you yourself.
 
-**Then the ⭐ Add card, or nothing.** If `add_question` is absent, stop. If it is present, send one multi-select question card after message 2. The short label is **⭐ Add**. The prompt is “Add to good neighbours?”. The options are the `label` values (`⭐ @handle`), in Flowers order, at most five, and only people who are not on the list. There is one free-text option (“Or name anyone else”). Do not also paste that list into message 1 or message 2. Do not look anyone else up on X to invent suggestions. Do not send the card on the Monday report. When they pick someone, add them with `good_neighbours.py`. Use the id and name already in `suggest_good_neighbours`. Call `get_users_by_username` only for a handle that is not in that list.
+**Then the ⭐ Add card, or nothing.** If `add_question` is absent, stop. If it is present, send one multi-select question card after message 2. The short label is **⭐ Add**. The prompt is “Add to good neighbours?”. Use each option's `label` exactly. It is `Display Name (@username)`, with a ⭐ in front only when that person is already a good neighbour. Do not shorten it to `@handle`. There is one free-text option (“Or name anyone else”). Do not also paste that list into message 1 or message 2. Do not look anyone else up on X to invent suggestions. Do not send the card on the Monday report. When they pick someone, add them with `good_neighbours.py`. Use the id and name already in `suggest_good_neighbours`. Call `get_users_by_username` only for a handle that is not in that list.
+
+Profile photos are not drawn in the chat. This host can attach a gallery of images to a message, and it cannot place a small picture beside a linked name. Putting avatars in that gallery would replace the clickable text, and a Markdown image would not show. Each person in `more_json` has an `avatar` field when the saved user data includes `profile_image_url`. Leave those URLs unused until the host can show one beside the name. Do not invent a screenshot of the list.
 
 ## Routines
 
@@ -249,7 +258,7 @@ Adding someone does not follow them. This run stays read-only on X.
 
 When the list is non-empty, Catch up with your good neighbours shows only those people, each one's latest original post the owner has not already liked, replied to, reposted, or quoted, and skips anyone with no such post. They are not inserted into the other sections just because they are on the list. When the list is empty, Catch up stays the top 10 from the period, with the same skip, and the report adds: “Add people to your good neighbours list to keep up with them here.” If everyone left is already engaged, the section is “You're all caught up with your good neighbours 🎉”.
 
-After a daily report, a first run, and a fresh on-demand report, the script lists up to five people from Flowers who are not on the list yet, in Flowers order. They are in `suggest_good_neighbours`. If nobody is left, `add_question` is absent and you skip the card. Send one multi-select card, short label **⭐ Add**, option labels `⭐ @handle`, plus a free-text option. A weekly report does not ask. The first-run closing line mentions the list once, besides that card.
+After a daily report, a first run, and a fresh on-demand report, the script lists up to five people from Flowers who are not on the list yet, in Flowers order. They are in `suggest_good_neighbours`. If nobody is left, `add_question` is absent and you skip the card. Send one multi-select card, short label **⭐ Add**. Each option label is `Display Name (@username)` from the `label` field. Do not rewrite it to the handle alone. Add a free-text option (“Or name anyone else”). A weekly report does not ask. The first-run closing line mentions the list once, besides that card.
 
 ## When they just say hello
 

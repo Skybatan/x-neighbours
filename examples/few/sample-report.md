@@ -1,9 +1,8 @@
-**X Neighbours · @fewcreator**
-last 24 hours (Nov 3 – Nov 4)
-2 replies · 1 quote · 6 likes · 1 repost
+Last 24 hours
+💬 2 · 🔁💬 1 · ❤️ 6 · 🔁 1
 👤? = you don't follow them yet · ⭐ = good neighbour
 
-### 💐 Flowers from your neighbours
+### 💐 Flowers
 
 **[Ada Brook](https://x.com/ada_brook)** ⭐  
 1 reply · 1 like
@@ -22,12 +21,12 @@ last 24 hours (Nov 3 – Nov 4)
 
 +1 more in Flowers. Ask to see them.
 
-### Catch up with your good neighbours
+### 🏡 What's new
 
 **Ada Brook** ⭐  
 [“Kept the window light on.”](https://x.com/ada_brook/status/83101) · 2h ago
 
-### 👋 Greetings from your neighbours
+### 👋 Replies
 
 **[Eri Fern](https://x.com/eri_fern)** 👤? · Quote · Not replied yet  
 [“Quiet streets are the best kind.”](https://x.com/eri_fern/status/72001) · 3h ago  

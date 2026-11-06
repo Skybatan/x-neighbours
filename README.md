@@ -16,7 +16,7 @@ People the owner does not follow are marked 👤?. There is no followed/unfollow
 
 The thank-you sentence is “My X neighbours circle, November 5!” plus a short thanks, using the report date in `timezone` (UTC if that key is blank). It does not mention any username.
 
-Every report has four parts, written so a phone can read them without sideways scrolling: Flowers as stacked people, Catch up as short post previews, Greetings with unanswered replies first, then Thank your neighbours on X. The first three sections show five entries and say how many are left. The house-framed picture sits in that last message with the thank-you words. The link does not attach the picture; the owner saves it and attaches it in X. The original three-ring layout is unchanged, and every avatar, including the centre, sits in a simple house frame. `--no-picture` skips the image.
+Every report has four parts, written so a phone can read them without sideways scrolling. The header is two lines: the period (`Since your last report · 30 min ago`, `Last 24 hours`, `Last 7 days`, or `First report · last 2 days`), then emoji counts only (`💬 3 · 🔁💬 0 · ❤️ 0 · 🔁 0`). The sections are 💐 Flowers, 🏡 What's new, 👋 Replies, then Thank your neighbours on X. The first three show five entries and say how many are left. The house-framed picture sits in that last message with the thank-you words. The link does not attach the picture; the owner saves it and attaches it in X. Profile photos are kept as metadata and are not placed in the chat text. The original three-ring layout is unchanged, and every avatar, including the centre, sits in a simple house frame. `--no-picture` skips the image.
 
 ![Sample neighbours picture with house frames, fictional data](docs/sample-neighbours.png)
 
