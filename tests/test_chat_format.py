@@ -48,16 +48,43 @@ class ChatFormatTest(unittest.TestCase):
             cls.more = json.load(fh)
 
     def test_section_order_and_no_table(self):
-        flowers = self.report.index("Flowers from your neighbours")
-        catch = self.report.index("Catch up with your good neighbours")
-        greet = self.report.index("Greetings from your neighbours")
+        flowers = self.report.index("### 💐 Flowers")
+        catch = self.report.index("### 🏡 What's new")
+        greet = self.report.index("### 👋 Replies")
         self.assertLess(flowers, catch)
         self.assertLess(catch, greet)
         self.assertNotIn("|---", self.report)
         self.assertNotIn("| User |", self.report)
+        self.assertNotIn("![", self.report)
+        self.assertNotIn("<img", self.report)
+
+    def test_header_is_two_lines_without_a_same_day_range(self):
+        head = self.report.split("### ")[0]
+        raw = [line for line in head.splitlines() if line.strip()]
+        lines = [line.rstrip() for line in raw]
+        self.assertEqual(lines[0], "Last 24 hours")
+        self.assertEqual(lines[1], "💬 2 · 🔁💬 1 · ❤️ 6 · 🔁 1")
+        self.assertTrue(raw[0].endswith("  "))
+        self.assertTrue(raw[1].endswith("  "))
+        self.assertNotIn("reply", lines[1].lower())
+        self.assertNotRegex(self.report, r"Nov \d+.Nov \d+")
+
+    def test_suggestion_labels_use_name_and_handle(self):
+        options = self.output["add_question"]["options"]
+        self.assertTrue(options)
+        for label in options:
+            self.assertRegex(label, r"^[^@]+ \(@[A-Za-z0-9_]+\)$")
+            self.assertNotRegex(label, r"^⭐ @")
+        self.assertIn("Cleo Dawn (@cleo_dawn)", options)
+
+    def test_avatar_metadata_is_kept_out_of_the_chat_text(self):
+        self.assertTrue(any(row.get("avatar") for row in self.more["flowers"]))
+        answered = self.more["greetings_answered"]
+        self.assertTrue(answered)
+        self.assertIn("avatar", answered[0])
 
     def test_flowers_are_stacked_and_capped(self):
-        block = self.report.split("### Catch up")[0]
+        block = self.report.split("### 🏡")[0]
         self.assertNotIn("@ada_brook", block)
         self.assertIn("[Ada Brook](https://x.com/ada_brook)", block)
         self.assertIn("1 reply · 1 like", block)
@@ -66,7 +93,7 @@ class ChatFormatTest(unittest.TestCase):
         self.assertLessEqual(block.count("https://x.com/"), 5)
 
     def test_catch_up_preview_has_one_link(self):
-        block = self.report.split("### Catch up")[1].split("### ")[0]
+        block = self.report.split("### 🏡 What's new")[1].split("### ")[0]
         self.assertIn("Kept the window light on.", block)
         self.assertNotIn("Quoting my own note", block)
         self.assertNotIn("Read post", block)
@@ -77,7 +104,7 @@ class ChatFormatTest(unittest.TestCase):
         self.assertEqual(self.more["catch_up"], [])
 
     def test_greeting_preview_links_to_the_post(self):
-        block = self.report.split("### 👋 Greetings")[1]
+        block = self.report.split("### 👋 Replies")[1]
         self.assertRegex(block, r"\]\(https://x\.com/[A-Za-z0-9_]+/status/\w+\)")
         self.assertIn("Not replied yet", block)
         for row in self.more["greetings_answered"]:
@@ -117,11 +144,11 @@ class ChatFormatTest(unittest.TestCase):
             self.report,
             r"\*\*Ada Brook\*\* ⭐  \n\[“Kept the window light on\.”\]",
         )
-        greet = self.report.split("### 👋 Greetings")[1]
+        greet = self.report.split("### 👋 Replies")[1]
         self.assertIn("  \n", greet)
 
     def test_greetings_skip_answered_by_default(self):
-        block = self.report.split("### 👋 Greetings")[1]
+        block = self.report.split("### 👋 Replies")[1]
         self.assertIn("Not replied yet", block)
         self.assertNotIn("already replied", block.lower())
         self.assertNotRegex(block, r"^\s+- ", )
@@ -144,6 +171,33 @@ class ChatFormatTest(unittest.TestCase):
             "Save the picture and attach it in X before posting.",
         )
         self.assertNotIn("###", self.thanks)
+
+
+class PeriodLabelTest(unittest.TestCase):
+    def test_elapsed_is_minutes_and_hours_not_a_calendar(self):
+        start = xn.ts("2026-11-04T17:30:00Z")
+        end = xn.ts("2026-11-04T18:00:00Z")
+        self.assertEqual(xn.elapsed_phrase(start, end), "30 min ago")
+        self.assertEqual(
+            xn.period_line("fresh", start, end, "Since your last report"),
+            "Since your last report · 30 min ago",
+        )
+        later = xn.ts("2026-11-04T19:00:00Z")
+        self.assertEqual(xn.elapsed_phrase(end, later), "1 hr ago")
+        self.assertEqual(xn.period_line("day", start, end, "last 24 hours"), "Last 24 hours")
+        self.assertEqual(xn.period_line("week", start, end, "last 7 days"), "Last 7 days")
+        self.assertEqual(
+            xn.period_line("first", start, end, "Last 2 days"),
+            "First report · last 2 days",
+        )
+
+    def test_timezone_does_not_change_the_elapsed_interval(self):
+        start = xn.ts("2026-11-04T17:30:00Z")
+        end = xn.ts("2026-11-04T18:00:00Z")
+        zone = xn.owner_zone("Pacific/Kiritimati")
+        shifted = end.astimezone(zone)
+        self.assertEqual(xn.elapsed_phrase(start, shifted), "30 min ago")
+        self.assertNotIn("Nov", xn.period_line("fresh", start, shifted, ""))
 
 
 if __name__ == "__main__":
