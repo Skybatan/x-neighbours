@@ -173,7 +173,7 @@ Then the sections, written for a phone. Do not turn them back into a wide table.
 2. **🏡 What's new** — the post preview is the link. No @handle and no separate “Read post” link. Same people as Catch up: good neighbours when the list has anyone, otherwise the top people from the period.
 3. **👋 Replies** — unanswered first, one block each, no nested bullets. The preview text is a link to that reply or quote (`url`), so the owner can open it and answer. Replies you already answered are left out. The report says how many, and they can ask to see them.
 
-A Markdown hard line break (two spaces at the end of the line) separates a name from the counts under it, and a name from the post preview. Keep those breaks when you send the text. A single newline is not enough; chat will join the lines.
+A Markdown hard line break (two spaces at the end of the line) separates the period from the emoji counts, the counts from the legend when there is one, a name from the counts under it, and a name from the post preview. Keep those breaks when you send the text. A single newline is not enough; chat will join the lines.
 
 Each section shows at most five entries. A last line says how many are left (`+3 more in Flowers. Ask to see them.`). Those entries are in `more_json` (`report_<window>_more.json`): `flowers`, `catch_up`, `greetings_unanswered`, and `greetings_answered`. If they ask for more, or for the answered greetings, send each greeting's `markdown` field. That text already links the preview to `url` and says `Replied` when `replied` is true, or `Not replied yet` when it is false. Do not relabel an answered greeting as not replied. Do not fetch X again. Do not paste the whole file. That file is this report only, not an older history.
 
@@ -187,7 +187,7 @@ Do not post the thank-you yourself.
 
 **Then the ⭐ Add card, or nothing.** If `add_question` is absent, stop. If it is present, send one multi-select question card after message 2. The short label is **⭐ Add**. The prompt is “Add to good neighbours?”. Use each option's `label` exactly. It is `Display Name (@username)`, with a ⭐ in front only when that person is already a good neighbour. Do not shorten it to `@handle`. There is one free-text option (“Or name anyone else”). Do not also paste that list into message 1 or message 2. Do not look anyone else up on X to invent suggestions. Do not send the card on the Monday report. When they pick someone, add them with `good_neighbours.py`. Use the id and name already in `suggest_good_neighbours`. Call `get_users_by_username` only for a handle that is not in that list.
 
-Profile photos are not drawn in the chat. This host can attach a gallery of images to a message, and it cannot place a small picture beside a linked name. Putting avatars in that gallery would replace the clickable text, and a Markdown image would not show. Each person in `more_json` has an `avatar` field when the saved user data includes `profile_image_url`. Leave those URLs unused until the host can show one beside the name. Do not invent a screenshot of the list.
+Profile photos are not drawn beside names in the chat. A message can include a gallery of images together with the text, but that gallery cannot line a small photo up with each person. A Markdown image would not show either. Each person in `more_json` has an `avatar` field when the saved user data includes `profile_image_url`. Leave those URLs unused until the host can place a photo on the same row as the name. Do not invent a screenshot of the list.
 
 ## Routines
 

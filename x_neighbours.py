@@ -1252,16 +1252,15 @@ def public_greeting(row, now):
 def write_chat_report(activity, path, handle, since, now, label, top=10, items_per_user=3,
                       show=CHAT_SHOW, window="day"):
     totals = activity["totals"]
-    lines = [
-        period_line(window, since, now, label),
-        count_line(totals),
-    ]
     people = activity["threads"] + activity["interactions"] + activity["catch_up"]
     legend = []
     if any(person["stranger"] for person in people):
         legend.append("👤? = you don't follow them yet")
     if activity.get("has_good_neighbours"):
         legend.append("⭐ = good neighbour")
+    counts = count_line(totals)
+    lines = [hard_break(period_line(window, since, now, label))]
+    lines.append(hard_break(counts) if legend else counts)
     if legend:
         lines.append(" · ".join(legend))
     lines.append("")

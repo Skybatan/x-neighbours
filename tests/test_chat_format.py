@@ -60,9 +60,12 @@ class ChatFormatTest(unittest.TestCase):
 
     def test_header_is_two_lines_without_a_same_day_range(self):
         head = self.report.split("### ")[0]
-        lines = [line for line in head.splitlines() if line.strip()]
+        raw = [line for line in head.splitlines() if line.strip()]
+        lines = [line.rstrip() for line in raw]
         self.assertEqual(lines[0], "Last 24 hours")
         self.assertEqual(lines[1], "💬 2 · 🔁💬 1 · ❤️ 6 · 🔁 1")
+        self.assertTrue(raw[0].endswith("  "))
+        self.assertTrue(raw[1].endswith("  "))
         self.assertNotIn("reply", lines[1].lower())
         self.assertNotRegex(self.report, r"Nov \d+.Nov \d+")
 

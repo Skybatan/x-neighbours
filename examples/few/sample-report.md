@@ -1,5 +1,5 @@
-Last 24 hours
-💬 2 · 🔁💬 1 · ❤️ 6 · 🔁 1
+Last 24 hours  
+💬 2 · 🔁💬 1 · ❤️ 6 · 🔁 1  
 👤? = you don't follow them yet · ⭐ = good neighbour
 
 ### 💐 Flowers
