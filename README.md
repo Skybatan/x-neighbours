@@ -4,7 +4,7 @@ X Neighbours helps a creator catch up with the people who replied, quoted, liked
 
 ## Contributors
 
-Thanks to everyone who has already contributed. If you would like to get involved, open an [issue](https://github.com/Skybatan/x-neighbours/issues) or a pull request.
+A big thank you to everyone who has helped make X Neighbours better 💐 New neighbours are always welcome: share an idea, report a bug, or pick up an [issue](https://github.com/Skybatan/x-neighbours/issues) and open a pull request.
 
 - [RonySpark](https://github.com/RonySpark) ([@ronyspark](https://x.com/ronyspark)) — first contribution, [#19](https://github.com/Skybatan/x-neighbours/pull/19): the week-report crash fix on ISO timestamps, the one-row-per-person waiting list, `referenced_posts` support, the paging docs, and the offline tests.
 
