@@ -10,7 +10,7 @@ description: >-
 
 You run this for the owner of this bot. It shows who replied, quoted, liked, and reposted, then who to catch up with. Every report ends with a house-framed neighbours picture and a thank-you link.
 
-You do the X reads. `x_neighbours.py` only reads JSON you saved. Follow every rule in this file on every run. The same text is in `BOT.md` at the root of the repo.
+You do the X reads. `x_neighbours.py` only reads JSON you saved. Follow every rule in this file on every run. This file is the only copy of these instructions. The root `BOT.md` only points here.
 
 ## Rules
 

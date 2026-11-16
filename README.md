@@ -1,6 +1,14 @@
 # X Neighbours
 
+[![Tests](https://github.com/Skybatan/x-neighbours/actions/workflows/tests.yml/badge.svg)](https://github.com/Skybatan/x-neighbours/actions/workflows/tests.yml)
+
 X Neighbours helps a creator catch up with the people who replied, quoted, liked, and reposted. The default result is a short chat report (markdown). A report-card PNG is optional (`--report-card`). A bot does the reading on X. The script only reads the saved JSON. It does not follow, like, post, or send messages.
+
+## Contributors
+
+A big thank you to everyone who has helped make X Neighbours better 💐 New neighbours are always welcome: share an idea, report a bug, or pick up an [issue](https://github.com/Skybatan/x-neighbours/issues) and open a pull request. The steps are in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+- [RonySpark](https://github.com/RonySpark) ([@ronyspark](https://x.com/ronyspark)) — first contribution, [#19](https://github.com/Skybatan/x-neighbours/pull/19): the week-report crash fix on ISO timestamps, the one-row-per-person waiting list, `referenced_posts` support, the paging docs, and the offline tests.
 
 ![Sample report with fictional people](docs/sample-report.png)
 
@@ -48,7 +56,7 @@ python3 x_neighbours.py --now 2026-11-04T18:00:00Z
 | `report_*_thanks.md` | Section 4, the thank-you text and link. The picture is sent in the same chat message |
 | `x_neighbours_*.png` | The house-framed picture, included inside section 4 |
 
-A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same runbook is in [skills/x-neighbours/SKILL.md](skills/x-neighbours/SKILL.md)). Any concern in chat can become a short GitHub issue: the bot drafts it and hands over a prefilled link, once per topic, and the owner submits it. The Monday report ends with one line inviting that. The draft leaves out handles, names, and post text.
+A Grok Bot that runs this for its owner should follow [skills/x-neighbours/SKILL.md](skills/x-neighbours/SKILL.md). [BOT.md](BOT.md) only points at that file. Any concern in chat can become a short GitHub issue: the bot drafts it and hands over a prefilled link, once per topic, and the owner submits it. The Monday report ends with one line inviting that. The draft leaves out handles, names, and post text.
 
 ## Config
 
@@ -147,7 +155,7 @@ Likes, reposts, and quotes are one call per post:
 - Already-engaged posts: at most two like pages and one page of the owner's own posts. Reuse them for the rest of the day. A failed call does not stop the report.
 - One page is enough for almost every post. Fetch another page only while you are inside the day's budget.
 
-Follower lists refresh on Monday only. The Monday run reuses that morning's daily files and only fetches the earlier part of the week, including likes, reposts, and quotes. The two runs share the 1,000-read cap. The steps are in [BOT.md](BOT.md).
+Follower lists refresh on Monday only. The Monday run reuses that morning's daily files and only fetches the earlier part of the week, including likes, reposts, and quotes. The two runs share the 1,000-read cap. The steps are in [skills/x-neighbours/SKILL.md](skills/x-neighbours/SKILL.md).
 
 ## Try the sample
 
@@ -192,6 +200,8 @@ python3 x_neighbours.py \
 
 `examples/few/sample-report.md` is sections 1–3 of that daily report: Flowers, then Catch up with your good neighbours, then Greetings. `examples/few/sample-thanks.md` is section 4. The ⭐ Add card is separate and only lists Flowers people who are not on the list. Rebuild both datasets with `python3 examples/make_sample.py`. The list file is not rewritten by that script. Add someone with `python3 good_neighbours.py --file PATH add handle --id ID --name "Name"`. The freshness clock is `python3 report_state.py --file PATH check`.
 
+GitHub Actions runs `python3 -m unittest discover -s tests -v` and this offline report (the bundled fixtures under `tests/fixtures/offline` and the samples under `examples/`) on every pull request and on pushes to `main`. The job installs `requirements.txt`. It does not call X and does not use secrets.
+
 ## Privacy
 
 - `config.json`, `data/`, `.avatar_cache/`, `report_*.md`, `report_*.png`, `x_neighbours_*.png`, and a `good_neighbours.json` or `state.json` copied into the repo root are gitignored. Leave them that way. The real list and the report clock belong in the bot's store, not in this repo. `examples/few/good_neighbours.json` is fictional and is the only copy that is tracked.
@@ -212,7 +222,8 @@ python3 x_neighbours.py \
 | `.github/pull_request_template.md` | Checklist on every pull request |
 | `save_raw.py` | Store one tool result under `data/` |
 | `config.example.json` | Config template |
-| `BOT.md`, `skills/x-neighbours/SKILL.md` | Runbook for the bot |
+| `skills/x-neighbours/SKILL.md` | Runbook for the bot |
+| `BOT.md` | Pointer to that runbook |
 | `examples/sample/` | Fictional data and generated avatars |
 | `docs/sample-report.png` | Sample report picture, fictional people |
 | `docs/sample-report.html` | HTML source for that picture |
@@ -222,13 +233,3 @@ python3 x_neighbours.py \
 | `examples/few/good_neighbours.json` | Fictional good neighbours list |
 | `examples/few/sample-report.md` | Sections 1–3 of a daily report from that list |
 | `examples/few/sample-thanks.md` | Section 4, the thank-you with no usernames |
-
-## Contributing
-
-The shared process is in [CONTRIBUTING.md](CONTRIBUTING.md): open an issue first, one change per pull request, tests, the docs that change, and no personal data. The owner reviews and merges.
-
-## Contributors
-
-Thank you. One bullet per person, so the next name is easy to add.
-
-- [RonySpark](https://github.com/RonySpark) ([@ronyspark](https://x.com/ronyspark)) — first contribution, [#19](https://github.com/Skybatan/x-neighbours/pull/19): the week-report crash fix on ISO timestamps, the one-row-per-person waiting list, `referenced_posts` support, the paging docs, and the offline tests.
