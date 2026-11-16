@@ -48,7 +48,7 @@ python3 x_neighbours.py --now 2026-11-04T18:00:00Z
 | `report_*_thanks.md` | Section 4, the thank-you text and link. The picture is sent in the same chat message |
 | `x_neighbours_*.png` | The house-framed picture, included inside section 4 |
 
-A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same runbook is in [skills/x-neighbours/SKILL.md](skills/x-neighbours/SKILL.md)). Any concern in chat can become a short GitHub issue: the bot drafts it and hands over a prefilled link, once per topic, and the owner submits it. The Monday report ends with one line inviting that. The draft leaves out handles, names, and post text.
+A Grok Bot that runs this for its owner should follow [skills/x-neighbours/SKILL.md](skills/x-neighbours/SKILL.md). [BOT.md](BOT.md) only points at that file. Any concern in chat can become a short GitHub issue: the bot drafts it and hands over a prefilled link, once per topic, and the owner submits it. The Monday report ends with one line inviting that. The draft leaves out handles, names, and post text.
 
 ## Config
 
@@ -147,7 +147,7 @@ Likes, reposts, and quotes are one call per post:
 - Already-engaged posts: at most two like pages and one page of the owner's own posts. Reuse them for the rest of the day. A failed call does not stop the report.
 - One page is enough for almost every post. Fetch another page only while you are inside the day's budget.
 
-Follower lists refresh on Monday only. The Monday run reuses that morning's daily files and only fetches the earlier part of the week, including likes, reposts, and quotes. The two runs share the 1,000-read cap. The steps are in [BOT.md](BOT.md).
+Follower lists refresh on Monday only. The Monday run reuses that morning's daily files and only fetches the earlier part of the week, including likes, reposts, and quotes. The two runs share the 1,000-read cap. The steps are in [skills/x-neighbours/SKILL.md](skills/x-neighbours/SKILL.md).
 
 ## Try the sample
 
@@ -210,7 +210,8 @@ python3 x_neighbours.py \
 | `.github/ISSUE_TEMPLATE/feedback.md` | Issue template labelled `feedback` |
 | `save_raw.py` | Store one tool result under `data/` |
 | `config.example.json` | Config template |
-| `BOT.md`, `skills/x-neighbours/SKILL.md` | Runbook for the bot |
+| `skills/x-neighbours/SKILL.md` | Runbook for the bot |
+| `BOT.md` | Pointer to that runbook |
 | `examples/sample/` | Fictional data and generated avatars |
 | `docs/sample-report.png` | Sample report picture, fictional people |
 | `docs/sample-report.html` | HTML source for that picture |
