@@ -6,7 +6,7 @@ X Neighbours helps a creator catch up with the people who replied, quoted, liked
 
 ## Contributors
 
-A big thank you to everyone who has helped make X Neighbours better 💐 New neighbours are always welcome: share an idea, report a bug, or pick up an [issue](https://github.com/Skybatan/x-neighbours/issues) and open a pull request.
+A big thank you to everyone who has helped make X Neighbours better 💐 New neighbours are always welcome: share an idea, report a bug, or pick up an [issue](https://github.com/Skybatan/x-neighbours/issues) and open a pull request. The steps are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 - [RonySpark](https://github.com/RonySpark) ([@ronyspark](https://x.com/ronyspark)) — first contribution, [#19](https://github.com/Skybatan/x-neighbours/pull/19): the week-report crash fix on ISO timestamps, the one-row-per-person waiting list, `referenced_posts` support, the paging docs, and the offline tests.
 
@@ -56,7 +56,27 @@ python3 x_neighbours.py --now 2026-11-04T18:00:00Z
 | `report_*_thanks.md` | Section 4, the thank-you text and link. The picture is sent in the same chat message |
 | `x_neighbours_*.png` | The house-framed picture, included inside section 4 |
 
-A Grok Bot that runs this for its owner should follow [skills/x-neighbours/SKILL.md](skills/x-neighbours/SKILL.md). [BOT.md](BOT.md) only points at that file. Any concern in chat can become a short GitHub issue: the bot drafts it and hands over a prefilled link, once per topic, and the owner submits it. The Monday report ends with one line inviting that. The draft leaves out handles, names, and post text.
+A Grok Bot that runs this for its owner should follow [skills/x-neighbours/SKILL.md](skills/x-neighbours/SKILL.md). [BOT.md](BOT.md) only points at that file. Any concern in chat can become a short GitHub issue: the bot drafts it and hands over a prefilled link, once per topic, and the owner submits it. The Monday report ends with one line inviting that. The draft leaves out handles, names, and post text. A contributor's bot that changes this repo follows [skills/x-neighbours-maintain/SKILL.md](skills/x-neighbours-maintain/SKILL.md).
+
+## Version
+
+The version number is the single line in [`VERSION`](VERSION). `version.py` reads that file. This README does not copy the number.
+
+```bash
+python3 version.py
+python3 x_neighbours.py --version
+```
+
+What changed is in [CHANGELOG.md](CHANGELOG.md).
+
+## Upgrading an installed bot
+
+The clone and `config.json` stay where they are. The good neighbours list and the report clock stay in the bot store.
+
+1. From the clone, run `python3 version.py` and keep the line.
+2. `git pull --ff-only`. When `requirements.txt` changed, run `python3 -m pip install -r requirements.txt`. Leave `config.json` and `data/` uncommitted.
+3. Run `python3 version.py` again. When the line changed, read [CHANGELOG.md](CHANGELOG.md).
+4. Leave `good_neighbours.json` and `state.json` in the bot store. The next report uses the updated scripts. Connect X again only when the X tools are missing.
 
 ## Config
 
@@ -102,7 +122,7 @@ A Grok Bot that runs this for its owner should follow [skills/x-neighbours/SKILL
 | `report` | `both` (default), `likes`, or `replies` |
 | `per_post`, `per_day` | Extra markdown sections. Off unless you ask |
 
-Other flags: `--config`, `--data`, `--out`, `--now`, `--since`, `--days`, `--first-run`, `--report-card`, `--rings`, `--top`, `--theme`, `--windows day,week`, `--report likes`, `--per-post`, `--per-day`, `--picture`, `--no-picture`, `--show-names`, `--no-image`, `--good-neighbours PATH`, `--state PATH`, `--timezone`, `--fresh-hours`.
+Other flags: `--config`, `--data`, `--out`, `--now`, `--since`, `--days`, `--first-run`, `--report-card`, `--rings`, `--top`, `--theme`, `--windows day,week`, `--report likes`, `--per-post`, `--per-day`, `--picture`, `--no-picture`, `--show-names`, `--no-image`, `--good-neighbours PATH`, `--state PATH`, `--timezone`, `--fresh-hours`, `--version`.
 
 A plain run writes the markdown report and the neighbours picture. `--first-run` uses `first_run_days`. `--report-card` adds the PNG card. `--days 14` is a custom period. `--no-picture` skips the image.
 
@@ -213,15 +233,21 @@ GitHub Actions runs `python3 -m unittest discover -s tests -v` and this offline 
 
 | Path | Role |
 |---|---|
-| `x_neighbours.py` | Reports and pictures |
+| `x_neighbours.py` | Reports and pictures. `--version` prints the line in `VERSION` |
+| `VERSION` | The only copy of the version number |
+| `version.py` | Read that number. Code calls `version.version()` |
+| `CHANGELOG.md` | What changed, for anyone upgrading |
 | `good_neighbours.py` | Add, remove, or list the personal good neighbours file |
 | `report_state.py` | Read or update the freshness clock in the bot store |
 | `feedback_link.py` | Build a prefilled GitHub issue link. It does not post the issue |
 | `.github/ISSUE_TEMPLATE/feedback.md` | Issue template labelled `feedback` |
+| `CONTRIBUTING.md` | Shared process for issues and pull requests |
+| `.github/pull_request_template.md` | Checklist on every pull request |
 | `save_raw.py` | Store one tool result under `data/` |
 | `config.example.json` | Config template |
 | `skills/x-neighbours/SKILL.md` | Runbook for the bot |
 | `BOT.md` | Pointer to that runbook |
+| `skills/x-neighbours-maintain/SKILL.md` | How a contributor's bot changes this repo |
 | `examples/sample/` | Fictional data and generated avatars |
 | `docs/sample-report.png` | Sample report picture, fictional people |
 | `docs/sample-report.html` | HTML source for that picture |

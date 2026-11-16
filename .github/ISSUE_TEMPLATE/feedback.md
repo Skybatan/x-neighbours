@@ -12,6 +12,6 @@ labels: feedback
 ### Report
 
 - Type: daily, weekly, first, fresh, or other
-- Version: the short git SHA (`git rev-parse --short HEAD`)
+- Version: the line from `python3 version.py`, and the short git SHA (`git rev-parse --short HEAD`)
 
 Leave out handles, names, post text, the good neighbours list, and tokens.

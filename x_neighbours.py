@@ -20,7 +20,7 @@ Usage:
                       [--data data] [--out .] [--now 2026-11-04T18:00:00Z]
                       [--rings 3] [--top 10]
                       [--report likes|replies|both] [--per-post] [--per-day]
-                      [--good-neighbours PATH]
+                      [--good-neighbours PATH] [--version]
 """
 import argparse
 import glob
@@ -34,6 +34,8 @@ import urllib.request
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
+
+import version as xn_version
 
 
 def load(pattern):
@@ -1809,6 +1811,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Build an X Neighbours report, and sometimes the neighbours picture."
     )
+    parser.add_argument("--version", action="version", version=xn_version.version())
     parser.add_argument("--config", default=os.path.join(here, "config.json"))
     parser.add_argument("--handle")
     parser.add_argument("--user-id", dest="user_id")
