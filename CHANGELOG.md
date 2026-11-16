@@ -6,6 +6,10 @@ What changed in X Neighbours, newest first. The version number is the single lin
 python3 version.py
 ```
 
+## Unreleased
+
+- What's new shows each good neighbour's newest original post. A quote of their own counts. A reply or a plain repost does not. The age is that post's `created_at` against the current UTC time, not the report window. ([#36](https://github.com/Skybatan/x-neighbours/issues/36))
+
 ## 2026-11-16
 
 - Contributor bots follow [`skills/x-neighbours-maintain/SKILL.md`](skills/x-neighbours-maintain/SKILL.md): open an issue, branch, one change per pull request, run the tests, update the docs and this changelog, and bump `VERSION` when releasing. An installed bot upgrades in place. The upgrade steps live in [`skills/x-neighbours/SKILL.md`](skills/x-neighbours/SKILL.md). ([#28](https://github.com/Skybatan/x-neighbours/issues/28))
