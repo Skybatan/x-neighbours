@@ -1,0 +1,79 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Unit tests and offline report
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: python3 -m pip install -r requirements.txt
+
+      - name: Run unit tests
+        run: python3 -m unittest discover -s tests -v
+
+      # Bundled fixtures and examples only. No X API calls and no secrets.
+      - name: Offline report smoke
+        run: |
+          set -euo pipefail
+          out="${RUNNER_TEMP:-/tmp}/x-neighbours-smoke"
+          mkdir -p "$out"
+
+          python3 x_neighbours.py \
+            --config tests/fixtures/offline/offline.json \
+            --data tests/fixtures/offline \
+            --out "$out/fixtures" \
+            --now 2026-11-16T12:00:00Z \
+            --windows week \
+            --good-neighbours tests/fixtures/offline/good_neighbours.json \
+            > "$out/fixtures.json"
+          python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d["week"]["report_md"]' "$out/fixtures.json"
+
+          python3 x_neighbours.py \
+            --config config.example.json \
+            --handle samplecreator \
+            --user-id 900001 \
+            --data examples/sample \
+            --out "$out/sample" \
+            --now 2026-11-04T18:00:00Z \
+            > "$out/sample.json"
+          python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d["week"]["report_md"]' "$out/sample.json"
+
+          python3 x_neighbours.py \
+            --config config.example.json \
+            --handle fewcreator \
+            --user-id 800001 \
+            --data examples/few \
+            --out "$out/few" \
+            --now 2026-11-04T18:00:00Z \
+            --first-run \
+            > "$out/few.json"
+          python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d["first"]["report_md"]' "$out/few.json"
+
+          python3 x_neighbours.py \
+            --config config.example.json \
+            --handle fewcreator \
+            --user-id 800001 \
+            --data examples/few \
+            --good-neighbours examples/few/good_neighbours.json \
+            --out "$out/few-day" \
+            --now 2026-11-04T18:00:00Z \
+            --windows day \
+            > "$out/few-day.json"
+          python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d["day"]["report_md"]' "$out/few-day.json"
