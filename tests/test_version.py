@@ -101,11 +101,18 @@ class ReleaseNotesTest(unittest.TestCase):
         readme = read(os.path.join(ROOT, "README.md"))
         skill = read(os.path.join(ROOT, "skills", "x-neighbours", "SKILL.md"))
         bot = read(os.path.join(ROOT, "BOT.md"))
-        for text in (readme, skill, bot):
+        for text in (readme, skill):
             self.assertIn("python3 version.py", text)
             self.assertIn("CHANGELOG.md", text)
             self.assertIn("git pull --ff-only", text)
         self.assertIn("## Upgrading an installed bot", readme)
         self.assertIn("## Upgrading", skill)
-        self.assertIn("## Upgrading", bot)
         self.assertIn("skills/x-neighbours-maintain/SKILL.md", readme)
+        self.assertNotIn("## Upgrading", bot)
+        self.assertNotIn("## Rules", bot)
+        self.assertIn("skills/x-neighbours/SKILL.md", bot)
+        self.assertIn("This file only points there.", bot)
+        welcome = "A big thank you to everyone who has helped make X Neighbours better"
+        self.assertIn(welcome, readme)
+        self.assertEqual(readme.count("## Contributors"), 1)
+        self.assertLess(readme.index("## Contributors"), readme.index("## Setup"))

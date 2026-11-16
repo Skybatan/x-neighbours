@@ -14,7 +14,7 @@ You change this repo for a contributor. Follow every rule in this file. The owne
 
 1. Start from an issue. When the change has no issue, open one first. One issue is one change.
 2. Update `main`, then branch from it. Commit on that branch.
-3. Leave other open issues on their own branches. `CONTRIBUTING.md` and a pull request template are [#26](https://github.com/Skybatan/x-neighbours/issues/26). GitHub Actions are [#27](https://github.com/Skybatan/x-neighbours/issues/27). Merging `BOT.md` into [`skills/x-neighbours/SKILL.md`](../x-neighbours/SKILL.md) is [#29](https://github.com/Skybatan/x-neighbours/issues/29). Do that work only when the issue you are closing is that issue.
+3. Leave other open issues on their own branches. Add `CONTRIBUTING.md` or a pull request template only when that is the issue you are closing. Add another GitHub Actions workflow only when that is the issue. [`skills/x-neighbours/SKILL.md`](../x-neighbours/SKILL.md) is the only runbook. `BOT.md` only points there. Do not paste the runbook back into `BOT.md`.
 
 ## One change
 
@@ -24,7 +24,7 @@ One change per branch and per pull request. When you find a second problem, open
 - Run `python3 -m unittest discover -s tests -v`. Open the pull request only after it passes.
 - Update the docs the change touches:
   - [`README.md`](../../README.md)
-  - [`skills/x-neighbours/SKILL.md`](../x-neighbours/SKILL.md), the bot instructions. That file is becoming the single source ([#29](https://github.com/Skybatan/x-neighbours/issues/29)). When the sentence you edit is still duplicated in `BOT.md`, edit that sentence too so the two files agree. Leave `BOT.md` in place unless the issue is #29.
+  - [`skills/x-neighbours/SKILL.md`](../x-neighbours/SKILL.md), the bot instructions, and the only copy. `BOT.md` only points at that file. Edit the skill. Do not paste runbook text into `BOT.md`.
   - [`CHANGELOG.md`](../../CHANGELOG.md). Add a dated section at the top for what changed, and link the issue or the pull request.
 - When you release, bump the version. The number is the single line in [`VERSION`](../../VERSION). Replace that line. A fix bumps the last number. A feature bumps the middle number and sets the last number to 0. `version.py` reads `VERSION`. Check with `python3 version.py`. The README, the runbook, this skill, and the changelog do not copy the number.
 

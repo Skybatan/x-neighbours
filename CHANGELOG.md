@@ -8,7 +8,10 @@ python3 version.py
 
 ## 2026-11-16
 
-- Contributor bots follow [`skills/x-neighbours-maintain/SKILL.md`](skills/x-neighbours-maintain/SKILL.md): open an issue, branch, one change per pull request, run the tests, update the docs and this changelog, and bump `VERSION` when releasing. An installed bot upgrades in place. ([#28](https://github.com/Skybatan/x-neighbours/issues/28))
+- Contributor bots follow [`skills/x-neighbours-maintain/SKILL.md`](skills/x-neighbours-maintain/SKILL.md): open an issue, branch, one change per pull request, run the tests, update the docs and this changelog, and bump `VERSION` when releasing. An installed bot upgrades in place. The upgrade steps live in [`skills/x-neighbours/SKILL.md`](skills/x-neighbours/SKILL.md). ([#28](https://github.com/Skybatan/x-neighbours/issues/28))
+- [`skills/x-neighbours/SKILL.md`](skills/x-neighbours/SKILL.md) is the only runbook. [`BOT.md`](BOT.md) only points there. ([#32](https://github.com/Skybatan/x-neighbours/pull/32))
+- GitHub Actions runs the unit tests and an offline report on every pull request and on pushes to `main`. ([#30](https://github.com/Skybatan/x-neighbours/pull/30))
+- The Contributors section sits at the top of the README, with a welcome. ([#25](https://github.com/Skybatan/x-neighbours/pull/25), [#35](https://github.com/Skybatan/x-neighbours/pull/35))
 - The README thanks [RonySpark](https://github.com/RonySpark) for the first contribution. ([#23](https://github.com/Skybatan/x-neighbours/pull/23))
 - A week report no longer crashes when What's new has more than five people and `created_at` is still an ISO string. Waiting is one row per person, and only when their latest message in that thread has no reply. The loader prefers `referenced_tweets` and falls back to `referenced_posts`. Posts, mentions, and likers pass `max_results` 100, and mentions keep paging until there is no `next_token`. ([#19](https://github.com/Skybatan/x-neighbours/pull/19))
 
