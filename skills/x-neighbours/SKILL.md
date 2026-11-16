@@ -25,6 +25,15 @@ You do the X reads. `x_neighbours.py` only reads JSON you saved. Follow every ru
 
 Weights are a quiet setting. The meaning of `like_weight` and `reply_weight` lives only in the config section of [README.md](../../README.md). Do not ask about them before the first picture. Do not repeat the numbers on the picture, in report headings, or in the summary you send.
 
+## Upgrading
+
+An already-installed bot updates the clone it already has. Leave `config.json`, `data/`, and the bot store as they are.
+
+1. From the clone, run `python3 version.py` and keep the line.
+2. `git pull --ff-only`. When `requirements.txt` changed, run `python3 -m pip install -r requirements.txt`.
+3. Run `python3 version.py` again. When the line changed, read `CHANGELOG.md` and tell the owner the new version in one line.
+4. Leave the good neighbours file and `state.json` in the bot store. The next report uses the updated scripts. Connect X again only when the X tools are missing.
+
 ## First run
 
 The only step is to make sure **one** X account is connected. If the X tools are missing, ask them to tap **Connect** on the X card in this chat. Do not ask for a password, API key, or bearer token, and do not open x.com to log them in. Stop until that one account is connected.
@@ -32,7 +41,7 @@ The only step is to make sure **one** X account is connected. If the X tools are
 Then do the rest with the defaults. Do not ask setup questions.
 
 1. `get_users_me` with `user.fields=id,name,username,description,profile_image_url`. That is the account. Write `handle` and `user_id` into `config.json` copied from `config.example.json`. If you know their timezone, set `timezone` to an IANA name such as `Europe/Stockholm`. Leave `fresh_hours` unset unless they ask for a fixed interval. Leave every other key as in the example.
-2. Clone or `git pull --ff-only` this repo, install Pillow, and fetch only the last `first_run_days` from config (default **2 days**, 48 hours). Use the tool calls below with that `START`. Do not fetch a full week on the first run. Never commit `config.json` or `data/`.
+2. Clone or `git pull --ff-only` this repo, install Pillow, and fetch only the last `first_run_days` from config (default **2 days**, 48 hours). Use the tool calls below with that `START`. Do not fetch a full week on the first run. Never commit `config.json` or `data/`. A later update follows “Upgrading”.
 3. Run `python3 x_neighbours.py --now <T> --first-run --good-neighbours <path> --state <state path>`. Send the report as two messages, exactly as in “How to send a report”. Do not post the thank-you yourself. If stdout has `add_question`, send that one card after those two messages. Do not ask again in prose.
 4. Create both routines with no question: every day at 9:00 AM (last 24 hours, picture included), and Mondays at 9:00 AM (last 7 days, reusing daily files, picture included). Use their timezone, or UTC if you don't know it.
 5. Close with one line: daily and Monday reports are set; anything can be changed by asking (time, period, top N, likes only, replies only, per post, per day); say 'add @someone to my good neighbours' to keep up with them here.
@@ -65,13 +74,13 @@ Call the tools by these names on the owner's X connection. Always pass `max_resu
 - `start_time`: `START`
 - `exclude`: `retweets`
 - `max_results`: `100`
-- `post.fields`: `created_at,public_metrics,in_reply_to_user_id,referenced_tweets`
-- `expansions`: `author_id`
+- `post.fields`: `created_at,public_metrics,in_reply_to_user_id,referenced_tweets,conversation_id`
+- `expansions`: `author_id,referenced_posts`
 - `user.fields`: `username,name,profile_image_url,public_metrics`
 
-Save as `posts_1`, `posts_2`, and so on. On a scheduled run, use `posts_day_*` or `posts_week_*` as the Routines section says. The script loads every `posts_*.json`.
+Save as `posts_1`, `posts_2`, and so on. On a scheduled run, use `posts_day_*` or `posts_week_*` as the Routines section says. The script loads every `posts_*.json`. Do not pass `exclude=replies`. The owner's own replies have to be in these pages so Replies can tell an original post from a reply, and can see which replies the owner already answered.
 
-Also request `conversation_id` in `post.fields` so a later reply from the owner can be matched to the item.
+`referenced_posts` is how these X tools expand the parent post. Some payloads call that list `referenced_tweets`. Pass both names, and save the whole response, including `includes`. The script reads either name. `conversation_id` is the thread root: it matches the post id on an original post and differs on a reply.
 
 ### 2. Mentions
 
@@ -80,13 +89,21 @@ Also request `conversation_id` in `post.fields` so a later reply from the owner 
 - `id`: `{ID}`
 - `start_time`: `START`
 - `max_results`: `100`
-- `post.fields`: `created_at,author_id,in_reply_to_user_id,referenced_tweets,conversation_id`
-- `expansions`: `author_id`
+- `post.fields`: `created_at,author_id,text,in_reply_to_user_id,referenced_tweets,conversation_id`
+- `expansions`: `author_id,referenced_posts`
 - `user.fields`: `username,name,description,public_metrics,profile_image_url`
 
-Save as `mentions_1`, `mentions_2`, and so on. If `meta.next_token` is present, fetch the next page.
+Save as `mentions_1`, `mentions_2`, and so on, including `includes`. If `meta.next_token` is present, fetch the next page.
 
-A reply is a mention with `in_reply_to_user_id` equal to `{ID}`, or a `replied_to` reference whose id is one of the owner's posts. Ignore the owner's own posts.
+`expansions=referenced_posts` puts each mention's direct parent in `includes.posts` or `includes.tweets`. The mention itself still needs `referenced_tweets` or `referenced_posts` with `type` `replied_to` and that parent's id. Without the parent id, the script cannot tell a top-level reply from a later one in the thread.
+
+A Replies entry is only a top-level reply or a quote of the owner's post:
+
+- Top-level reply: the direct parent (`referenced_tweets` or `referenced_posts`, type `replied_to`) is one of the owner's original posts. Original means the owner's own post, not one of the owner's replies. If someone replies, the owner replies to them, and they reply back, that later reply's parent is the owner's reply, so it does not count.
+- Quote: type `quoted` points at one of the owner's posts, and the quote is not itself a reply to something else.
+- Never the owner's own posts or replies, even when they show up in mentions.
+
+`in_reply_to_user_id` equal to `{ID}` is not enough. That is also true of a reply under the owner's own reply.
 
 ### 3. Likers
 
@@ -120,9 +137,9 @@ Do this once per run, before the catch-up pages, and only if today's files are m
 
 `get_users_liked_posts` — `id` `{ID}`, `max_results` 20, `post.fields=id,created_at,author_id`. Save as `my_likes_1`. If `meta.next_token` is present, save one more page as `my_likes_2`, then stop.
 
-`get_users_posts` — `id` `{ID}`, `max_results` 20, no `exclude` (replies and reposts have to be in the page), `post.fields=created_at,text,author_id,in_reply_to_user_id,referenced_tweets,conversation_id`. Save as `my_posts_1`. One page only.
+`get_users_posts` — `id` `{ID}`, `max_results` 20, no `exclude` (replies and reposts have to be in the page), `post.fields=created_at,text,author_id,in_reply_to_user_id,referenced_tweets,conversation_id`, `expansions=author_id,referenced_posts`. Save as `my_posts_1`. One page only.
 
-Those files, plus replies already in `posts_*.json`, are how Catch up hides a post the owner liked, replied to, reposted, or quoted. A reply's `referenced_tweets` id of type `replied_to`, its `conversation_id`, a quote's `quoted` id, and a repost's `retweeted` id all count.
+Those files, plus replies already in `posts_*.json`, are how Catch up hides a post the owner liked, replied to, reposted, or quoted. A reply's `referenced_tweets` (or `referenced_posts`) id of type `replied_to`, its `conversation_id`, a quote's `quoted` id, and a repost's `retweeted` id all count. The same owner replies tell Replies which mentions are already answered: answered means the owner's reply's `replied_to` id is that mention's id. A page that drops replies, or drops `referenced_posts`, leaves an answered reply marked as not replied.
 
 ### 6. Latest post for the catch-up list
 
@@ -172,7 +189,7 @@ Then the sections, written for a phone. Do not turn them back into a wide table.
 
 1. **💐 Flowers** — one person per block. The name is the only link. Counts sit on the next line (`2 replies · 4 likes · 1 repost`). Replies means replies plus quote posts. Biggest supporters first. No Total column and no second @handle.
 2. **🏡 What's new** — the post preview is the link. No @handle and no separate “Read post” link. Same people as Catch up: good neighbours when the list has anyone, otherwise the top people from the period.
-3. **👋 Replies** — unanswered first, one block each, no nested bullets. The preview text is a link to that reply or quote (`url`), so the owner can open it and answer. Replies you already answered are left out. The report says how many, and they can ask to see them.
+3. **👋 Replies** — top-level replies and quote posts only, unanswered first, newest first inside the unanswered group and inside the answered group, one block each, no nested bullets. The preview text is a link to that reply or quote (`url`), so the owner can open it and answer. A reply counts only when its direct `replied_to` parent is one of the owner's original posts. A later reply in the thread does not count, and the owner's own posts are never listed. Replies the owner already answered directly are left out. The report says how many, and they can ask to see them. Shown answered text says `Replied`, never `Not replied yet`. The “ago” time is that post's `created_at` against the actual current UTC time, not the report window end.
 
 A Markdown hard line break (two spaces at the end of the line) separates the period from the emoji counts, the counts from the legend when there is one, a name from the counts under it, and a name from the post preview. Keep those breaks when you send the text. A single newline is not enough; chat will join the lines.
 
@@ -198,7 +215,7 @@ Both run at 9:00 AM in the owner's timezone. Count every X call from both toward
 
 ### Every day
 
-1. `git pull --ff-only`. Leave `config.json` and `data/` uncommitted.
+1. Follow “Upgrading” (`git pull --ff-only` is part of it). Leave `config.json` and `data/` uncommitted.
 2. Do not refresh followers or following.
 3. Pick `T`. `START` is `T` minus 24 hours.
 4. Fetch posts and mentions from `START`. Save them as `posts_day_1`, `posts_day_2`, … and `mentions_day_1`, ….
@@ -298,7 +315,7 @@ Offer this for any concern the owner mentions: a complaint, a wish, a nit, or a 
 1. Answer the point in a sentence or two.
 2. Ask once, as a yes/no card: “Want to report this so it gets fixed?”
 3. If they say no, drop it. Do not ask again about that same point in this conversation.
-4. If they say yes, draft a short issue and show it before any link. Title is one line. Body has what they expected, what happened, the report type (daily, weekly, first, fresh, or other), and the version from `git rev-parse --short HEAD`.
+4. If they say yes, draft a short issue and show it before any link. Title is one line. Body has what they expected, what happened, the report type (daily, weekly, first, fresh, or other), the version from `python3 version.py` (the line in `VERSION`), and the short git SHA from `git rev-parse --short HEAD`.
 5. Leave out every personal detail: handles, names, post text, the good neighbours list, avatars, ids, and tokens. Describe the behaviour, not the people.
 6. When they accept the draft, build the link. Do not post it.
 
@@ -312,7 +329,7 @@ A quote of their own post was left out of Catch up.
 
 Report
 - Type: daily
-- Version: abc1234
+- Version: (paste `python3 version.py`) (abc1234)
 EOF
 )"
 ```
