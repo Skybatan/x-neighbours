@@ -208,6 +208,8 @@ python3 x_neighbours.py \
 | `report_state.py` | Read or update the freshness clock in the bot store |
 | `feedback_link.py` | Build a prefilled GitHub issue link. It does not post the issue |
 | `.github/ISSUE_TEMPLATE/feedback.md` | Issue template labelled `feedback` |
+| `CONTRIBUTING.md` | Shared process for issues and pull requests |
+| `.github/pull_request_template.md` | Checklist on every pull request |
 | `save_raw.py` | Store one tool result under `data/` |
 | `config.example.json` | Config template |
 | `BOT.md`, `skills/x-neighbours/SKILL.md` | Runbook for the bot |
@@ -220,6 +222,10 @@ python3 x_neighbours.py \
 | `examples/few/good_neighbours.json` | Fictional good neighbours list |
 | `examples/few/sample-report.md` | Sections 1–3 of a daily report from that list |
 | `examples/few/sample-thanks.md` | Section 4, the thank-you with no usernames |
+
+## Contributing
+
+The shared process is in [CONTRIBUTING.md](CONTRIBUTING.md): open an issue first, one change per pull request, tests, the docs that change, and no personal data. The owner reviews and merges.
 
 ## Contributors
 
