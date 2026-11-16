@@ -146,6 +146,9 @@ class Data:
         self.originals = {}
         self.engaged = set()
         self.owner_replied_to = set()
+        self.owner_original_ids = set()
+        self.owner_reply_ids = set()
+        self._expanded_posts = []
         self.likes_truncated = []
         for _, doc in load(os.path.join(data_dir, "posts_*.json")):
             for post in doc.get("data") or []:
@@ -157,10 +160,9 @@ class Data:
                     post["author_id"] = str(post["author_id"])
                 if post.get("author_id", self.me) == self.me:
                     self.posts[post["id"]] = post
-                    for ref in referenced(post):
-                        if ref.get("type") == "replied_to" and ref.get("id"):
-                            self.owner_replied_to.add(str(ref["id"]))
+                    self._note_owner_post(post, assume_owner=True)
             self._users((doc.get("includes") or {}).get("users") or [])
+            self._expanded_posts.extend(included_posts(doc))
         for _, doc in load(os.path.join(data_dir, "mentions_*.json")):
             for mention in doc.get("data") or []:
                 mention = set_referenced(dict(mention))
@@ -177,6 +179,7 @@ class Data:
                     mention["in_reply_to_user_id"] = str(mention["in_reply_to_user_id"])
                 self.mentions.append(mention)
             self._users((doc.get("includes") or {}).get("users") or [])
+            self._expanded_posts.extend(included_posts(doc))
         for path, doc in load(os.path.join(data_dir, "likes_*.json")):
             match = re.search(r"likes_(\d+)", os.path.basename(path))
             if not match:
@@ -309,17 +312,76 @@ class Data:
             if kind in ("replied_to", "quoted", "retweeted"):
                 self.engaged.add(str(ref["id"]))
 
+    def _note_owner_post(self, post, assume_owner=False):
+        """Record an owner post as original or as a reply, and who it answered.
+
+        A direct reply is answered when this post's replied_to id is that reply.
+        Expanded parents can be sparse, so a known reply is never reclassified
+        as an original.
+        """
+        if not isinstance(post, dict):
+            return
+        post = set_referenced(dict(post))
+        pid = post.get("id")
+        if pid is None:
+            return
+        pid = str(pid)
+        author = post.get("author_id")
+        if author is None:
+            if not assume_owner:
+                return
+        elif str(author) != self.me:
+            return
+        reply_targets = referenced_ids(post, "replied_to")
+        for target in reply_targets:
+            self.owner_replied_to.add(target)
+        if pid in self.owner_reply_ids:
+            return
+        if reply_targets or not is_owner_original_post(post):
+            self.owner_reply_ids.add(pid)
+            self.owner_original_ids.discard(pid)
+            return
+        self.owner_original_ids.add(pid)
+
+    def _note_expanded_posts(self):
+        for raw in self._expanded_posts:
+            if not isinstance(raw, dict):
+                continue
+            post = set_referenced(dict(raw))
+            if post.get("id") is not None:
+                post["id"] = str(post["id"])
+            if post.get("author_id") is not None:
+                post["author_id"] = str(post["author_id"])
+            self._note_owner_post(post, assume_owner=False)
+
+    def owner_post_ids(self):
+        return set(self.posts) | self.owner_original_ids | self.owner_reply_ids
+
     def _load_engagement(self):
         """Post ids the owner already liked, replied to, reposted, or quoted.
 
         Missing files leave the set empty apart from replies already in posts_*.json.
+        Replies in my_posts_*.json also mark those ids answered.
         """
+        my_posts = []
+        for doc in load_soft(os.path.join(self.data_dir, "my_posts_*.json")):
+            for raw in doc.get("data") or []:
+                if not isinstance(raw, dict):
+                    continue
+                post = set_referenced(dict(raw))
+                if post.get("id") is not None:
+                    post["id"] = str(post["id"])
+                if post.get("author_id") is not None:
+                    post["author_id"] = str(post["author_id"])
+                self._note_owner_post(post, assume_owner=True)
+                my_posts.append(post)
+            self._expanded_posts.extend(included_posts(doc))
+        self._note_expanded_posts()
         self.engaged = set(self.owner_replied_to)
         for post in self.posts.values():
             self._add_owner_targets(post)
-        for doc in load_soft(os.path.join(self.data_dir, "my_posts_*.json")):
-            for post in doc.get("data") or []:
-                self._add_owner_targets(set_referenced(dict(post)))
+        for post in my_posts:
+            self._add_owner_targets(post)
         for doc in load_soft(os.path.join(self.data_dir, "my_likes_*.json")):
             for post in doc.get("data") or []:
                 if isinstance(post, dict) and post.get("id") is not None:
@@ -371,9 +433,8 @@ class Data:
                 continue
             if not self._in_window(mention.get("created_at"), since, until):
                 continue
-            refs = [ref.get("id") for ref in referenced(mention)
-                    if ref.get("type") == "replied_to"]
-            if mention.get("in_reply_to_user_id") == self.me or any(ref in self.posts for ref in refs):
+            parent = next(iter(referenced_ids(mention, "replied_to")), None)
+            if parent and parent in self.owner_original_ids:
                 replies[mention["author_id"]] += 1
         excluded = getattr(self, "exclude", set())
         for counts in (likes, replies):
@@ -400,6 +461,42 @@ def is_original_post(post):
         if kind in ("replied_to", "retweeted"):
             return False
     return True
+
+
+def is_owner_original_post(post):
+    """Owner post that is not itself a reply.
+
+    conversation_id, when present, is the thread root. A reply keeps that root
+    even when the saved object has no referenced_tweets of its own.
+    """
+    if not is_original_post(post):
+        return False
+    root = post.get("conversation_id")
+    if root and str(root) != str(post.get("id")):
+        return False
+    return True
+
+
+def referenced_ids(post, kind):
+    want = (kind or "").lower()
+    found = []
+    for ref in referenced(post):
+        if (ref.get("type") or "").lower() == want and ref.get("id"):
+            found.append(str(ref["id"]))
+    return found
+
+
+def included_posts(doc):
+    """Posts expanded onto a response, under includes.tweets or includes.posts."""
+    includes = doc.get("includes") if isinstance(doc, dict) else None
+    if not isinstance(includes, dict):
+        return []
+    rows = []
+    for key in ("tweets", "posts"):
+        chunk = includes.get(key) or []
+        if isinstance(chunk, list):
+            rows.extend(item for item in chunk if isinstance(item, dict))
+    return rows
 
 
 def like_count(post):
@@ -797,6 +894,11 @@ def ago(when, now):
     return f"{max(1, int(seconds // 86400))}d ago"
 
 
+def utc_now():
+    """Wall clock in UTC. Reply ages use this, not the report window end."""
+    return datetime.now(timezone.utc)
+
+
 def post_text(data, pid):
     text = snippet((data.posts.get(pid) or {}).get("text"))
     return text or "your post"
@@ -865,22 +967,29 @@ def build_activity(data, since, until, top, like_weight, reply_weight, mode, now
             "replied": post["id"] in data.owner_replied_to,
         })
 
+    owner_posts = data.owner_post_ids()
     for mention in data.mentions:
         author = mention.get("author_id")
-        refs = [ref.get("id") for ref in referenced(mention)
-                if ref.get("type") == "replied_to"]
-        quoted = [ref.get("id") for ref in referenced(mention)
-                  if ref.get("type") == "quoted"]
-        on_reply = next((ref for ref in refs if ref in data.posts), None)
-        on_quote = next((ref for ref in quoted if ref in data.posts), None)
-        is_reply = mention.get("in_reply_to_user_id") == data.me or on_reply is not None
-        if on_quote and not is_reply:
-            add_item("quote", mention, author, on_quote)
-        elif is_reply:
-            add_item("reply", mention, author, on_reply)
+        parent = next(iter(referenced_ids(mention, "replied_to")), None)
+        # Top-level only: the direct parent is one of the owner's original posts.
+        # A later reply in the thread, whose parent is the owner's own reply, does not count.
+        if parent and parent in data.owner_original_ids:
+            add_item("reply", mention, author, parent)
+            continue
+        if parent:
+            continue
+        quoted = next((pid for pid in referenced_ids(mention, "quoted") if pid in owner_posts), None)
+        if quoted:
+            add_item("quote", mention, author, quoted)
     for pid, quotes in data.quotes.items():
         for quote in quotes:
-            add_item("quote", quote, quote.get("author_id"), quote.get("_on_post") or pid)
+            parent = next(iter(referenced_ids(quote, "replied_to")), None)
+            if parent and parent not in data.owner_original_ids:
+                continue
+            if parent:
+                add_item("reply", quote, quote.get("author_id"), parent)
+            else:
+                add_item("quote", quote, quote.get("author_id"), quote.get("_on_post") or pid)
 
     likes_c, reposts_c = Counter(), Counter()
     reply_c, quote_c = Counter(), Counter()
@@ -1247,10 +1356,14 @@ def greeting_status(row):
     return "Replied" if row.get("replied") else "Not replied yet"
 
 
-def greeting_lines(row, now):
+def greeting_lines(row, now=None):
+    # `now` is the report window end. Reply ages use the actual UTC clock so a
+    # stale --now cannot show a week-old post as minutes ago. What's new still
+    # passes that window end into ago() from catch_lines.
+    del now
     when = ""
     if row.get("created_at"):
-        when = ago(ts(row["created_at"]), now)
+        when = ago(ts(row["created_at"]), utc_now())
     kind = "Quote" if row.get("kind") == "quote" else "Reply"
     name = f"**[{row['name']}](https://x.com/{row['username']})**{person_marks(row)}"
     text = row.get("text") or "Post"
@@ -1579,7 +1692,7 @@ def render_report(activity, path, handle, since, now, label, top=10, thanks=None
                 for row in on_lines:
                     _draw.text((margin + 78, text_y), row, font=small_font, fill=muted)
                     text_y += 20
-                meta = f"{ago(item['created_at'], now)}   ·   {state}"
+                meta = f"{ago(item['created_at'], utc_now())}   ·   {state}"
                 _draw.text((margin + 66, text_y), meta, font=small_font, fill=state_color)
             add(block_h, paint_item)
 
