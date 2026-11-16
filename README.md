@@ -20,7 +20,7 @@ The first run covers the last two days, so it loads quickly. Every report includ
 
 *Made-up neighbours, one ring, house frames. The display name sits under each avatar, with the @username below it. From `examples/few`.*
 
-People the owner does not follow are marked 👤?. There is no followed/unfollowed split. Catch up with your good neighbours lists each person's latest original post (not a reply or a plain repost; a quote of their own counts) that the owner has not already liked, replied to, reposted, or quoted. People with none left in the saved page are skipped. If everyone is already engaged, the section says you're all caught up. When the owner has a good neighbours list, that section shows only those people. When the list is empty, it stays the top people from the period and adds one hint line. A ⭐ marks a good neighbour in the other sections too. The ordering score stays in config and is not printed.
+People the owner does not follow are marked 👤?. There is no followed/unfollowed split. Catch up with your good neighbours lists each person's latest original post (not a reply or a plain repost; a quote of their own counts) that the owner has not already liked, replied to, reposted, or quoted. The age is that post's `created_at` against the current UTC time. People with none left in the saved page are skipped. If nothing is left to show, the section says you're all caught up. When the owner has a good neighbours list, that section shows only those people. When the list is empty, it stays the top people from the period and adds one hint line. A ⭐ marks a good neighbour in the other sections too. The ordering score stays in config and is not printed.
 
 The thank-you sentence is “My X neighbours circle, November 5!” plus a short thanks, using the report date in `timezone` (UTC if that key is blank). It does not mention any username.
 
@@ -146,7 +146,7 @@ python3 save_raw.py <tool-result-file> <name>
 
 `save_raw.py` accepts raw JSON or text that wraps one JSON object, and writes `data/<name>.json`. You can also write that file yourself if you already have the object.
 
-Pick a UTC timestamp `T` when you start. Pass `T` to the script as `--now`. For a week (or for both windows), `start_time` is `T` minus 7 days, for example `T` = `2026-11-04T18:00:00Z` and `start_time` = `2026-10-28T18:00:00Z`. For a day-only run, `start_time` is `T` minus 24 hours. One fetch feeds every window you render: the script cuts the 24-hour window out of the same files.
+Pick a UTC timestamp `T` when you start: the actual current UTC time, not a leftover from an earlier run. Pass `T` to the script as `--now`. What's new ages posts from each `created_at` against the clock at render time, not from `--now`. For a week (or for both windows), `start_time` is `T` minus 7 days, for example `T` = `2026-11-04T18:00:00Z` and `start_time` = `2026-10-28T18:00:00Z`. For a day-only run, `start_time` is `T` minus 24 hours. One fetch feeds every window you render: the script cuts the 24-hour window out of the same files.
 
 `{ID}` is your user id. Always pass `max_results` 100 for posts, mentions, and likers; do not omit it (the tool then pages at 25). Page with `pagination_token` set to the previous `meta.next_token`. Keep paging while `next_token` is present — a short page is not the end of the list. For mentions, keep calling until there is no `next_token`.
 
@@ -158,7 +158,7 @@ Pick a UTC timestamp `T` when you start. Pass `T` to the script as `--now`. For 
 | 4 | `get_posts_reposted_by` | Posts with reposts. Same user fields | `reposts_<postid>` |
 | 5 | `get_posts_quoted_posts` | Posts with quotes. `post.fields=created_at,author_id,text,referenced_tweets`, `expansions=author_id` | `quotes_<postid>` |
 | 6 | `get_users_liked_posts` and `get_users_posts` | Owner only, before Catch up. Likes: `max_results=20`, at most two pages, saved as `my_likes_1` and `my_likes_2`. Own posts: `max_results=20`, no `exclude`, one page, `post.fields` include `referenced_tweets,conversation_id`, `expansions=author_id,referenced_posts`, saved as `my_posts_1`. A failed call is skipped. Those replies are how Replies marks a mention answered | `my_likes_1`, `my_posts_1` |
-| 7 | `get_users_posts` | Each good neighbour (at most 20), or at most 10 catch-up people when the list is empty. `max_results=10`, `exclude=replies,retweets`, `post.fields=created_at,text,author_id,in_reply_to_user_id,referenced_tweets` | `latest_<userid>` |
+| 7 | `get_users_posts` | Each good neighbour (at most 20), or at most 10 catch-up people when the list is empty. `max_results=100`, `exclude` `replies` and `retweets`, `post.fields=created_at,text,conversation_id`, `expansions=author_id,in_reply_to_user_id,referenced_posts`. One more page as `latest_<userid>_p2` if the first page is all engaged | `latest_<userid>` |
 | 8 | `get_users_me_followers` and `get_users_me_following` | `max_results=1000`. Refresh on Mondays | `followers_1`, `following_1`, … |
 
 On a Grok Bot these tools are on the X connection. A reply counts only when its direct `replied_to` parent is one of your original posts, not one of your replies. A quote of your post still counts. You have answered a reply when one of your own replies points `replied_to` at that reply's id. Your own posts are ignored as neighbours.
@@ -171,7 +171,7 @@ Likes, reposts, and quotes are one call per post:
 
 - The last 24 hours: every post with that count above 0.
 - Days 2–7: only counts of 3 or more.
-- Latest posts: one call per good neighbour (at most 20), or at most 10 when that list is empty.
+- Latest posts: one call per good neighbour (at most 20), or at most 10 when that list is empty. If that page is already all engaged, fetch one more page.
 - Already-engaged posts: at most two like pages and one page of the owner's own posts. Reuse them for the rest of the day. A failed call does not stop the report.
 - One page is enough for almost every post. Fetch another page only while you are inside the day's budget.
 

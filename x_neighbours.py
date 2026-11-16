@@ -284,6 +284,9 @@ class Data:
                 post["id"] = str(post["id"])
                 if post.get("author_id") is not None:
                     post["author_id"] = str(post["author_id"])
+                author = post.get("author_id")
+                if author not in (None, "") and author != uid:
+                    continue
                 if post.get("in_reply_to_user_id") is not None:
                     post["in_reply_to_user_id"] = str(post["in_reply_to_user_id"])
                 if is_original_post(post):
@@ -450,19 +453,36 @@ class Data:
 def is_original_post(post):
     """A catch-up post is their own writing: not a reply and not a plain repost.
 
-    Quote posts are kept. A quote that is also a reply is a reply.
+    A quote counts. It is their text, and its conversation id is its own id.
+    A quote that is also a reply does not count. A plain repost does not.
+    Replies are recognised from in_reply_to_*, a replied_to reference
+    (referenced_tweets or referenced_posts), or a conversation_id that is
+    not this post's id. The last case is what the API sends when reply
+    fields were not requested.
     """
     if not post:
         return False
     if post.get("in_reply_to_user_id"):
         return False
+    for key in ("in_reply_to_tweet_id", "in_reply_to_status_id", "in_reply_to_post_id"):
+        if post.get(key):
+            return False
     text = post.get("text") or ""
     if text.startswith("RT @"):
         return False
+    kinds = set()
     for ref in referenced(post):
-        kind = (ref.get("type") or "").lower()
-        if kind in ("replied_to", "retweeted"):
-            return False
+        kinds.add((ref.get("type") or "").replace("-", "_").lower())
+    if kinds & {"replied_to", "reply", "retweeted", "retweet", "reposted", "repost"}:
+        return False
+    # A quote is their own post. Some payloads set conversation_id to the
+    # quoted post; that must not throw the quote out.
+    if kinds & {"quoted", "quote"}:
+        return True
+    conversation = post.get("conversation_id")
+    post_id = post.get("id")
+    if conversation is not None and post_id is not None and str(conversation) != str(post_id):
+        return False
     return True
 
 
@@ -1403,22 +1423,16 @@ def build_activity(data, since, until, top, like_weight, reply_weight, mode, now
         row["username"],
     ))
 
-    skipped_engaged = []
-
     def catch_person(uid, fallback=None):
         chosen = None
-        saw_engaged = False
         for post in data.originals.get(uid) or []:
             if not is_original_post(post):
                 continue
             if str(post["id"]) in data.engaged:
-                saw_engaged = True
                 continue
             chosen = post
             break
         if chosen is None:
-            if saw_engaged:
-                skipped_engaged.append(uid)
             return None
         return {
             **describe(uid, fallback),
@@ -1456,7 +1470,7 @@ def build_activity(data, since, until, top, like_weight, reply_weight, mode, now
         "ranked": ranked,
         "has_good_neighbours": bool(good),
         "catch_hint": not good,
-        "all_caught_up": not catch_up and bool(skipped_engaged),
+        "all_caught_up": not catch_up and bool(good),
     }
 
 
@@ -1612,10 +1626,19 @@ def flower_record(row):
     }
 
 
-def catch_lines(person, now):
+def catch_lines(person, now=None):
+    """One What's new block.
+
+    `now` is the report window end passed as `--now`. Ages use utc_now()
+    so a stale window cannot show a week-old post as "8h ago". ago() itself
+    is unchanged.
+    """
+    del now
     latest = person.get("latest") or {}
     text = snippet(latest.get("text")) or "Post"
-    when = ago(ts(latest["created_at"]), now) if latest.get("created_at") else ""
+    when = ""
+    if latest.get("created_at"):
+        when = ago(ts(latest["created_at"]), utc_now())
     tail = f" · {when}" if when else ""
     return [
         hard_break(f"**{person['name']}**{person_marks(person)}"),
@@ -1679,8 +1702,8 @@ def greeting_status(row):
 
 def greeting_lines(row, now=None):
     # `now` is the report window end. Reply ages use the actual UTC clock so a
-    # stale --now cannot show a week-old post as minutes ago. What's new still
-    # passes that window end into ago() from catch_lines.
+    # stale --now cannot show a week-old post as minutes ago. What's new does
+    # the same from catch_lines.
     del now
     when = ""
     if row.get("created_at"):
@@ -1749,7 +1772,7 @@ def write_chat_report(activity, path, handle, since, now, label, top=10, items_p
             lines.append("Add people to your good neighbours list to keep up with them here.")
         lines.append("")
         for person in catch[:show]:
-            lines.extend(catch_lines(person, now))
+            lines.extend(catch_lines(person))
         extra = len(catch) - show
         if extra > 0:
             lines.append(f"+{extra} more in What's new. Ask to see them.")
@@ -1968,8 +1991,8 @@ def render_report(activity, path, handle, since, now, label, top=10, thanks=None
             for row in lines:
                 _draw.text((margin + 48, text_y), row, font=body_font, fill=ink)
                 text_y += 22
-            if latest:
-                when = ago(ts(latest["created_at"]), now)
+            if latest and latest.get("created_at"):
+                when = ago(ts(latest["created_at"]), utc_now())
                 _draw.text((margin + 48, text_y), when + "   ·   Read post", font=small_font, fill=blue)
         add(block_h + 18, paint_catch)
 

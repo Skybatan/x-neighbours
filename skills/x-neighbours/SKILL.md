@@ -50,7 +50,7 @@ Do not send a settings list.
 
 ## Each run
 
-A manual run can fetch one window in a single pass. The daily and Monday routines below split the work so Monday reuses that morning's files. Work in the clone. Pick a UTC timestamp `T` when you start fetching, such as `2026-11-04T18:00:00Z`. You will pass `T` as `--now`.
+A manual run can fetch one window in a single pass. The daily and Monday routines below split the work so Monday reuses that morning's files. Work in the clone. Pick a UTC timestamp `T` when you start fetching. `T` is the actual current UTC time (`date -u +%Y-%m-%dT%H:%M:%SZ`). Pass that as `--now`. Do not reuse a timestamp from an earlier run, from `state.json`, or from a sample such as `2026-11-04T18:00:00Z` (that value is only a shape example). What's new does not age posts from `--now`; a stale `--now` still shifts the Flowers and Replies window.
 
 One fetch covers every window in config. When `week` is on, `START` is `T` minus 7 days. When the config is day-only, `START` is `T` minus 24 hours. The script cuts the 24-hour window out of the same files, so do not fetch twice.
 
@@ -143,11 +143,24 @@ Those files, plus replies already in `posts_*.json`, are how Catch up hides a po
 
 ### 6. Latest post for the catch-up list
 
-Read the good neighbours file first (see Good neighbours). If it lists people, fetch a latest page for each of them, at most 20, and do not also fetch the ranked ten. If the file is missing or the list is empty, pick at most 10 people with the highest quiet score in config (replies and quotes use `reply_weight`, likes use `like_weight`; do not tell the owner the numbers). For each person, one call:
+Read the good neighbours file first (see Good neighbours). If it lists people, fetch a latest page for each of them, at most 20, and do not also fetch the ranked ten. If the file is missing or the list is empty, pick at most 10 people with the highest quiet score in config (replies and quotes use `reply_weight`, likes use `like_weight`; do not tell the owner the numbers). For each person:
 
-`get_users_posts` — `id` their user id, `max_results` 10, `exclude=replies,retweets`, `post.fields=created_at,text,author_id,in_reply_to_user_id,referenced_tweets`, `expansions=author_id`, `user.fields=username,name,profile_image_url`.
+`get_users_posts`
 
-Save the whole page as `latest_<userid>`. Catch up walks that page newest first and keeps the first original post the owner has not already liked, replied to, reposted, or quoted. A quote of their own counts. A reply (`in_reply_to_user_id` or `referenced_tweets` type `replied_to`) and a plain repost (`retweeted`, or text starting `RT @`) do not. If every original post in the page is already engaged, the script skips that person. If nobody is left, the section is one line: “You're all caught up with your good neighbours 🎉”. With an empty list it fills the ten from the next person who still has an unengaged original post. With a list it does not fill from anyone else. Skip a file saved earlier today.
+- `id`: their user id
+- `max_results`: `100` (the tool maximum). `10` is not enough once posts the owner already liked, reposted, or replied to are skipped
+- `exclude`: `replies` and `retweets`. Pass the two values. `exclude=replies,retweets` is the same pair
+- `post.fields`: `created_at,text,conversation_id`
+- `expansions`: `author_id,in_reply_to_user_id,referenced_posts`
+- `user.fields`: `username,name,profile_image_url`
+
+Do not put `author_id`, `in_reply_to_user_id`, or `referenced_tweets` in `post.fields`. On this API those are expansions (`referenced_posts`, not `referenced_tweets`). An unknown post field can fail the call, and the saved page then has no real `created_at`.
+
+Save the whole page as `latest_<userid>`. Copy each post's `created_at` from the tool result. Do not replace it with the fetch time, the report time, or `--now`. If every original post on that page is one the owner already liked, reposted, or replied to, and `meta.next_token` is present, fetch one more page and save it as `latest_<userid>_p2`. Then stop. The script merges those pages.
+
+The script walks the saved posts newest first and keeps one post per neighbour: the newest of their own writing that the owner has not liked, reposted, or replied to. A quote by the owner counts as engaged. A quote post of their own counts as their writing (it is their text). A quote that is also a reply does not. A reply does not (`in_reply_to_user_id`, a `replied_to` reference on `referenced_tweets` or `referenced_posts`, or a `conversation_id` that is not the post's own id). A plain repost does not (`retweeted`, or text starting `RT @`). If that page has no such post, the script skips that person. If nobody is left, the section is one line: “You're all caught up with your good neighbours 🎉”. With an empty list it fills the ten from the next person who still has an unengaged original post. With a list it does not fill from anyone else.
+
+The age on each line is that post's `created_at` against the actual current UTC time when the script runs. It is not `--now`, the report window, or the time the file was saved. Skip a `latest_<userid>` file saved earlier today. A file from a previous day is stale and must be fetched again. Do not skip section 5: those likes, reposts, and replies are what hides a post the owner already engaged with.
 
 ### 7. Followers and following
 
@@ -188,7 +201,7 @@ The first two lines of `report_<window>.md` are the header. Do not add a date ra
 Then the sections, written for a phone. Do not turn them back into a wide table. The headings are short:
 
 1. **💐 Flowers** — one person per block. The name is the only link. Counts sit on the next line (`2 replies · 4 likes · 1 repost`). Replies means replies plus quote posts. Biggest supporters first. No Total column and no second @handle.
-2. **🏡 What's new** — the post preview is the link. No @handle and no separate “Read post” link. Same people as Catch up: good neighbours when the list has anyone, otherwise the top people from the period.
+2. **🏡 What's new** — the post preview is the link. No @handle and no separate “Read post” link. Same people as Catch up: good neighbours when the list has anyone, otherwise the top people from the period. One post per person: their newest original (a quote of their own counts; a reply or a plain repost does not) that the owner has not liked, reposted, or replied to. The age is that post's `created_at` against the actual current UTC time, not `--now`.
 3. **👋 Replies** — top-level replies and quote posts only, unanswered first, newest first inside the unanswered group and inside the answered group, one block each, no nested bullets. The preview text is a link to that reply or quote (`url`), so the owner can open it and answer. A reply counts only when its direct `replied_to` parent is one of the owner's original posts. A later reply in the thread does not count, and the owner's own posts are never listed. Replies the owner already answered directly are left out. The report says how many, and they can ask to see them. Shown answered text says `Replied`, never `Not replied yet`. The “ago” time is that post's `created_at` against the actual current UTC time, not the report window end.
 
 A Markdown hard line break (two spaces at the end of the line) separates the period from the emoji counts, the counts from the legend when there is one, a name from the counts under it, and a name from the post preview. Keep those breaks when you send the text. A single newline is not enough; chat will join the lines.
@@ -282,7 +295,7 @@ To remove someone, run `remove`. To show the list, run `list` and send the names
 
 Adding someone does not follow them. This run stays read-only on X.
 
-When the list is non-empty, Catch up with your good neighbours shows only those people, each one's latest original post the owner has not already liked, replied to, reposted, or quoted, and skips anyone with no such post. They are not inserted into the other sections just because they are on the list. When the list is empty, Catch up stays the top 10 from the period, with the same skip, and the report adds: “Add people to your good neighbours list to keep up with them here.” If everyone left is already engaged, the section is “You're all caught up with your good neighbours 🎉”.
+When the list is non-empty, Catch up with your good neighbours shows only those people, each one's latest original post the owner has not already liked, replied to, reposted, or quoted, and skips anyone with no such post. A quote of their own counts as that original post; a reply or a plain repost does not. The age is the post's `created_at` against the current UTC time. They are not inserted into the other sections just because they are on the list. When the list is empty, Catch up stays the top 10 from the period, with the same skip, and the report adds: “Add people to your good neighbours list to keep up with them here.” If nothing is left to show, the section is “You're all caught up with your good neighbours 🎉”.
 
 After a daily report, a first run, and a fresh on-demand report, the script lists up to five people from Flowers who are not on the list yet, in Flowers order. They are in `suggest_good_neighbours`. If nobody is left, `add_question` is absent and you skip the card. Send one multi-select card, short label **⭐ Add**. Each option label is `Display Name (@username)` from the `label` field. Do not rewrite it to the handle alone. Add a free-text option (“Or name anyone else”). A weekly report does not ask. The first-run closing line mentions the list once, besides that card.
 
