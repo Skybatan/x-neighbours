@@ -220,3 +220,9 @@ python3 x_neighbours.py \
 | `examples/few/good_neighbours.json` | Fictional good neighbours list |
 | `examples/few/sample-report.md` | Sections 1–3 of a daily report from that list |
 | `examples/few/sample-thanks.md` | Section 4, the thank-you with no usernames |
+
+## Contributors
+
+Thank you. One bullet per person, so the next name is easy to add.
+
+- [RonySpark](https://github.com/RonySpark) ([@ronyspark](https://x.com/ronyspark)) — first contribution, [#19](https://github.com/Skybatan/x-neighbours/pull/19): the week-report crash fix on ISO timestamps, the one-row-per-person waiting list, `referenced_posts` support, the paging docs, and the offline tests.
