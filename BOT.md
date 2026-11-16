@@ -17,6 +17,15 @@ You do the X reads. `x_neighbours.py` only reads JSON you saved. Follow every ru
 
 Weights are a quiet setting. The meaning of `like_weight` and `reply_weight` lives only in the config section of [README.md](README.md). Do not ask about them before the first picture. Do not repeat the numbers on the picture, in report headings, or in the summary you send.
 
+## Upgrading
+
+An already-installed bot updates the clone it already has. Leave `config.json`, `data/`, and the bot store as they are.
+
+1. From the clone, run `python3 version.py` and keep the line.
+2. `git pull --ff-only`. When `requirements.txt` changed, run `python3 -m pip install -r requirements.txt`.
+3. Run `python3 version.py` again. When the line changed, read `CHANGELOG.md` and tell the owner the new version in one line.
+4. Leave the good neighbours file and `state.json` in the bot store. The next report uses the updated scripts. Connect X again only when the X tools are missing.
+
 ## First run
 
 The only step is to make sure **one** X account is connected. If the X tools are missing, ask them to tap **Connect** on the X card in this chat. Do not ask for a password, API key, or bearer token, and do not open x.com to log them in. Stop until that one account is connected.
@@ -24,7 +33,7 @@ The only step is to make sure **one** X account is connected. If the X tools are
 Then do the rest with the defaults. Do not ask setup questions.
 
 1. `get_users_me` with `user.fields=id,name,username,description,profile_image_url`. That is the account. Write `handle` and `user_id` into `config.json` copied from `config.example.json`. If you know their timezone, set `timezone` to an IANA name such as `Europe/Stockholm`. Leave `fresh_hours` unset unless they ask for a fixed interval. Leave every other key as in the example.
-2. Clone or `git pull --ff-only` this repo, install Pillow, and fetch only the last `first_run_days` from config (default **2 days**, 48 hours). Use the tool calls below with that `START`. Do not fetch a full week on the first run. Never commit `config.json` or `data/`.
+2. Clone or `git pull --ff-only` this repo, install Pillow, and fetch only the last `first_run_days` from config (default **2 days**, 48 hours). Use the tool calls below with that `START`. Do not fetch a full week on the first run. Never commit `config.json` or `data/`. A later update follows “Upgrading”.
 3. Run `python3 x_neighbours.py --now <T> --first-run --good-neighbours <path> --state <state path>`. Send the report as two messages, exactly as in “How to send a report”. Do not post the thank-you yourself. If stdout has `add_question`, send that one card after those two messages. Do not ask again in prose.
 4. Create both routines with no question: every day at 9:00 AM (last 24 hours, picture included), and Mondays at 9:00 AM (last 7 days, reusing daily files, picture included). Use their timezone, or UTC if you don't know it.
 5. Close with one line: daily and Monday reports are set; anything can be changed by asking (time, period, top N, likes only, replies only, per post, per day); say 'add @someone to my good neighbours' to keep up with them here.
@@ -190,7 +199,7 @@ Both run at 9:00 AM in the owner's timezone. Count every X call from both toward
 
 ### Every day
 
-1. `git pull --ff-only`. Leave `config.json` and `data/` uncommitted.
+1. Follow “Upgrading” (`git pull --ff-only` is part of it). Leave `config.json` and `data/` uncommitted.
 2. Do not refresh followers or following.
 3. Pick `T`. `START` is `T` minus 24 hours.
 4. Fetch posts and mentions from `START`. Save them as `posts_day_1`, `posts_day_2`, … and `mentions_day_1`, ….
@@ -290,7 +299,7 @@ Offer this for any concern the owner mentions: a complaint, a wish, a nit, or a 
 1. Answer the point in a sentence or two.
 2. Ask once, as a yes/no card: “Want to report this so it gets fixed?”
 3. If they say no, drop it. Do not ask again about that same point in this conversation.
-4. If they say yes, draft a short issue and show it before any link. Title is one line. Body has what they expected, what happened, the report type (daily, weekly, first, fresh, or other), and the version from `git rev-parse --short HEAD`.
+4. If they say yes, draft a short issue and show it before any link. Title is one line. Body has what they expected, what happened, the report type (daily, weekly, first, fresh, or other), the version from `python3 version.py` (the line in `VERSION`), and the short git SHA from `git rev-parse --short HEAD`.
 5. Leave out every personal detail: handles, names, post text, the good neighbours list, avatars, ids, and tokens. Describe the behaviour, not the people.
 6. When they accept the draft, build the link. Do not post it.
 
@@ -304,7 +313,7 @@ A quote of their own post was left out of Catch up.
 
 Report
 - Type: daily
-- Version: abc1234
+- Version: (paste `python3 version.py`) (abc1234)
 EOF
 )"
 ```
