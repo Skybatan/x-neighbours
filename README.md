@@ -14,9 +14,9 @@ A big thank you to everyone who has helped make X Neighbours better 💐 New nei
 
 The first run covers the last two days, so it loads quickly. Every report includes the house-framed picture and a thank-you link. With only a few neighbours the picture uses one larger ring instead of an empty three-ring chart.
 
-![A first-run picture with five fictional neighbours](docs/sample-few-neighbours.png)
+![A first-run picture with fictional neighbours](docs/sample-few-neighbours.png)
 
-*Five made-up neighbours, one ring, house frames. From `examples/few`.*
+*Made-up neighbours, one ring, house frames. The display name sits under each avatar, with the @username below it. From `examples/few`.*
 
 People the owner does not follow are marked 👤?. There is no followed/unfollowed split. Catch up with your good neighbours lists each person's latest original post (not a reply or a plain repost; a quote of their own counts) that the owner has not already liked, replied to, reposted, or quoted. People with none left in the saved page are skipped. If everyone is already engaged, the section says you're all caught up. When the owner has a good neighbours list, that section shows only those people. When the list is empty, it stays the top people from the period and adds one hint line. A ⭐ marks a good neighbour in the other sections too. The ordering score stays in config and is not printed.
 
@@ -26,7 +26,7 @@ Every report has four parts, written so a phone can read them without sideways s
 
 ![Sample neighbours picture with house frames, fictional data](docs/sample-neighbours.png)
 
-*Same fictional neighbourhood. Inner ring from the top, clockwise. Handles sit under the avatars.*
+*Same fictional neighbourhood. Inner ring from the top, clockwise. The display name sits under each avatar, with the @username on the line below.*
 
 ## Setup
 
@@ -90,7 +90,7 @@ A Grok Bot that runs this for its owner should follow [BOT.md](BOT.md) (the same
 | `rings` | Rings on the picture, from 1 to 4. Default 3. The rings hold 8, then 14, then 20, then 26 people |
 | `first_run_days` | How many days the first fetch covers. Default 2. Daily stays 24 hours. Monday stays 7 days |
 | `items_per_user` | Reply and quote lines shown per person before `+N more`. Default 3 |
-| `show_names` | Handles under the avatars on the picture |
+| `show_names` | Display name under each avatar, with @username on the line below. @username alone when the account has no name |
 | `theme` | `midnight` (default), `light`, or `sunset` |
 | `windows` | `week` by default. `day` is the daily report |
 | `top` | How many people are ranked for Flowers and for Catch up when the good neighbours list is empty. The chat still shows five at a time. Default 10 |
@@ -220,7 +220,7 @@ python3 x_neighbours.py \
 | `examples/sample/` | Fictional data and generated avatars |
 | `docs/sample-report.png` | Sample report picture, fictional people |
 | `docs/sample-report.html` | HTML source for that picture |
-| `docs/sample-few-neighbours.png` | First-run picture with five fictional neighbours |
+| `docs/sample-few-neighbours.png` | First-run picture with fictional neighbours |
 | `docs/sample-neighbours.png` | A full three-ring picture from `examples/sample` |
 | `examples/few/` | The short fictional dataset |
 | `examples/few/good_neighbours.json` | Fictional good neighbours list |
