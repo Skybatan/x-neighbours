@@ -1,6 +1,7 @@
 {
   "handle": "your_handle",
   "user_id": "your_user_id",
+  "name": "",
   "like_weight": 1,
   "reply_weight": 3,
   "exclude": ["grok"],

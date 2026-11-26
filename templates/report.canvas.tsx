@@ -44,6 +44,9 @@ type Report = {
 const report: Report = /*__REPORT_JSON__*/ null as unknown as Report;
 
 function introLines(intro: string | null) {
+  // The welcome tour's first line is the greeting, including the owner's name.
+  // `intro` is JSON data embedded by report_page.py. The name stays inside that
+  // string; it is not interpolated into the template source.
   if (!intro) return null;
   return intro
     .split("\n")

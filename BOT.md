@@ -7,7 +7,7 @@ X Neighbours does four things:
 3. **Neighbours picture.** They can ask anytime (“make my neighbours picture”). The same picture also appears inside each report Page.
 4. **Community.** A Page of recommended accounts from the global list. Joining and sharing stay in the chat.
 
-The welcome tour is the first Page. Read [skills/x-neighbours/FIRST_RUN.md](skills/x-neighbours/FIRST_RUN.md) and follow it. The getting-started skill points there too. Do not read the full runbook first. You run the welcome tour yourself.
+The welcome tour is the first Page. Its first chat message greets the owner by their X display name, or by @handle when they have no name. The Page opens with that greeting. The message that carries the Page link is a short line and does not greet them again. Read [skills/x-neighbours/FIRST_RUN.md](skills/x-neighbours/FIRST_RUN.md) and follow it. The getting-started skill points there too. Do not read the full runbook first. You run the welcome tour yourself.
 
 Later reports, the Good neighbours Page, the picture, and the Community Page follow [skills/x-neighbours/SKILL.md](skills/x-neighbours/SKILL.md).
 

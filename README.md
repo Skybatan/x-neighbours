@@ -21,7 +21,7 @@ A big thank you to everyone who has helped make X Neighbours better 💐 New nei
 
 *Sample report with fictional people.*
 
-The welcome tour is a short guided demo: the latest original posts and quotes (`trial_post_count`, default 5), not a day window, and about 15 X reads. The header says `Welcome tour`. It opens with how the bot works, one plain line under each section, and a short What's next. Every report includes the house-framed picture inside the Page, and a thank-you link. With only a few neighbours the picture uses one larger ring instead of an empty three-ring chart.
+The welcome tour is a short guided demo: the latest original posts and quotes (`trial_post_count`, default 5), not a day window, and about 15 X reads. The header says `Welcome tour`. The first chat message greets you by your display name (or @handle). The Page opens with that hello, one plain line under each section, and a short What's next. When the tour is ready, the chat is one short line and the Page link, with no second hello. Every report includes the house-framed picture inside the Page, and a thank-you link. With only a few neighbours the picture uses one larger ring instead of an empty three-ring chart.
 
 ![A first-run picture with fictional neighbours](docs/sample-few-neighbours.png)
 
@@ -48,7 +48,7 @@ python3 -m pip install -r requirements.txt
 cp config.example.json config.json
 ```
 
-Edit `config.json` and set `handle` and `user_id` from the connected X account (`get_users_me`, or `get_users_by_username` for that same account). Follower and following lists come from the connected account, so the handle has to be that account.
+Edit `config.json` and set `handle`, `user_id`, and `name` from the connected X account (`get_users_me`, or `get_users_by_username` for that same account). `name` is the display name. Leave it blank when the account has none; the welcome greeting then uses `@handle`. Follower and following lists come from the connected account, so the handle has to be that account.
 
 ```bash
 python3 x_neighbours.py --help
@@ -154,6 +154,7 @@ These are not in the repo, because they are accounts and secrets:
 {
   "handle": "your_handle",
   "user_id": "your_user_id",
+  "name": "",
   "like_weight": 1,
   "reply_weight": 3,
   "exclude": ["grok"],
@@ -177,6 +178,7 @@ These are not in the repo, because they are accounts and secrets:
 |---|---|
 | `handle` | Your X handle, without @ |
 | `user_id` | Your numeric X user id, stored as a string |
+| `name` | Your X display name, from `get_users_me`. Blank falls back to `@handle` in the welcome greeting |
 | `like_weight`, `reply_weight` | Quiet points. A reply or quote uses `reply_weight`. A like uses `like_weight`. They order Catch up and the picture. They are not printed on the report or the picture. Override with `--like-weight` and `--reply-weight` |
 | `exclude` | Handles left out, such as bots. `@grok` is the default |
 | `rings` | Rings on the picture, from 1 to 4. Default 3. The rings hold 8, then 14, then 20, then 26 people |
@@ -194,7 +196,7 @@ These are not in the repo, because they are accounts and secrets:
 | `report` | `both` (default), `likes`, or `replies` |
 | `per_post`, `per_day` | Extra markdown sections. Off unless you ask |
 
-Other flags: `--config`, `--data`, `--out`, `--now`, `--since`, `--days`, `--first-run`, `--trial-plan`, `--estimate-reads`, `--trial-post-count`, `--picture-only`, `--report-card`, `--rings`, `--top`, `--theme`, `--windows day,week`, `--report likes`, `--per-post`, `--per-day`, `--picture`, `--no-picture`, `--show-names`, `--no-image`, `--good-neighbours PATH`, `--state PATH`, `--timezone`, `--fresh-hours`, `--version`.
+Other flags: `--config`, `--data`, `--out`, `--now`, `--since`, `--days`, `--first-run`, `--trial-plan`, `--estimate-reads`, `--trial-post-count`, `--name`, `--picture-only`, `--report-card`, `--rings`, `--top`, `--theme`, `--windows day,week`, `--report likes`, `--per-post`, `--per-day`, `--picture`, `--no-picture`, `--show-names`, `--no-image`, `--good-neighbours PATH`, `--state PATH`, `--timezone`, `--fresh-hours`, `--version`.
 
 A plain run writes the markdown report and the neighbours picture. `--first-run` is the welcome tour (`trial_post_count` latest originals and quotes). The header is `Welcome tour`. `--trial-plan` prints the reads for posts already saved, including reply-search pages. `--estimate-reads N` prints how many minutes those reads should take. `--picture-only` draws the picture and skips the report. `--report-card` adds the PNG card. `--days 14` is a custom period. `--no-picture` skips the image.
 

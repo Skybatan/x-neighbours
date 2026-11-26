@@ -591,20 +591,67 @@ TOUR_NEXT_LATER = (
 PICTURE_NUDGE = "Want a neighbours picture to post? Ask anytime and I'll make one."
 
 
-def trial_intro(count):
-    """Opening lines of the welcome tour. No picker and no community ask."""
+def one_line(value):
+    """One display line. Newlines and control characters become spaces."""
+    chars = []
+    for char in str(value or ""):
+        code = ord(char)
+        if char in "\r\n\t" or code < 0x20 or code == 0x7F or code in (0x2028, 0x2029):
+            chars.append(" ")
+        else:
+            chars.append(char)
+    return re.sub(r"\s+", " ", "".join(chars)).strip()
+
+
+def greeting_name(name, handle):
+    """Display name for the welcome greeting. A blank name falls back to @handle."""
+    cleaned = one_line(name)
+    if cleaned:
+        return cleaned
+    handle = one_line(handle).lstrip("@").replace(" ", "")
+    if handle:
+        return "@" + handle
+    return ""
+
+
+def hello_line(name, handle):
+    who = greeting_name(name, handle)
+    if who:
+        return f"Hi {who}! 👋"
+    return "Hi! 👋"
+
+
+def post_scope(count):
     count = int(count or 0)
     if count == 1:
-        scope = "your latest post"
-    elif count:
-        scope = f"your {count} latest posts"
-    else:
-        scope = "your latest posts"
+        return "your latest post"
+    if count > 1:
+        return f"your {count} latest posts"
+    return "your latest posts"
+
+
+TOUR_HELP = (
+    "X Neighbours helps you keep up with and grow the connections around your posts "
+    "(the people who reply, like, quote and repost)."
+)
+TOUR_HELP_CHAT = "X Neighbours helps you keep up with the people around your posts."
+
+
+def tour_delivery_line(count):
+    """Short chat line that goes with the Page link. It does not greet again."""
+    return f"Here's a quick welcome tour of {post_scope(count)}."
+
+
+def trial_intro(count, name=None, handle=None):
+    """Opening lines of the welcome tour. The greeting is the first line.
+
+    Three short lines: hello, what X Neighbours helps with, then the tour line.
+    No feature list, no picker, and no community ask.
+    """
     return "\n".join([
-        "Here's how X Neighbours works.",
-        f"This welcome tour is {scope}, on the same kind of page a later report uses.",
-        "The bot can write a report, show good neighbours, make a neighbours picture, "
-        "or open the community list.",
+        hello_line(name, handle),
+        TOUR_HELP,
+        tour_delivery_line(count),
     ])
 
 
@@ -645,7 +692,7 @@ def estimate_minutes(read_count, per_read_seconds=PER_READ_SECONDS, parallelism=
 
 def estimate_message(read_count, per_read_seconds=PER_READ_SECONDS, parallelism=PARALLEL_BATCH,
                      sequential_seconds=0):
-    """What to tell the owner before the reads of a report."""
+    """What to tell the owner before the reads of a later report."""
     minutes = estimate_minutes(
         read_count, per_read_seconds, parallelism, sequential_seconds)
     unit = "minute" if minutes == 1 else "minutes"
@@ -653,6 +700,21 @@ def estimate_message(read_count, per_read_seconds=PER_READ_SECONDS, parallelism=
         f"This report is about {minutes} {unit}. "
         "You don't need to wait in the chat. "
         "I'll notify you when it's ready."
+    )
+
+
+def tour_estimate_message(read_count, name=None, handle=None, post_count=TRIAL_POST_COUNT,
+                          per_read_seconds=PER_READ_SECONDS, parallelism=PARALLEL_BATCH,
+                          sequential_seconds=0):
+    """First chat message of the welcome tour. The greeting is already in it."""
+    minutes = estimate_minutes(
+        read_count, per_read_seconds, parallelism, sequential_seconds)
+    unit = "minute" if minutes == 1 else "minutes"
+    scope = post_scope(post_count)
+    return (
+        f"{hello_line(name, handle)} {TOUR_HELP_CHAT} "
+        f"I'm putting together a quick welcome tour of {scope}, "
+        f"about {minutes} {unit}; I'll let you know when it's ready."
     )
 
 
@@ -699,7 +761,7 @@ def load_saved_posts(data_dir):
     return rows
 
 
-def trial_plan(posts, limit=TRIAL_POST_COUNT, budget=TRIAL_READ_BUDGET):
+def trial_plan(posts, limit=TRIAL_POST_COUNT, budget=TRIAL_READ_BUDGET, name=None, handle=None):
     """Reads for the welcome tour, capped by `budget`.
 
     The posts page is one read. Reply search is one page per 25 replies,
@@ -833,7 +895,9 @@ def trial_plan(posts, limit=TRIAL_POST_COUNT, budget=TRIAL_READ_BUDGET):
         "reply_pages": search_pages,
         "reply_pages_needed": pages_needed,
         "estimate_minutes": estimate_minutes(used, sequential_seconds=sequential),
-        "estimate_message": estimate_message(used, sequential_seconds=sequential),
+        "estimate_message": tour_estimate_message(
+            used, name=name, handle=handle, post_count=len(chosen),
+            sequential_seconds=sequential),
         "parallel_batch": PARALLEL_BATCH,
         "per_read_seconds": PER_READ_SECONDS,
         "search_page_seconds": SEARCH_PAGE_SECONDS,
@@ -1521,6 +1585,7 @@ def draw_circle(data, me_user, scores, path, rings=3, show_names=True, width=120
 DEFAULTS = {
     "handle": None,
     "user_id": None,
+    "name": "",
     "like_weight": 1,
     "reply_weight": 3,
     "exclude": ["grok"],
@@ -2572,6 +2637,8 @@ def main():
     parser.add_argument("--config", default=os.path.join(here, "config.json"))
     parser.add_argument("--handle")
     parser.add_argument("--user-id", dest="user_id")
+    parser.add_argument("--name",
+                        help="display name from get_users_me; blank falls back to @handle")
     parser.add_argument("--data", default=os.path.join(here, "data"))
     parser.add_argument("--out", default=here)
     parser.add_argument("--now", help="UTC ISO time the data was fetched (default: now)")
@@ -2649,7 +2716,9 @@ def main():
             parser.error("trial_post_count must be at least 1")
         if budget < 1:
             parser.error("read budget must be at least 1")
-        payload = trial_plan(load_saved_posts(args.data), limit=limit, budget=budget)
+        payload = trial_plan(
+            load_saved_posts(args.data), limit=limit, budget=budget,
+            name=cfg.get("name"), handle=cfg.get("handle"))
         print(json.dumps(payload, ensure_ascii=False))
         return
     if not cfg["handle"] or not cfg["user_id"]:
@@ -2798,7 +2867,10 @@ def main():
                 theme=cfg["theme"])
         thanks_path = os.path.join(args.out, f"report_{key}_thanks.md")
         more_path = os.path.join(args.out, f"report_{key}_more.json")
-        intro = trial_intro(len(trial_ids or [])) if key == "first" else None
+        intro = (
+            trial_intro(len(trial_ids or []), name=cfg.get("name"), handle=cfg.get("handle"))
+            if key == "first" else None
+        )
         more = write_chat_report(
             activity, md_path, cfg["handle"], since, now, label,
             top=cfg["top"], items_per_user=int(cfg.get("items_per_user") or 3),
@@ -2828,6 +2900,8 @@ def main():
         if picture_path:
             page = report_page.apply_overrides(
                 page, picture_asset_name="asset:" + os.path.basename(picture_path))
+        if key == "first":
+            page["headline"] = tour_delivery_line(len(trial_ids or []))
         canvas_path = os.path.join(args.out, f"report_{key}.canvas.tsx")
         model_path = os.path.join(args.out, f"report_{key}_page.json")
         report_page.write_page(page, canvas_path, model_path)

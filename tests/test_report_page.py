@@ -275,17 +275,19 @@ class EmptySectionTest(unittest.TestCase):
 
     def test_tour_intro_explainers_and_whats_next(self):
         activity = empty_activity()
-        intro = xn.trial_intro(5)
+        intro = xn.trial_intro(5, name="Ada Brook", handle="ada_brook")
         model = report_page.build_page_model(
             activity, SINCE, NOW, "Welcome tour", window="first", intro=intro, thanks=THANKS)
         source = report_page.render_report_canvas(model)
         payload = parse_canvas(source)
         self.assertEqual(payload["title"], "Welcome tour")
         self.assertEqual(payload["intro"], intro)
-        self.assertTrue(payload["intro"].startswith("Here's how X Neighbours works."))
+        self.assertTrue(payload["intro"].startswith("Hi Ada Brook! 👋"))
         intro_lines = [line for line in payload["intro"].splitlines() if line.strip()]
-        self.assertGreaterEqual(len(intro_lines), 2)
-        self.assertLessEqual(len(intro_lines), 3)
+        self.assertEqual(len(intro_lines), 3)
+        self.assertEqual(intro_lines[0], "Hi Ada Brook! 👋")
+        self.assertIn("reply, like, quote and repost", intro_lines[1])
+        self.assertEqual(intro_lines[2], "Here's a quick welcome tour of your 5 latest posts.")
         blob = json.dumps(payload)
         for line in (xn.TOUR_FLOWERS, xn.TOUR_WHATS_NEW, xn.TOUR_REPLIES, xn.TOUR_THANKS):
             self.assertIn(line, blob)
@@ -385,6 +387,26 @@ class EscapingTest(unittest.TestCase):
         self.assertIn(f"https://x.com/{nasty_handle}", hrefs(payload))
         self.assertIn("https://x.com/cleo_dawn/status/2", hrefs(payload))
         self.assertIn("https://x.com/bob_co/status/1", hrefs(payload))
+
+    def test_welcome_greeting_name_cannot_break_the_page(self):
+        nasty = "Ava <script>alert(\"x\")</script>\u0007"
+        intro = xn.trial_intro(5, name=nasty + "\nHi", handle='ava"brook')
+        self.assertEqual(len(intro.splitlines()), 3)
+        self.assertTrue(intro.startswith('Hi Ava <script>alert("x")</script> Hi! 👋'))
+        self.assertNotIn("\u0007", intro)
+        self.assertNotIn("@ava", intro)
+        model = report_page.build_page_model(
+            empty_activity(), SINCE, NOW, "Welcome tour", window="first", intro=intro, thanks=THANKS)
+        source = report_page.render_report_canvas(model)
+        payload = parse_canvas(source)
+        self.assertEqual(payload["intro"], intro)
+        self.assertEqual(payload["intro"].count("Hi Ava "), 1)
+        code = code_without_data(source)
+        self.assertNotIn("<script>", code)
+        self.assertNotIn("Ava", code)
+        self.assertIn('\\"x\\"', source)
+        blank = xn.trial_intro(5, name=" \n ", handle="ava_brook")
+        self.assertTrue(blank.startswith("Hi @ava_brook! 👋"))
 
 
 class OverrideTest(unittest.TestCase):
@@ -486,7 +508,9 @@ class RunbookTest(unittest.TestCase):
         self.assertNotIn("Send exactly two chat messages", skill)
         self.assertIn("Do not send a good-neighbours card", first)
         self.assertIn("community", first.lower())
-        self.assertIn("don't need to wait", first)
+        self.assertIn("estimate_message", first)
+        self.assertIn("Do not add another greeting", first)
+        self.assertIn("does not greet them again", first)
         self.assertIn("Welcome tour", first)
         self.assertIn("WriteCanvasAsset", first)
         self.assertIn("WriteCanvasAsset", skill)

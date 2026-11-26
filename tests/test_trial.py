@@ -114,6 +114,7 @@ class TrialPlanTest(unittest.TestCase):
         self.assertEqual(plan["read_count"], 10)
         self.assertEqual(plan["estimate_minutes"], 3)
         self.assertIn("about 3 minutes", plan["estimate_message"])
+        self.assertIn("I'll let you know when it's ready.", plan["estimate_message"])
         self.assertEqual(xn.estimate_minutes(10, sequential_seconds=180), 3)
         self.assertEqual(xn.estimate_minutes(15), 1)
 
@@ -288,14 +289,22 @@ class TrialReportCommandTest(unittest.TestCase):
         self.assertNotIn("good_neighbours_page", payload)
         self.assertFalse(payload["community_offer"])
         self.assertFalse(payload["share_offer"])
-        self.assertTrue(payload["intro"].startswith("Here's how X Neighbours works."))
+        self.assertTrue(payload["intro"].startswith("Hi @demo_owner! 👋"))
+        self.assertNotIn("Hi Demo", payload["intro"])
         intro_lines = [line for line in payload["intro"].splitlines() if line.strip()]
-        self.assertGreaterEqual(len(intro_lines), 2)
-        self.assertLessEqual(len(intro_lines), 3)
-        self.assertIn("good neighbours", payload["intro"].lower())
-        self.assertIn("neighbours picture", payload["intro"].lower())
-        self.assertIn("community list", payload["intro"].lower())
+        self.assertEqual(len(intro_lines), 3)
+        self.assertEqual(payload["intro"].count("Hi @demo_owner! 👋"), 1)
+        self.assertIn("keep up with and grow the connections", payload["intro"])
+        self.assertNotIn("good neighbours", payload["intro"].lower())
+        self.assertNotIn("community list", payload["intro"].lower())
+        self.assertEqual(
+            payload["headline"],
+            "Here's a quick welcome tour of your 5 latest posts.",
+        )
+        self.assertEqual(payload["messages"][0]["text"], payload["headline"])
+        self.assertNotIn("Hi ", payload["headline"])
         self.assertIn(payload["intro"], report)
+        self.assertEqual(report.count("Hi @demo_owner! 👋"), 1)
         self.assertIn(xn.TOUR_FLOWERS, report)
         self.assertNotIn("Add to good neighbours", report)
         self.assertNotIn("Join the community", report)
@@ -317,6 +326,10 @@ class TrialReportCommandTest(unittest.TestCase):
         self.assertEqual(len(planned["posts"]), 5)
         self.assertNotIn("8901", [row["id"] for row in planned["posts"]])
         self.assertLessEqual(planned["read_count"], 15)
+        self.assertTrue(planned["estimate_message"].startswith("Hi @your_handle! 👋 "))
+        self.assertEqual(planned["estimate_message"].count("Hi @your_handle! 👋"), 1)
+        self.assertIn("I'll let you know when it's ready.", planned["estimate_message"])
+        self.assertNotIn(planned["estimate_message"], payload["headline"])
 
         estimate = subprocess.run(
             [sys.executable, os.path.join(ROOT, "x_neighbours.py"), "--estimate-reads", "15"],
@@ -325,6 +338,151 @@ class TrialReportCommandTest(unittest.TestCase):
         estimated = json.loads(estimate.stdout)
         self.assertEqual(estimated["estimate_minutes"], 1)
         self.assertIn("don't need to wait", estimated["message"])
+        self.assertNotIn("Hi ", estimated["message"])
+
+
+class GreetingTest(unittest.TestCase):
+    def test_greeting_uses_the_display_name(self):
+        intro = xn.trial_intro(5, name="Ada Brook", handle="ada_brook")
+        self.assertEqual(
+            intro,
+            "Hi Ada Brook! 👋\n"
+            "X Neighbours helps you keep up with and grow the connections around your posts "
+            "(the people who reply, like, quote and repost).\n"
+            "Here's a quick welcome tour of your 5 latest posts.",
+        )
+        self.assertNotIn("@ada_brook", intro)
+        estimate = xn.tour_estimate_message(
+            10, name="Ada Brook", handle="ada_brook", post_count=5, sequential_seconds=180)
+        self.assertEqual(
+            estimate,
+            "Hi Ada Brook! 👋 X Neighbours helps you keep up with the people around your posts. "
+            "I'm putting together a quick welcome tour of your 5 latest posts, about 3 minutes; "
+            "I'll let you know when it's ready.",
+        )
+        self.assertNotIn("@ada_brook", estimate)
+        self.assertNotIn("quote and repost", estimate)
+        collapsed = xn.trial_intro(5, name="Ada\nBrook", handle="ada_brook")
+        self.assertTrue(collapsed.startswith("Hi Ada Brook! 👋\n"))
+        self.assertEqual(collapsed.count("Hi Ada Brook! 👋"), 1)
+
+    def test_greeting_falls_back_to_the_handle(self):
+        for blank in ("", "   ", None, "\n\t"):
+            intro = xn.trial_intro(5, name=blank, handle="@ada_brook")
+            self.assertTrue(intro.startswith("Hi @ada_brook! 👋\n"), repr(blank))
+            estimate = xn.tour_estimate_message(
+                15, name=blank, handle="ada_brook", post_count=5)
+            self.assertTrue(estimate.startswith("Hi @ada_brook! 👋 "))
+            self.assertIn("about 1 minute;", estimate)
+            self.assertEqual(estimate.count("Hi @ada_brook! 👋"), 1)
+        one = xn.trial_intro(1, name="", handle="ada_brook")
+        self.assertTrue(one.endswith("Here's a quick welcome tour of your latest post."))
+        self.assertNotIn("1 latest", one)
+
+    def test_greeting_appears_once_in_chat_and_once_on_the_page(self):
+        hello = "Hi Ada Brook! 👋"
+        intro = xn.trial_intro(5, name="Ada Brook", handle="ada_brook")
+        delivery = xn.tour_delivery_line(5)
+        estimate = xn.tour_estimate_message(
+            10, name="Ada Brook", handle="ada_brook", post_count=5, sequential_seconds=180)
+        self.assertEqual(intro.count(hello), 1)
+        self.assertEqual(estimate.count(hello), 1)
+        self.assertNotIn(hello, delivery)
+        self.assertNotIn("Hi ", delivery)
+        self.assertEqual((estimate + "\n" + delivery).count(hello), 1)
+        posts = [starter("p1", "2026-11-16T10:00:00Z", likes=0, reposts=0, quotes=0, replies=0)]
+        named = xn.trial_plan(posts, name="Ada Brook", handle="ada_brook")
+        blank = xn.trial_plan(posts, name="   ", handle="@ada_brook")
+        self.assertEqual(named["estimate_message"].count(hello), 1)
+        self.assertIn("your latest post", named["estimate_message"])
+        self.assertNotIn("@ada_brook", named["estimate_message"])
+        self.assertTrue(blank["estimate_message"].startswith("Hi @ada_brook! 👋"))
+        self.assertNotIn("Ada Brook", blank["estimate_message"])
+        self.assertEqual(blank["estimate_message"].count("Hi @ada_brook! 👋"), 1)
+
+    def test_first_run_greets_from_config_and_not_again_on_delivery(self):
+        folder = tempfile.mkdtemp(prefix="xn-greet-")
+        out = tempfile.mkdtemp(prefix="xn-greet-out-")
+        me = "100"
+        with open(os.path.join(folder, "posts_1.json"), "w", encoding="utf-8") as fh:
+            json.dump({
+                "data": [{
+                    "id": "1",
+                    "author_id": me,
+                    "created_at": "2026-11-16T08:00:00Z",
+                    "text": "Hello",
+                    "conversation_id": "1",
+                    "public_metrics": {
+                        "like_count": 0, "repost_count": 0, "quote_count": 0, "reply_count": 0,
+                    },
+                }],
+                "includes": {"users": [{
+                    "id": me, "username": "demo_owner", "name": "Saved Name",
+                }]},
+            }, fh)
+        config_path = os.path.join(folder, "config.json")
+        with open(os.path.join(ROOT, "config.example.json"), encoding="utf-8") as fh:
+            config = json.load(fh)
+        config.update({"handle": "demo_owner", "user_id": me, "name": "Ada Brook"})
+        with open(config_path, "w", encoding="utf-8") as fh:
+            json.dump(config, fh)
+        cmd = [
+            sys.executable, os.path.join(ROOT, "x_neighbours.py"),
+            "--config", config_path,
+            "--data", folder,
+            "--out", out,
+            "--now", "2026-11-16T12:00:00Z",
+            "--first-run",
+            "--no-picture",
+            "--good-neighbours", os.path.join(ROOT, "examples", "few", "good_neighbours.json"),
+        ]
+        result = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)["first"]
+        hello = "Hi Ada Brook! 👋"
+        self.assertEqual(payload["intro"].count(hello), 1)
+        self.assertTrue(payload["intro"].startswith(hello))
+        self.assertNotIn("Saved Name", payload["intro"])
+        self.assertNotIn("@demo_owner", payload["intro"])
+        self.assertEqual(payload["headline"], "Here's a quick welcome tour of your latest post.")
+        self.assertEqual(payload["messages"][0]["text"], payload["headline"])
+        self.assertNotIn("Hi ", payload["headline"])
+        with open(payload["page_canvas"], encoding="utf-8") as fh:
+            source = fh.read()
+        marker = "const report: Report = "
+        start = source.index(marker) + len(marker)
+        page, _end = json.JSONDecoder().raw_decode(source[start:])
+        self.assertEqual(page["intro"].count(hello), 1)
+        self.assertEqual(page["intro"].splitlines()[0], hello)
+
+        plan = subprocess.run(
+            [sys.executable, os.path.join(ROOT, "x_neighbours.py"),
+             "--trial-plan", "--data", folder, "--config", config_path],
+            cwd=ROOT, capture_output=True, text=True, check=True,
+        )
+        message = json.loads(plan.stdout)["estimate_message"]
+        self.assertEqual(
+            message,
+            "Hi Ada Brook! 👋 X Neighbours helps you keep up with the people around your posts. "
+            "I'm putting together a quick welcome tour of your latest post, about 1 minute; "
+            "I'll let you know when it's ready.",
+        )
+        self.assertEqual(message.count(hello), 1)
+        self.assertNotIn(hello, payload["headline"])
+
+        config["name"] = "   "
+        with open(config_path, "w", encoding="utf-8") as fh:
+            json.dump(config, fh)
+        fallback = subprocess.run(
+            [sys.executable, os.path.join(ROOT, "x_neighbours.py"),
+             "--trial-plan", "--data", folder, "--config", config_path],
+            cwd=ROOT, capture_output=True, text=True, check=True,
+        )
+        fallback_message = json.loads(fallback.stdout)["estimate_message"]
+        self.assertTrue(fallback_message.startswith("Hi @demo_owner! 👋 "))
+        self.assertNotIn("Saved Name", fallback_message)
+        self.assertNotIn("Ada Brook", fallback_message)
+        self.assertEqual(fallback_message.count("Hi @demo_owner! 👋"), 1)
 
 
 if __name__ == "__main__":

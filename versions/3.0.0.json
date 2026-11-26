@@ -7,7 +7,7 @@
   "source_commit": "",
   "changelog": "First community release: share lists, global recommendations, and Neighbour Dog. Tentative.",
   "release_notes": [
-    "The welcome tour uses your 5 latest posts and shows how a report works.",
+    "The welcome tour greets you by name, then shows your 5 latest posts.",
     "Each report is a Page. The neighbours picture is on that Page.",
     "Every report says how long it should take and notifies you when it is ready.",
     "Only a direct reply to your post counts, and likes on your own replies are not fetched.",
