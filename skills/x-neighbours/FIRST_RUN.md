@@ -1,6 +1,6 @@
-# Trial report
+# First report
 
-The first X Neighbours report is a trial, a short demo. You run it yourself in this chat. Do not hand it to a subagent. Do not read the full [SKILL.md](SKILL.md) to produce it. Later reports use that file, after the owner picks a routine.
+The first X Neighbours report is a short demo. You run it yourself in this chat. Do not hand it to a subagent. Do not read the full [SKILL.md](SKILL.md) to produce it. Later reports use that file, after the owner picks a routine.
 
 This run is read-only. Do not follow, like, post, reply, or DM. Do not commit `config.json` or `data/`.
 
@@ -33,7 +33,7 @@ python3 x_neighbours.py --trial-plan --data data --user-id <id>
 
 5. Replies to those posts: one `search_posts_all` (recent search) using the plan's `query` (`conversation_id:` joined with `OR`), `max_results` 100, `post.fields=created_at,author_id,text,in_reply_to_user_id,referenced_tweets,conversation_id`, `expansions=author_id,referenced_posts`. Save as `mentions_1`. A second page only when `next_token` is set and the budget allows. If search is missing, one `get_users_mentions` page with the same fields and stop. Do not page through the whole account.
 
-A reply counts only when its direct `replied_to` parent is one of the trial posts. `conversation_id` is the thread root and is not enough. `in_reply_to_user_id` equal to the owner is not enough. Owner posts P, A replies (A1), the owner replies, A replies again (A2): only A1 counts. A2 is not an unanswered reply.
+A reply counts only when its direct `replied_to` parent is one of the posts in this first report. `conversation_id` is the thread root and is not enough. `in_reply_to_user_id` equal to the owner is not enough. Owner posts P, A replies (A1), the owner replies, A replies again (A2): only A1 counts. A2 is not an unanswered reply.
 
 6. Likers, reposters, and quote posts: only the ids the plan lists, and only when that count is greater than 0. Never fetch likers for a reply. `max_results` 100. `user.fields=username,name,description,public_metrics,profile_image_url`. Save `likes_<id>`, `reposts_<id>`, and `quotes_<id>`. A missing liker file is normal. The report still runs.
 
@@ -45,13 +45,13 @@ A reply counts only when its direct `replied_to` parent is one of the trial post
 python3 x_neighbours.py --now <T> --first-run --good-neighbours <store>/good_neighbours.json --state <store>/state.json
 ```
 
-9. Send the report as a Page. `page_canvas` is `report_first.canvas.tsx` and `page_title` is `Trial report`. Pass the whole file to WriteCanvas. Do not pass a canvas id. Do not write the Page by hand. The Page already starts with `Trial report` and the short `intro` (what this is, what the sections show, and an invitation to thank someone, ask anytime, or pick daily or weekly). One line in that intro says community sharing can wait. Do not add a second introduction.
+9. Send the report as a Page. `page_canvas` is `report_first.canvas.tsx` and `page_title` is `First report`. Pass the whole file to WriteCanvas. Do not pass a canvas id. Do not write the Page by hand. The Page already starts with `First report` and the short `intro` (what this is, what the sections show, and an invitation to thank someone, ask anytime, or pick daily or weekly). One line in that intro says community sharing can wait. Do not add a second introduction.
 
-The chat message is `headline`, then the Page link labelled `Trial report`. Put `x_neighbours_first.png` in that message's `images`. Do not paste `report_first.md` or the thank-you sentence into the chat. Those words are on the Page. Do not post the picture.
+The chat message is `headline`, then the Page link labelled `First report`. Put `x_neighbours_first.png` in that message's `images`. Do not paste `report_first.md` or the thank-you sentence into the chat. Those words are on the Page. Do not post the picture.
 
 If WriteCanvas fails or returns no url, send two messages and no Page link. Message 1 is the text of `report_first.md` and no image. Message 2 is `thank_you.text`, a blank line, the link `thank_you.intent` labelled “Post your thank-you”, a blank line, and `thank_you.note`, with the PNG in `images`.
 
-Do not send a good-neighbours card. `add_question` is absent on a trial. Do not ask them to build the list. Do not run `community.py offer`. Do not send a community or share card. `community_offer` and `share_offer` are false. The first experience is the five-post report plus that intro.
+Do not send a good-neighbours card. `add_question` is absent on the first report. Do not ask them to build the list. Do not run `community.py offer`. Do not send a community or share card. `community_offer` and `share_offer` are false. The first experience is the five-post report plus that intro.
 
 10. Then ask what comes next, with `next_steps` from the script. One question. The options are Daily report, Weekly report, and Only when I ask.
 

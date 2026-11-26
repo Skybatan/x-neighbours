@@ -368,16 +368,37 @@ def page_payload(model):
     }
 
 
+def _plain_text(value):
+    """Text for a Page: real characters, no ``\\u`` escapes.
+
+    JSON still writes quotes and newlines as ``\\"`` and ``\\n``. Characters
+    that JSON would spell as ``\\uXXXX`` (controls, DEL, the two Unicode line
+    separators) become a space or a newline first, so the canvas source keeps
+    the character itself.
+    """
+    if isinstance(value, str):
+        chars = []
+        for char in value:
+            code = ord(char)
+            if char in "\n\r\t":
+                chars.append(char)
+            elif code < 0x20 or code == 0x7F:
+                chars.append(" ")
+            elif code in (0x2028, 0x2029):
+                chars.append("\n")
+            else:
+                chars.append(char)
+        return "".join(chars)
+    if isinstance(value, list):
+        return [_plain_text(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _plain_text(item) for key, item in value.items()}
+    return value
+
+
 def embed_json(value):
-    """JSON for a TSX expression. User text cannot close a tag or a string."""
-    raw = json.dumps(value, ensure_ascii=False, indent=2)
-    return (
-        raw.replace("<", "\\u003c")
-        .replace(">", "\\u003e")
-        .replace("&", "\\u0026")
-        .replace("\u2028", "\\u2028")
-        .replace("\u2029", "\\u2029")
-    )
+    """JSON for a TSX expression. Non-ASCII text is UTF-8, not ``\\u`` escapes."""
+    return json.dumps(_plain_text(value), ensure_ascii=False, indent=2)
 
 
 def render_report_canvas(model, template=None):

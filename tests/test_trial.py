@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Trial report: five originals or quotes, no stranger marks, a time estimate.
+"""First report: five originals or quotes, no stranger marks, a time estimate.
 
 Handles, names, and ids here are fictional. Nothing in this file is a real account.
 """
@@ -227,7 +227,7 @@ class TrialReportCommandTest(unittest.TestCase):
         )
         with open(payload["report_md"], encoding="utf-8") as fh:
             report = fh.read()
-        self.assertTrue(report.startswith("Trial report"))
+        self.assertTrue(report.startswith("First report"))
         self.assertNotIn("Old Fan", report)
         self.assertIn("New Fan", report)
         self.assertNotIn("👤?", report)

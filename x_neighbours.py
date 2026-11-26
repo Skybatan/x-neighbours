@@ -212,7 +212,7 @@ class Data:
         self._load_engagement()
         self.followers = self._idset("followers_*.json")
         self.following = self._idset("following_*.json")
-        # No following file means the trial (or a partial fetch) did not load
+        # No following file means the first report (or a partial fetch) did not load
         # the list. An empty file still counts as loaded.
         self.following_known = bool(glob.glob(os.path.join(self.data_dir, "following_*.json")))
 
@@ -574,7 +574,7 @@ TRIAL_READ_BUDGET = 15
 
 
 def trial_intro(count):
-    """Short welcome on the trial report only. No picker, no community ask."""
+    """Short welcome on the first report only. No picker, no community ask."""
     count = int(count or 0)
     if count == 1:
         scope = "your latest post"
@@ -584,7 +584,7 @@ def trial_intro(count):
         scope = "your latest posts"
     return (
         "X Neighbours shows who replied, quoted, liked, and reposted you. "
-        f"This trial is {scope}: Flowers, What's new, and Replies. "
+        f"This first report is {scope}: Flowers, What's new, and Replies. "
         "Thank someone below, ask for a report anytime, or pick a daily or weekly one. "
         "Community sharing can wait until later."
     )
@@ -653,7 +653,7 @@ def load_saved_posts(data_dir):
 
 
 def trial_plan(posts, limit=TRIAL_POST_COUNT, budget=TRIAL_READ_BUDGET):
-    """Reads for a trial report, capped by `budget`.
+    """Reads for a first report, capped by `budget`.
 
     The posts page is one read. Replies to the chosen posts are one search.
     Likers, reposters, and quote posts are one read each, and only when that
@@ -690,7 +690,7 @@ def trial_plan(posts, limit=TRIAL_POST_COUNT, budget=TRIAL_READ_BUDGET):
         add({
             "tool": "search_posts_all",
             "count": 1,
-            "purpose": "replies to the trial posts",
+            "purpose": "replies to the posts in the first report",
             "query": " OR ".join(f"conversation_id:{pid}" for pid in ids),
             "post_ids": ids,
             "max_results": 100,
@@ -1486,7 +1486,7 @@ def hidden_user(data, uid):
 def stranger(data, uid):
     """True when a loaded following list does not include this person.
 
-    With no following file, nobody is marked. A trial report skips that
+    With no following file, nobody is marked. The first report skips that
     fetch, and an empty list would otherwise mark every neighbour.
     """
     if not getattr(data, "following_known", False):
@@ -1619,8 +1619,8 @@ def build_activity(data, since, until, top, like_weight, reply_weight, mode, now
         if not counts_here(pid):
             continue
         when = ts(post["created_at"])
-        # Likes on owner replies are not part of the score. The trial and the
-        # daily run both skip that fetch, and a missing file stays a zero.
+        # Likes on owner replies are not part of the score. The first report
+        # and the daily run both skip that fetch, and a missing file stays a zero.
         if is_owner_original_post(post):
             for uid in data.likes.get(pid, []):
                 if not hidden_user(data, uid):
@@ -1865,7 +1865,7 @@ def period_line(window, since, now, label):
     if window == "week":
         return "Last 7 days"
     if window == "first":
-        return "Trial report"
+        return "First report"
     if window == "custom":
         return label or "Custom period"
     return label or "This report"
@@ -2473,13 +2473,13 @@ def main():
     parser.add_argument("--fresh-hours", dest="fresh_hours", type=float,
                         help="owner override for how many hours a report stays fresh")
     parser.add_argument("--first-run", action="store_true",
-                        help="trial report: the latest original posts and quotes, no day window")
+                        help="first report: the latest original posts and quotes, no day window")
     parser.add_argument("--trial-plan", action="store_true",
-                        help="print the trial reads for posts already saved in --data")
+                        help="print the first-report reads for posts already saved in --data")
     parser.add_argument("--estimate-reads", type=int, default=None,
                         help="print the minute estimate for this many X reads")
     parser.add_argument("--trial-post-count", dest="trial_post_count", type=int, default=None,
-                        help="how many original posts and quotes the trial uses (default 5)")
+                        help="how many original posts and quotes the first report uses (default 5)")
     parser.add_argument("--read-budget", dest="read_budget", type=int, default=None,
                         help="cap for --trial-plan (default 15)")
     parser.add_argument("--report-card", action="store_true",
@@ -2591,7 +2591,7 @@ def main():
             span_start = min(ts(post["created_at"]) for post in chosen)
         else:
             span_start = now - timedelta(minutes=1)
-        windows = [("first", span_start, "Trial report")]
+        windows = [("first", span_start, "First report")]
         if args.picture is None:
             args.picture = True
     elif args.days:

@@ -124,6 +124,14 @@ class FewPageTest(unittest.TestCase):
             cls.canvas = fh.read()
         cls.payload = parse_canvas(cls.canvas)
 
+    def test_page_source_keeps_emoji_as_characters(self):
+        self.assertNotRegex(self.canvas, r"(?<!\\)\\u[0-9a-fA-F]{4}")
+        self.assertIn("💐", self.canvas)
+        self.assertIn("💬", self.canvas)
+        self.assertIn("❤️", self.canvas)
+        self.assertNotIn("\\ud83d", self.canvas)
+        self.assertNotIn("\\u2014", self.canvas)
+
     def test_canvas_is_one_page_module(self):
         code = code_without_data(self.canvas)
         self.assertEqual(code.count("from "), 1)
@@ -166,6 +174,51 @@ class FewPageTest(unittest.TestCase):
         self.assertNotIn(self.output["headline"], self.canvas.split(MARKER, 1)[0])
 
 
+class UnicodeSourceTest(unittest.TestCase):
+    def test_emoji_and_em_dash_are_characters_not_escapes(self):
+        activity = {
+            "totals": {"replies": 1, "quotes": 0, "likes": 0, "reposts": 0},
+            "interactions": [{
+                "name": "Ada\u0007 — Brook",
+                "username": "ada_brook",
+                "good": False,
+                "stranger": False,
+                "replies": 1,
+                "likes": 0,
+                "reposts": 0,
+            }],
+            "catch_up": [{
+                "name": "Bea Glen",
+                "username": "bea_glen",
+                "good": False,
+                "stranger": False,
+                "latest": {"text": "Kept the window — light on.", "created_at": "2026-11-04T16:00:00Z"},
+                "latest_url": "https://x.com/bea_glen/status/1",
+            }],
+            "threads": [],
+            "has_good_neighbours": False,
+            "catch_hint": True,
+            "all_caught_up": False,
+        }
+        clock = xn.ts("2026-11-04T18:00:00Z")
+        with patch.object(xn, "utc_now", return_value=clock):
+            model = report_page.build_page_model(
+                activity, SINCE, NOW, "Last 24 hours", window="day", thanks=THANKS)
+            source = report_page.render_report_canvas(model)
+        self.assertNotRegex(source, r"(?<!\\)\\u[0-9a-fA-F]{4}")
+        self.assertIn("💐", source)
+        self.assertIn("💬", source)
+        self.assertIn("—", source)
+        self.assertNotIn("\\u2014", source)
+        self.assertNotIn("\\ud83d", source)
+        self.assertNotIn("\\u0007", source)
+        payload = parse_canvas(source)
+        found = strings(payload)
+        self.assertIn("Ada  — Brook", found)
+        self.assertTrue(any("window — light" in text for text in found))
+        self.assertEqual(payload["blocks"][0]["heading"], "💐 Flowers")
+
+
 class EmptySectionTest(unittest.TestCase):
     def test_empty_sections_are_omitted_and_the_sentences_match(self):
         activity = empty_activity()
@@ -203,9 +256,9 @@ class EmptySectionTest(unittest.TestCase):
         activity = empty_activity()
         intro = xn.trial_intro(5)
         model = report_page.build_page_model(
-            activity, SINCE, NOW, "Trial report", window="first", intro=intro, thanks=THANKS)
+            activity, SINCE, NOW, "First report", window="first", intro=intro, thanks=THANKS)
         payload = parse_canvas(report_page.render_report_canvas(model))
-        self.assertEqual(payload["title"], "Trial report")
+        self.assertEqual(payload["title"], "First report")
         self.assertEqual(payload["intro"], intro)
         self.assertIn("Community sharing can wait until later.", payload["intro"])
         texts = [block.get("text") for block in payload["blocks"]]
@@ -284,19 +337,16 @@ class EscapingTest(unittest.TestCase):
             model = report_page.build_page_model(
                 activity, SINCE, NOW, "Last 24 hours", window="day", thanks=THANKS)
             source = report_page.render_report_canvas(model)
-        with open(report_page.TEMPLATE, encoding="utf-8") as fh:
-            template = fh.read()
         payload = parse_canvas(source)
-        self.assertEqual(source.count("</Text>"), template.count("</Text>"))
-        self.assertEqual(source.count("</Page>"), template.count("</Page>"))
-        self.assertNotIn("<script", source)
+        self.assertNotRegex(source, r"(?<!\\)\\u[0-9a-fA-F]{4}")
         self.assertNotIn("\u2028", source)
-        self.assertEqual(source.count("&"), template.count("&"))
+        self.assertIn("Bob & Co", source)
+        self.assertNotIn("\\u0026", source)
         found = strings(payload)
         self.assertIn(nasty_name, found)
         self.assertTrue(any(xn.snippet(nasty_post) in text for text in found))
         self.assertIn("</Text>", xn.snippet(nasty_post))
-        self.assertIn("Cleo\u2028Dawn", found)
+        self.assertIn("Cleo\nDawn", found)
         self.assertIn("Bob & Co", found)
         self.assertIn(f"https://x.com/{nasty_handle}", hrefs(payload))
         self.assertIn("https://x.com/cleo_dawn/status/2", hrefs(payload))
@@ -347,7 +397,9 @@ class OverrideTest(unittest.TestCase):
         self.assertEqual(payload["title"], "Last 7 days")
         self.assertEqual(payload["blocks"][-1]["href"], "https://x.com/intent/post?text=week")
         self.assertEqual(payload["blocks"][-1]["extra"], extra)
-        self.assertNotIn("<for>", source)
+        self.assertIn("<for>", source)
+        self.assertNotRegex(source, r"(?<!\\)\\u[0-9a-fA-F]{4}")
+        self.assertIn("💬", source)
 
     def test_extra_post_section_keeps_its_link_ahead_of_thanks(self):
         text = (

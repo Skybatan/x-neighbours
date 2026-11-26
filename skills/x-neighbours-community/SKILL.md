@@ -19,7 +19,7 @@ Read [`skills/x-neighbours/SKILL.md`](../x-neighbours/SKILL.md) for the report i
 
 ## Join and leave
 
-Do not offer community mode during the trial report. That report follows [FIRST_RUN.md](../x-neighbours/FIRST_RUN.md) and stops at the five-post demo plus a short intro. After the owner has picked a daily, weekly, or on-request routine, offer community once, with or after their first regular report. If they ask to join before that, wait until that report. Then run:
+Do not offer community mode during the first report. That report follows [FIRST_RUN.md](../x-neighbours/FIRST_RUN.md) and stops at the five-post demo plus a short intro. After the owner has picked a daily, weekly, or on-request routine, offer community once, with or after their first regular report. If they ask to join before that, wait until that report. Then run:
 
 ```bash
 python3 community.py --file <community path> offer

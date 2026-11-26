@@ -188,7 +188,7 @@ class PeriodLabelTest(unittest.TestCase):
         self.assertEqual(xn.period_line("week", start, end, "last 7 days"), "Last 7 days")
         self.assertEqual(
             xn.period_line("first", start, end, "Last 2 days"),
-            "Trial report",
+            "First report",
         )
 
     def test_timezone_does_not_change_the_elapsed_interval(self):
