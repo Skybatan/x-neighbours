@@ -16,7 +16,7 @@ Count the reads you plan (use 15 until the plan says a smaller number) and run:
 python3 x_neighbours.py --estimate-reads 15
 ```
 
-Send the `message` field before you fetch. It says the report is about one minute, that they don't need to wait in the chat, and that you will notify them when it is ready. Deliver the report as a new message when it is done.
+Send the `message` field before you fetch. It says the report is about one minute, that they don't need to wait in the chat, and that you will notify them when it is ready. Deliver the report as a Page when it is done. The chat message is the short headline and the Page link.
 
 ## Steps
 
@@ -45,7 +45,11 @@ A reply counts only when its direct `replied_to` parent is one of the trial post
 python3 x_neighbours.py --now <T> --first-run --good-neighbours <store>/good_neighbours.json --state <store>/state.json
 ```
 
-9. Send two messages. Message 1 is the text of `report_first.md` and no image. It already starts with `Trial report` and the short `intro` (what this is, what the sections show, and an invitation to thank someone, ask anytime, or pick daily or weekly). One line in that intro says community sharing can wait. Do not add a second introduction. Message 2 is `thank_you.text`, a blank line, the link `thank_you.intent` labelled “Post your thank-you”, a blank line, and `thank_you.note`. Put `x_neighbours_first.png` in that message's `images`. Do not post it.
+9. Send the report as a Page. `page_canvas` is `report_first.canvas.tsx` and `page_title` is `Trial report`. Pass the whole file to WriteCanvas. Do not pass a canvas id. Do not write the Page by hand. The Page already starts with `Trial report` and the short `intro` (what this is, what the sections show, and an invitation to thank someone, ask anytime, or pick daily or weekly). One line in that intro says community sharing can wait. Do not add a second introduction.
+
+The chat message is `headline`, then the Page link labelled `Trial report`. Put `x_neighbours_first.png` in that message's `images`. Do not paste `report_first.md` or the thank-you sentence into the chat. Those words are on the Page. Do not post the picture.
+
+If WriteCanvas fails or returns no url, send two messages and no Page link. Message 1 is the text of `report_first.md` and no image. Message 2 is `thank_you.text`, a blank line, the link `thank_you.intent` labelled “Post your thank-you”, a blank line, and `thank_you.note`, with the PNG in `images`.
 
 Do not send a good-neighbours card. `add_question` is absent on a trial. Do not ask them to build the list. Do not run `community.py offer`. Do not send a community or share card. `community_offer` and `share_offer` are false. The first experience is the five-post report plus that intro.
 

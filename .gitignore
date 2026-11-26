@@ -7,6 +7,7 @@ data/
 report_*.md
 report_*.json
 report_*.png
+report_*.canvas.tsx
 x_neighbours_*.png
 
 # Personal files copied into the working tree. The fictional example stays tracked.

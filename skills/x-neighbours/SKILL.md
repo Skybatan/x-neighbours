@@ -8,7 +8,7 @@ description: >-
 
 # X Neighbours — bot runbook
 
-You run this for the owner of this bot. It shows who replied, quoted, liked, and reposted, then who to catch up with. Every report ends with a house-framed neighbours picture and a thank-you link.
+You run this for the owner of this bot. It shows who replied, quoted, liked, and reposted, then who to catch up with. Every report is a Page. It ends with a house-framed neighbours picture and a thank-you link.
 
 You do the X reads. `x_neighbours.py` only reads JSON you saved. Follow every rule in this file on every run. This file is the only copy of these instructions. The root `BOT.md` only points here.
 
@@ -19,7 +19,7 @@ You do the X reads. `x_neighbours.py` only reads JSON you saved. Follow every ru
 - Refresh follower and following lists **at most once a week**. Reuse `data/followers_*.json` and `data/following_*.json` when they are under 7 days old.
 - This run is **read-only**. Never follow, unfollow, like, unlike, repost, bookmark, post, reply, or DM. Never open a GitHub issue yourself. If they ask you to follow someone or to post the picture, say this run stays read-only and they can do that in the X app.
 - Leave bot accounts out. `@grok` is already in `exclude`. They can name other handles to skip anytime.
-- Never commit user data. Do not commit or push `config.json`, `data/`, `.avatar_cache/`, `report_*.md`, `report_*.png`, `x_neighbours_*.png`, `good_neighbours.json`, `state.json`, `community.json`, or `global_neighbours.neighbours`. Do not open a pull request with those files. Do not run `git add .`. For a normal run, commit nothing. `git pull` is fine when the owner asked to upgrade: those paths are gitignored. The good neighbours list, the report clock, and community mode live in this bot's own store, outside the repo.
+- Never commit user data. Do not commit or push `config.json`, `data/`, `.avatar_cache/`, `report_*.md`, `report_*.png`, `report_*.canvas.tsx`, `report_*_page.json`, `x_neighbours_*.png`, `good_neighbours.json`, `state.json`, `community.json`, or `global_neighbours.neighbours`. Do not open a pull request with those files. Do not run `git add .`. For a normal run, commit nothing. `git pull` is fine when the owner asked to upgrade: those paths are gitignored. The good neighbours list, the report clock, and community mode live in this bot's own store, outside the repo.
 - Community mode is off until the owner opts in. The steps are in [skills/x-neighbours-community/SKILL.md](../x-neighbours-community/SKILL.md). Individual mode does not check `versions/`, does not download the global list, does not share, and does not mention `@SkyXFunNext`.
 - A community share is the only time you open a GitHub pull request, and only for one submission file, and only by [skills/x-neighbours-share/SKILL.md](../x-neighbours-share/SKILL.md). You still never open a GitHub issue yourself. You still never post, follow, or repost on X.
 - Stay on this task. Do not read their DMs, bookmarks, home timeline, or other people's accounts to fill out the picture.
@@ -46,7 +46,7 @@ After the owner picks a daily report, a weekly report, or on-request only, later
 
 ## Each run
 
-Before the first X read of any report (daily, weekly, or on request), count the reads you plan to make and run `python3 x_neighbours.py --estimate-reads <N>`. Send the `message` field to the owner. It says how many minutes the report should take, that they don't need to wait in the chat, and that they will get a notification when it is ready. Then fetch. Deliver the report as a new message when it is done.
+Before the first X read of any report (daily, weekly, or on request), count the reads you plan to make and run `python3 x_neighbours.py --estimate-reads <N>`. Send the `message` field to the owner. It says how many minutes the report should take, that they don't need to wait in the chat, and that they will get a notification when it is ready. Then fetch. Deliver the report when it is done, as “How to send a report” says: a Page, then one short chat message. The estimate is the only message you send before the fetches.
 
 A manual run can fetch one window in a single pass. The daily and Monday routines below split the work so Monday reuses that morning's files. Work in the clone. Pick a UTC timestamp `T` when you start fetching. `T` is the actual current UTC time (`date -u +%Y-%m-%dT%H:%M:%SZ`). Pass that as `--now`. Do not reuse a timestamp from an earlier run, from `state.json`, or from a sample such as `2026-11-04T18:00:00Z` (that value is only a shape example). What's new does not age posts from `--now`; a stale `--now` still shifts the Flowers and Replies window.
 
@@ -188,44 +188,66 @@ Overwrite those names as you go. Do not delete the previous files until the new 
 python3 x_neighbours.py --now <T> --good-neighbours <path> --state <state path>
 ```
 
-`<path>` is `good_neighbours.json` in the store. `<state path>` is `state.json` beside it. The script reads `config.json` and `data/`. For each window it writes `report_<window>.md` (sections 1–3) and `report_<window>_thanks.md` (section 4), plus `x_neighbours_<window>.png`, the house-framed picture. Each neighbour on that picture is labelled with their display name and, on the line below, their @username. The name is the X user `name` field. Keep `name` in every `user.fields` list in this runbook. When an account has no name, the label is the @username alone. The report card PNG is off unless you pass `--report-card`. Stdout is JSON with totals, `catch_up`, `picture`, `thank_you`, and `messages`. `thank_you.text` is the thank-you sentence. It names no one. `thank_you.intent` is the post link. A day window and a fresh on-demand report include `suggest_good_neighbours` and `add_question` when someone in Flowers is not on the list yet. A week window does not. A trial report does not: no good-neighbours card, and `community_offer` is false. It includes `intro` instead. `--first-run` uses `trial_post_count` (default 5), not a day window. A missing good neighbours file is an empty list. `--no-picture` skips the image; the default is to draw it every time. `--since <ISO>` is a report that starts at that time.
+`<path>` is `good_neighbours.json` in the store. `<state path>` is `state.json` beside it. The script reads `config.json` and `data/`. For each window it writes `report_<window>.md` (sections 1–3), `report_<window>_thanks.md` (section 4), `report_<window>.canvas.tsx` (the Page), and `report_<window>_page.json` (the data that filled the Page), plus `x_neighbours_<window>.png`, the house-framed picture. Each neighbour on that picture is labelled with their display name and, on the line below, their @username. The name is the X user `name` field. Keep `name` in every `user.fields` list in this runbook. When an account has no name, the label is the @username alone. The report card PNG is off unless you pass `--report-card`. Stdout is JSON with totals, `catch_up`, `picture`, `thank_you`, `page_title`, `headline`, `page_canvas`, `page_model`, `messages`, and `fallback_messages`. `thank_you.text` is the thank-you sentence. It names no one. `thank_you.intent` is the post link. `headline` is the one line for the chat. A day window and a fresh on-demand report include `suggest_good_neighbours` and `add_question` when someone in Flowers is not on the list yet. A week window does not. A trial report does not: no good-neighbours card, and `community_offer` is false. It includes `intro` instead. `--first-run` uses `trial_post_count` (default 5), not a day window. A missing good neighbours file is an empty list. `--no-picture` skips the image; the default is to draw it every time. `--since <ISO>` is a report that starts at that time.
 
 A custom period is `--days 14` (writes `report_custom`). Likes only, replies only, per post, and per day are `--report likes`, `--report replies`, `--per-post`, and `--per-day`. They re-read `data/` and do not need more X calls. Weight flags exist. Keep those values in config only, and never print them.
 
 ## How to send a report
 
-Send exactly two chat messages, in this order. Then, only if `add_question` is present, one question card. Do not post, like, or DM anyone. Do not send a report card unless they asked.
+The report is a Page. The chat does not get the report body. Do not post, like, or DM anyone. Do not send a report card unless they asked.
 
-**Message 1 — sections 1 to 3.** Send the text of `report_<window>.md` and nothing else. The `images` field of this message is empty. Do not attach the picture here.
+The sections, in order, stay as they are. They are written for a phone. Do not turn them into a wide table. Do not add a date range such as Nov 5 – Nov 5.
 
-The sections, in order, are written for a phone. Do not turn them back into a wide table.
-
-The first two lines of `report_<window>.md` are the header. Do not add a date range such as Nov 5 – Nov 5.
+The Page title is the period. The line under the title is the emoji counts. Those are the first two lines of `report_<window>.md`.
 
 1. The interval. A fresh report is `Since your last report · 30 min ago`, using the real time since the previous report (`min`, `hr`, `day`). A daily report is `Last 24 hours`. A Monday report is `Last 7 days`. A trial report is `Trial report`.
 2. Emoji counts only, including zeros: `💬 3 · 🔁💬 0 · ❤️ 0 · 🔁 0`. No words beside those numbers.
 
-Then the sections, written for a phone. Do not turn them back into a wide table. The headings are short:
+Then the sections. The headings are short:
 
 1. **💐 Flowers** — one person per block. The name is the only link. Counts sit on the next line (`2 replies · 4 likes · 1 repost`). Replies means replies plus quote posts. Biggest supporters first. No Total column and no second @handle.
 2. **🏡 What's new** — the post preview is the link. No @handle and no separate “Read post” link. Same people as Catch up: good neighbours when the list has anyone, otherwise the top people from the period. One post per person: their newest original (a quote of their own counts; a reply or a plain repost does not) that the owner has not liked, reposted, or replied to. The age is that post's `created_at` against the actual current UTC time, not `--now`.
 3. **👋 Replies** — first-level replies and quote posts only, unanswered first, newest first inside the unanswered group and inside the answered group, one block each, no nested bullets. The preview text is a link to that reply or quote (`url`), so the owner can open it and answer. A reply counts only when its direct `replied_to` parent is an owner post or quote that starts the conversation. A later reply in the thread, under the owner's reply, does not count, and the owner's own posts are never listed. Replies the owner already answered directly are left out. The report says how many, and they can ask to see them. Shown answered text says `Replied`, never `Not replied yet`. The “ago” time is that post's `created_at` against the actual current UTC time, not the report window end.
 
-A Markdown hard line break (two spaces at the end of the line) separates the period from the emoji counts, the counts from the legend when there is one, a name from the counts under it, and a name from the post preview. Keep those breaks when you send the text. A single newline is not enough; chat will join the lines.
+On the Page, a name and the line under it are separate lines, with the same words as the markdown. The name link and the post link are link components. A legend line, when there is one, sits under the counts. An empty section is left out. The sentence the markdown uses for an empty stretch stays, without a heading.
 
-Each section shows at most five entries. A last line says how many are left (`+3 more in Flowers. Ask to see them.`). Those entries are in `more_json` (`report_<window>_more.json`): `flowers`, `catch_up`, `greetings_unanswered`, and `greetings_answered`. If they ask for more, or for the answered greetings, send each greeting's `markdown` field. That text already links the preview to `url` and says `Replied` when `replied` is true, or `Not replied yet` when it is false. Do not relabel an answered greeting as not replied. Do not fetch X again. Do not paste the whole file. That file is this report only, not an older history.
+Each section shows at most five entries. A last line says how many are left (`+3 more in Flowers. Ask to see them.`). Those entries are in `more_json` (`report_<window>_more.json`): `flowers`, `catch_up`, `greetings_unanswered`, and `greetings_answered`. If they ask for more, or for the answered greetings, send each greeting's `markdown` field in the chat. That text already links the preview to `url` and says `Replied` when `replied` is true, or `Not replied yet` when it is false. Do not relabel an answered greeting as not replied. Do not fetch X again. Do not paste the whole file. That file is this report only, not an older history.
 
 ⭐ next to a name means they are on the good neighbours list. The legend “⭐ = good neighbour” appears only when that list is non-empty. 👤? means the owner does not follow that person. It is shown only when a following list was loaded. A trial report does not fetch that list, so it does not show 👤? or that legend. Do not add a followed/unfollowed split, a follow-back list, or impressions.
 
-**Message 2 — section 4, one message, picture included.** This is a single chat message. Put the house-framed PNG in that message's `images` field. The path is `messages[1].images[0]`, the same file as `picture`. The text of the same message is `thank_you.text`, then a blank line, then the link `thank_you.intent` with the label “Post your thank-you”, then a blank line, then `thank_you.note`: “Save the picture and attach it in X before posting.” In individual mode, no @handles in this message. In community mode, run `picture-tag` from the community skill. When it says `remind`, use its `intent` for the link and add its `text` after the note. That line is the only @handle, and you still do not post the picture. When the posting account is already `@SkyXFunNext`, skip the line.
+When per-post or per-day is on, those extra sections are on the Page too, after Replies and before the thank-you.
 
-The picture belongs inside this message. Do not send the picture as its own message. Do not send the picture as a later attachment. Do not send the text first and the picture second. If the owner cannot see the picture in the same bubble as the thank-you sentence, the send was wrong. The link only opens a composer with the words. It does not attach the picture. Never say that tapping the link posts the image.
+The thank-you is the last block on the Page: `thank_you.text`, then the link `thank_you.intent` with the label “Post your thank-you”, then `thank_you.note`: “Save the picture and attach it in X before posting.” The link only opens a composer with the words. It does not attach the picture. Never say that tapping the link posts the image. Do not post the thank-you yourself.
 
-Do not post the thank-you yourself.
+**The Page.** `page_canvas` is `report_<window>.canvas.tsx`. The script fills it from `templates/report.canvas.tsx`. Do not write that file by hand.
 
-**Then the ⭐ Add card, or nothing.** If `add_question` is absent, stop. If it is present, send one multi-select question card after message 2. The short label is **⭐ Add**. The prompt is “Add to good neighbours?”. Use each option's `label` exactly. It is `Display Name (@username)`, with a ⭐ in front only when that person is already a good neighbour. Do not shorten it to `@handle`. There is one free-text option (“Or name anyone else”). Do not also paste that list into message 1 or message 2. Do not look anyone else up on X to invent suggestions. Do not send the card on the Monday report or the trial report. When they pick someone, add them with `good_neighbours.py`. Use the id and name already in `suggest_good_neighbours`. Call `get_users_by_username` only for a handle that is not in that list.
+In community mode, before WriteCanvas, run picture-tag from the community skill. When `remind` is true, rewrite the Page so the thank-you link is `intent` and `text` follows the note:
 
-Profile photos are not drawn beside names in the chat. A message can include a gallery of images together with the text, but that gallery cannot line a small photo up with each person. A Markdown image would not show either. Each person in `more_json` has an `avatar` field when the saved user data includes `profile_image_url`. Leave those URLs unused until the host can place a photo on the same row as the name. Do not invent a screenshot of the list.
+```bash
+python3 report_page.py --model <page_model> --thank-intent "<intent>" --thanks-extra "<text>"
+```
+
+`<page_model>` is `report_<window>_page.json`, the same path as `page_model`. When `remind` is false, skip that command. A trial report does not run picture-tag. When the posting account is already `@SkyXFunNext`, picture-tag says `remind` false. That reminder is the only @handle, and you still do not post the picture.
+
+Pass the whole canvas file to WriteCanvas. The title is `page_title`. Do not pass a canvas id. Each report gets its own Page, including a routine run and a run that says the same thing as the last one. `report_<window>.md` is overwritten every time and is not a history of past reports, so reusing one Page would change the report an older chat link still opens.
+
+WriteCanvas returns a url. If it fails or returns no url, use the plain-text fallback below. Do not invent a link.
+
+**The chat message.** One message, after the Page exists. The text is `headline`, then the Page link. `headline` is the period, the emoji counts, and, when replies are waiting, how many (`2 replies to answer`). Label the link with `page_title`. The host shows that link as a card. Do not paste the sections, `report_<window>.md`, or `thank_you.text` into the chat.
+
+Put the house-framed PNG in that message's `images` field. The path is `picture`, the same file as `messages[0].images[0]`. Do not send the picture as its own later message. In individual mode the chat message has no @handle.
+
+**Then the chat widgets, or nothing.** A Page cannot record a choice, so these stay in the chat, after the Page link.
+
+If `add_question` is absent, do not send the ⭐ Add card. If it is present, send one multi-select question card. The short label is **⭐ Add**. The prompt is “Add to good neighbours?”. Use each option's `label` exactly. It is `Display Name (@username)`, with a ⭐ in front only when that person is already a good neighbour. Do not shorten it to `@handle`. There is one free-text option (“Or name anyone else”). Do not also paste that list into the Page or the chat message. Do not look anyone else up on X to invent suggestions. Do not send the card on the Monday report or the trial report. When they pick someone, add them with `good_neighbours.py`. Use the id and name already in `suggest_good_neighbours`. Call `get_users_by_username` only for a handle that is not in that list.
+
+On the Monday report, after the Page message, add `feedback_line` and nothing else. Do not fetch anything for it.
+
+A trial report does not send the ⭐ Add card, a community offer, or a share card. The intro is already on the Page. Do not add a second introduction. Then ask `next_steps` in the chat.
+
+**Plain-text fallback.** If WriteCanvas fails or returns no url, send two chat messages and no Page link. Message 1 is the text of `report_<window>.md` and no image. Message 2 is `thank_you.text`, a blank line, the link `thank_you.intent` with the label “Post your thank-you”, a blank line, and `thank_you.note`, with the PNG in that message's `images`. Those two messages are `fallback_messages`. Then the same widgets as above. In community mode, when picture-tag says `remind`, use its `intent` for that fallback link and add its `text` after the note.
+
+Profile photos are not drawn beside names. A Page does not fetch a web image, and a chat gallery cannot line a small photo up with each person. Each person in `more_json` has an `avatar` field when the saved user data includes `profile_image_url`. Leave those URLs unused. Do not invent a screenshot of the list.
 
 ## Routines
 
@@ -242,7 +264,7 @@ Both run at 9:00 AM in the owner's timezone. Count every X call from both toward
 5. Fetch likers only for original posts and quotes (never the owner's replies), and fetch reposters and quote posts, with the budget rule above. Skip files you already have. Before the first read, send the estimate from `--estimate-reads`.
 6. If today's `my_likes_1.json` or `my_posts_1.json` is missing, fetch those small pages (section 5). Then fetch latest posts (`latest_<userid>.json`) for each good neighbour, or for the ranked ten when the list is empty.
 7. Run `python3 x_neighbours.py --now <T> --windows day --good-neighbours <path> --state <state path>`.
-8. Send the report with “How to send a report”: message 1 is `report_day.md` with no image, message 2 is the thank-you text and link with `x_neighbours_day.png` in that message's `images` field. Then the ⭐ Add card if `add_question` is present. If they pick someone, add them with `good_neighbours.py`.
+8. Send the report with “How to send a report”: one Page titled with the period, then a short chat message (`headline` and the Page link, with `x_neighbours_day.png` in that message's `images`). Then the ⭐ Add card if `add_question` is present. If they pick someone, add them with `good_neighbours.py`.
 
 Leave the files in place. Later reports filter them by time.
 
@@ -255,7 +277,7 @@ If today's `posts_day_1.json` is missing, do the daily run first.
 3. If saved posts already cover `T` minus 7 days through `T` minus 24 hours, do not page posts or mentions for that span. Fetch only missing liker, reposter, and quote files for older original posts and quotes whose count is 3 or more. Do not fetch likers for the owner's replies.
 4. If that span is missing, fetch it once: `get_users_posts` and `get_users_mentions` with `start_time` of `T` minus 7 days and `end_time` of `T` minus 24 hours. Save as `posts_week_1`, … and `mentions_week_1`, …. Then the same 3-or-more rule for likes, reposts, and quotes. Refresh `latest_<userid>.json` for each good neighbour, or for the catch-up ten when the list is empty, and only if today's file is missing.
 5. Run `python3 x_neighbours.py --now <T> --windows week --good-neighbours <path> --state <state path>`. Do not send the ⭐ Add card on this report.
-6. Send the report with “How to send a report”: message 1 is `report_week.md` with no image, message 2 is the thank-you text and link with `x_neighbours_week.png` in that message's `images` field. Do not post it. Do not send a report card unless they asked for `--report-card`. After those two messages, add one line and nothing else: “Anything you'd change about X Neighbours? Tell me and I'll turn it into a feedback link.” That line is `feedback_line` in the script output. Do not fetch anything for it.
+6. Send the report with “How to send a report”: one Page titled with the period, then a short chat message (`headline` and the Page link, with `x_neighbours_week.png` in that message's `images`). Do not post it. Do not send a report card unless they asked for `--report-card`. Do not send the ⭐ Add card. After that message, add one line and nothing else: “Anything you'd change about X Neighbours? Tell me and I'll turn it into a feedback link.” That line is `feedback_line` in the script output. Do not fetch anything for it.
 7. If community mode is on, run the Monday check in the community skill (ask before any upgrade, then save the global list). If it is off, do not fetch `versions/` or the global file.
 
 If the Monday calls would pass about 1,000 for the day, send the day picture you already have, fetch the older posts and mentions, and stop the liker lists when the cap is close. Tell the owner which older posts were left out.

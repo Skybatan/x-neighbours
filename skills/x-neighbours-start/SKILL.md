@@ -10,6 +10,6 @@ description: >-
 
 The trial report is [skills/x-neighbours/FIRST_RUN.md](../x-neighbours/FIRST_RUN.md). Read that file and follow it. Do not read the full [SKILL.md](../x-neighbours/SKILL.md) to produce the trial. You run it yourself. Do not hand it to a subagent.
 
-The trial is the five-post report plus the short intro already in `report_first.md`. Do not send a good-neighbours card. Do not offer community mode or a share. Those wait until after the owner picks a daily report, a weekly report, or on-request only, with or after their first regular report.
+The trial is a Page: the five-post report plus the short intro. The chat gets a short headline and the Page link. Do not send a good-neighbours card. Do not offer community mode or a share. Those wait until after the owner picks a daily report, a weekly report, or on-request only, with or after their first regular report.
 
 The full runbook is for those later reports.

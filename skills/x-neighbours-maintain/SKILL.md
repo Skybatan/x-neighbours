@@ -38,4 +38,4 @@ Share-list pull requests are not this flow. Neighbour Dog reviews and merges tho
 
 ## Personal data
 
-Never commit personal data. Never commit or push `config.json`, `data/`, `.avatar_cache/`, `report_*.md`, `report_*.png`, `x_neighbours_*.png`, `good_neighbours.json`, or `state.json`. Never commit real handles, real names, user ids, post text, avatars, or tokens. The fictional samples under `examples/` are the only account-shaped data that belongs in git. Never run `git add .`.
+Never commit personal data. Never commit or push `config.json`, `data/`, `.avatar_cache/`, `report_*.md`, `report_*.png`, `report_*.canvas.tsx`, `report_*_page.json`, `x_neighbours_*.png`, `good_neighbours.json`, or `state.json`. Never commit real handles, real names, user ids, post text, avatars, or tokens. The fictional samples under `examples/` are the only account-shaped data that belongs in git. Never run `git add .`.

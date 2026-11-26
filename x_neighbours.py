@@ -2606,6 +2606,7 @@ def main():
             )
         ]
     zone = owner_zone(cfg.get("timezone"))
+    import report_page
     for key, span, label in windows:
         since = span if isinstance(span, datetime) else now - timedelta(days=span)
         activity = build_activity(
@@ -2644,11 +2645,21 @@ def main():
         if key == "week":
             with open(thanks_path, "a", encoding="utf-8") as fh:
                 fh.write("\n" + WEEKLY_FEEDBACK + "\n")
+        extra = ""
         if cfg["per_post"] or cfg["per_day"]:
+            extra = extra_sections(
+                data, since, now, cfg["handle"], cfg["top"], like_weight, reply_weight,
+                cfg["per_post"], cfg["per_day"])
             with open(md_path, "a", encoding="utf-8") as fh:
-                fh.write("\n" + extra_sections(
-                    data, since, now, cfg["handle"], cfg["top"], like_weight, reply_weight,
-                    cfg["per_post"], cfg["per_day"]) + "\n")
+                fh.write("\n" + extra + "\n")
+        page = report_page.build_page_model(
+            activity, since, now, label, window=key, intro=intro, thanks=thanks)
+        if extra.strip():
+            page["blocks"] = report_page.insert_before_thanks(
+                page["blocks"], report_page.blocks_from_extra_markdown(extra))
+        canvas_path = os.path.join(args.out, f"report_{key}.canvas.tsx")
+        model_path = os.path.join(args.out, f"report_{key}_page.json")
+        report_page.write_page(page, canvas_path, model_path)
         if args.report_card and not args.no_image:
             render_report(
                 activity, png_path, cfg["handle"], since, now, label,
@@ -2666,7 +2677,20 @@ def main():
             "more_json": more_path,
             "more_counts": {name: len(rows) for name, rows in more.items()},
             "thank_you": thanks,
+            "page_title": page["title"],
+            "headline": page["headline"],
+            "page_canvas": canvas_path,
+            "page_model": model_path,
             "messages": [
+                {
+                    "part": "page",
+                    "text": page["headline"],
+                    "page_title": page["title"],
+                    "page_canvas": canvas_path,
+                    "images": [picture_path] if picture_path else [],
+                },
+            ],
+            "fallback_messages": [
                 {"part": "sections_1_to_3", "text_file": md_path, "images": []},
                 {
                     "part": "section_4",
