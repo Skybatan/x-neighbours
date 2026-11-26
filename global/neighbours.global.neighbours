@@ -1,8 +1,8 @@
 {
   "format": "x-neighbours-global",
   "version": 1,
-  "generated_at": "2026-11-26T18:00:00Z",
-  "source_commit": "0ec08e21654b145a791c400dfe20fa1782d9744e",
+  "generated_at": "2026-11-26T19:07:37Z",
+  "source_commit": "c400983a278d8641d66d342501bb54bbd3dd7da7",
   "rules_version": "1",
   "min_recommendations": 2,
   "neighbours": {
