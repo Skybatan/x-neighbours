@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The Community Page lists recommended accounts. Opt-in stays in the chat.
+"""The Community Honor Roll lists recommended accounts. Opt-in stays in the chat.
 
 Handles here are fictional.
 """
@@ -61,7 +61,7 @@ class PageTest(unittest.TestCase):
         self.assertEqual([row["handle"] for row in loaded], ["ada_brook", "bea_glen"])
         source = community.render_canvas(community.build_model(loaded))
         payload = parse_canvas(source)
-        self.assertEqual(payload["title"], "Community")
+        self.assertEqual(payload["title"], "Community Honor Roll")
         self.assertIn("A recommendation is not a follow.", payload["intro"])
         blob = json.dumps(payload)
         self.assertIn("https://x.com/ada_brook", blob)

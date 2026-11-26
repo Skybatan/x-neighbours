@@ -1,12 +1,726 @@
 {
   "format": "x-neighbours-global",
   "version": 1,
-  "generated_at": "2026-11-26T05:34:16Z",
-  "source_commit": "ac49c85880b260263603317a3246a498cfb35f1e",
+  "generated_at": "2026-11-26T18:00:00Z",
+  "source_commit": "0ec08e21654b145a791c400dfe20fa1782d9744e",
   "rules_version": "1",
   "min_recommendations": 2,
-  "submission_interval_days": 7,
-  "neighbours": {},
+  "neighbours": {
+    "816733": {
+      "user_id": "816733",
+      "handle": "phillipstewart",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "18777958": {
+      "user_id": "18777958",
+      "handle": "Coveguy",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "36048436": {
+      "user_id": "36048436",
+      "handle": "KelleyToons",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "235204729": {
+      "user_id": "235204729",
+      "handle": "KenCCheng",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "330363903": {
+      "user_id": "330363903",
+      "handle": "Burntkorn",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "477201788": {
+      "user_id": "477201788",
+      "handle": "drtmrc1",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "718821755": {
+      "user_id": "718821755",
+      "handle": "DoublepPradhan",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "1562196758": {
+      "user_id": "1562196758",
+      "handle": "Code_Orangutan",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "2649710906": {
+      "user_id": "2649710906",
+      "handle": "TranscendntCode",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "2741028639": {
+      "user_id": "2741028639",
+      "handle": "iwifysom",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "3280094136": {
+      "user_id": "3280094136",
+      "handle": "DavidTeslaTech_",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "762120336599048192": {
+      "user_id": "762120336599048192",
+      "handle": "TSLASPCX1e80",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "881156406384234496": {
+      "user_id": "881156406384234496",
+      "handle": "chadly_c21",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "943100332191690753": {
+      "user_id": "943100332191690753",
+      "handle": "wilzap",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "955450556524482560": {
+      "user_id": "955450556524482560",
+      "handle": "AmericanPi3141",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "965577799086964736": {
+      "user_id": "965577799086964736",
+      "handle": "ZabetTward",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "1016892155145711616": {
+      "user_id": "1016892155145711616",
+      "handle": "QuietTesla",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "1160026964025102336": {
+      "user_id": "1160026964025102336",
+      "handle": "RichardYoungJr7",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "1312805643498258433": {
+      "user_id": "1312805643498258433",
+      "handle": "DigitalDaisyX",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "1330952300697964544": {
+      "user_id": "1330952300697964544",
+      "handle": "Ultima_Lumina",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "1381251623276531714": {
+      "user_id": "1381251623276531714",
+      "handle": "contractorsPOV",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "1457011887653081092": {
+      "user_id": "1457011887653081092",
+      "handle": "flightmediic",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "1485311640363016196": {
+      "user_id": "1485311640363016196",
+      "handle": "DocEpcot",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "1519682271866884096": {
+      "user_id": "1519682271866884096",
+      "handle": "Tesla_Borg",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "1521234205685989376": {
+      "user_id": "1521234205685989376",
+      "handle": "beechking9",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "1589395111577780225": {
+      "user_id": "1589395111577780225",
+      "handle": "jacobgay1989",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "1646950051925590018": {
+      "user_id": "1646950051925590018",
+      "handle": "Ari_on_twitr",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "1695882189676617728": {
+      "user_id": "1695882189676617728",
+      "handle": "CudaMster",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "1747760581212262400": {
+      "user_id": "1747760581212262400",
+      "handle": "Buikechax",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "1822743945119432705": {
+      "user_id": "1822743945119432705",
+      "handle": "Sandra49z",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "1847028179438915584": {
+      "user_id": "1847028179438915584",
+      "handle": "eyeshot65",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "1855010556203147264": {
+      "user_id": "1855010556203147264",
+      "handle": "SirMaximusIX",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "1863065787931807744": {
+      "user_id": "1863065787931807744",
+      "handle": "teslachoi",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "1879989692981993472": {
+      "user_id": "1879989692981993472",
+      "handle": "TangoTurtleA",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "1910338682118426624": {
+      "user_id": "1910338682118426624",
+      "handle": "SOwashington26",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "1946558643899383808": {
+      "user_id": "1946558643899383808",
+      "handle": "EvaVagrin5910",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "1965979870133104641": {
+      "user_id": "1965979870133104641",
+      "handle": "HanselRivera171",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "1969205099609407490": {
+      "user_id": "1969205099609407490",
+      "handle": "MakunaMars",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "1999130901297639424": {
+      "user_id": "1999130901297639424",
+      "handle": "mikeydsoftware",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "2048742076003545088": {
+      "user_id": "2048742076003545088",
+      "handle": "lowcountryev",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "2067049826693283840": {
+      "user_id": "2067049826693283840",
+      "handle": "ColdMorningGrit",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    },
+    "2098304673237110784": {
+      "user_id": "2098304673237110784",
+      "handle": "Patricia_Brdhst",
+      "source": "founding",
+      "recommendation_count": 1,
+      "recommended_by": [
+        {
+          "owner_id": "founding",
+          "owner_handle": "founding-submission",
+          "recommended_at": "2026-11-26T00:00:00Z",
+          "submission": "submissions/founding/2026-11-26T000000Z.neighbours"
+        }
+      ],
+      "first_recommended": "2026-11-26T00:00:00Z",
+      "last_recommended": "2026-11-26T00:00:00Z",
+      "tags": {}
+    }
+  },
   "owners": {},
   "opted_out": [],
   "banned_owners": []

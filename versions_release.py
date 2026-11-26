@@ -3,6 +3,7 @@
 
 The version number is read from VERSION. This script refuses to run on any
 other UTC weekday, and it is the only writer of versions/latest.json.
+It does not write a second versions/<version>.json file.
 global_build.py must not call it. A mid-week global rebuild leaves this
 folder alone.
 
@@ -58,7 +59,8 @@ def validate_notes(notes):
 
 
 def existing_notes(repo, number):
-    path = os.path.join(repo, "versions", number + ".json")
+    """Notes already stored on versions/latest.json for this same version."""
+    path = os.path.join(repo, "versions", "latest.json")
     if not os.path.isfile(path):
         return None
     try:
@@ -66,7 +68,9 @@ def existing_notes(repo, number):
             doc = json.load(fh)
     except (OSError, json.JSONDecodeError):
         return None
-    if not isinstance(doc, dict) or not doc.get("release_notes"):
+    if not isinstance(doc, dict) or str(doc.get("version") or "") != number:
+        return None
+    if not doc.get("release_notes"):
         return None
     return validate_notes(doc.get("release_notes"))
 
@@ -103,9 +107,8 @@ def write_release(repo, when, changelog, source_commit, min_compatible=None, rel
     folder = os.path.join(repo, "versions")
     os.makedirs(folder, exist_ok=True)
     text = json.dumps(document, ensure_ascii=False, indent=2) + "\n"
-    for name in ("latest.json", document["version"] + ".json"):
-        with open(os.path.join(folder, name), "w", encoding="utf-8") as fh:
-            fh.write(text)
+    with open(os.path.join(folder, "latest.json"), "w", encoding="utf-8") as fh:
+        fh.write(text)
     return document
 
 

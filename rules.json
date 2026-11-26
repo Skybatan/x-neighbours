@@ -9,7 +9,6 @@
   "min_period_days": 7,
   "max_period_days": 93,
   "cap": 100,
-  "submission_interval_days": 7,
   "min_recommendations": 2,
   "note_max_chars": 140,
   "max_tags": 3,

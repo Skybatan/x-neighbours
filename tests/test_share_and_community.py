@@ -159,34 +159,15 @@ class SubmissionTest(unittest.TestCase):
         share.write_json(path, doc)
         self.assertTrue(any(item["code"] == "tag" for item in share.validate_file(path, self.repo, relpath).errors))
 
-    def test_seven_day_interval(self):
+    def test_a_later_file_is_allowed_immediately(self):
         write_submission(
             self.repo, "100", "example_owner", EARLIER, [person(201, "ex_neighbour")])
-        soon = "2026-11-16T17:00:00Z"
+        soon = "2026-11-11T17:00:00Z"
         relpath, _doc = write_submission(
-            self.repo, "100", "example_owner", soon, [person(201, "ex_neighbour")])
+            self.repo, "100", "example_owner", soon, [person(202, "other_neighbour")])
         report = share.validate_file(os.path.join(self.repo, relpath), self.repo, relpath)
-        self.assertTrue(any(item["code"] == "interval" for item in report.errors))
-        allowed, nxt = rules.submission_allowed(soon, EARLIER)
-        self.assertFalse(allowed)
-        self.assertEqual(nxt, "2026-11-17T17:00:00Z")
-        week_later = "2026-11-17T17:00:00Z"
-        relpath, _doc = write_submission(
-            self.repo, "100", "example_owner", week_later, [person(202, "other_neighbour")])
-        # The earlier file is still the previous one only if this file is ignored.
-        # 17 Nov is exactly 7 days after 10 Nov, and the 16 Nov file is also present.
-        # Ignore this new file; the latest other file is 16 Nov, so this still fails.
-        report = share.validate_file(os.path.join(self.repo, relpath), self.repo, relpath)
-        self.assertFalse(report.ok)
-        alone = tempfile.mkdtemp()
-        try:
-            write_submission(alone, "100", "example_owner", EARLIER, [person(201, "ex_neighbour")])
-            relpath, _doc = write_submission(
-                alone, "100", "example_owner", week_later, [person(201, "ex_neighbour")])
-            report = share.validate_file(os.path.join(alone, relpath), alone, relpath)
-            self.assertTrue(report.ok, report.errors)
-        finally:
-            shutil.rmtree(alone)
+        self.assertTrue(report.ok, report.errors)
+        self.assertFalse(any(item["code"] == "interval" for item in report.errors))
 
     def test_cap_and_eligibility_are_checked_again(self):
         relpath, doc = write_submission(
@@ -298,7 +279,6 @@ class GlobalBuildTest(unittest.TestCase):
         os.makedirs(os.path.join(self.repo, "global"))
         share.write_json(os.path.join(self.repo, "global", "build.json"), {
             "min_recommendations": 2,
-            "submission_interval_days": 7,
             "rules_version": "1",
             "founding_waiver": {
                 "submission": "",
@@ -339,7 +319,7 @@ class GlobalBuildTest(unittest.TestCase):
         self.assertEqual(owners, {"100", "200"})
         self.assertIn("submission", row["recommended_by"][0])
 
-    def test_latest_submission_wins_for_one_owner(self):
+    def test_one_owner_counts_once_across_files(self):
         write_submission(self.repo, "100", "example_owner", EARLIER, [person(201, "old_name")])
         write_submission(self.repo, "100", "example_owner", NOW, [person(202, "new_name")])
         write_submission(self.repo, "200", "second_owner", NOW, [
@@ -347,8 +327,10 @@ class GlobalBuildTest(unittest.TestCase):
             person(202, "new_name"),
         ])
         document, _summary = self.rebuild()
-        self.assertNotIn("201", document["neighbours"])
-        self.assertIn("202", document["neighbours"])
+        self.assertEqual(document["neighbours"]["201"]["recommendation_count"], 2)
+        self.assertEqual(document["neighbours"]["202"]["recommendation_count"], 2)
+        owners_for_old = {item["owner_id"] for item in document["neighbours"]["201"]["recommended_by"]}
+        self.assertEqual(owners_for_old, {"100", "200"})
 
     def test_founding_waiver_populates_from_one_file_with_a_neutral_credit(self):
         doc, _dropped, _relpath = share.build_document(
@@ -497,12 +479,39 @@ class GlobalBuildTest(unittest.TestCase):
             self.assertEqual(committed["format"], document["format"])
             self.assertEqual(committed["rules_version"], document["rules_version"])
             self.assertEqual(committed["min_recommendations"], document["min_recommendations"])
-            self.assertEqual(
-                committed["submission_interval_days"], document["submission_interval_days"])
+            self.assertNotIn("submission_interval_days", document)
+            self.assertNotIn("submission_interval_days", committed)
             self.assertIsInstance(committed["neighbours"], dict)
             self.assertIsInstance(committed["owners"], dict)
         finally:
             shutil.rmtree(repo)
+
+    def test_committed_founding_seed_uses_the_neutral_credit(self):
+        with open(os.path.join(ROOT, "global", "build.json"), encoding="utf-8") as fh:
+            build = json.load(fh)
+        rel = build["founding_waiver"]["submission"]
+        self.assertEqual(rel, "submissions/founding/2026-11-26T000000Z.neighbours")
+        self.assertEqual(build["founding_waiver"]["owner_id"], "founding")
+        self.assertEqual(build["founding_waiver"]["owner_handle"], "founding-submission")
+        path = os.path.join(ROOT, rel)
+        report = share.validate_file(path, ROOT, rel, now="2026-11-26T18:00:00Z")
+        self.assertTrue(report.ok, report.errors)
+        with open(path, encoding="utf-8") as fh:
+            doc = json.load(fh)
+        self.assertEqual(doc["owner"]["user_id"], "founding")
+        self.assertEqual(doc["owner"]["handle"], "founding-submission")
+        self.assertEqual(len(doc["neighbours"]), 42)
+        with open(os.path.join(ROOT, rules.GLOBAL_REL), encoding="utf-8") as fh:
+            committed = json.load(fh)
+        self.assertEqual(set(committed["neighbours"]), {row["user_id"] for row in doc["neighbours"]})
+        self.assertEqual(len(committed["neighbours"]), 42)
+        for row in committed["neighbours"].values():
+            self.assertEqual(row["source"], "founding")
+            self.assertEqual(row["recommendation_count"], 1)
+            credit = row["recommended_by"][0]
+            self.assertEqual(credit["owner_id"], "founding")
+            self.assertEqual(credit["owner_handle"], "founding-submission")
+            self.assertEqual(credit["submission"], rel)
 
 
 class CommunityModeTest(unittest.TestCase):
@@ -563,10 +572,10 @@ class CommunityModeTest(unittest.TestCase):
         ready = community.sunday_message(True, NOW, None, "Europe/Stockholm")
         self.assertTrue(ready["can_share"])
         self.assertIn("Monday", ready["text"])
-        waiting = community.sunday_message(True, NOW, "2026-11-24T17:00:00Z", "Europe/Stockholm")
-        self.assertFalse(waiting["can_share"])
-        self.assertEqual(waiting["next_allowed_at"], "2026-12-01T17:00:00Z")
-        self.assertIn("share again", waiting["text"])
+        again = community.sunday_message(True, NOW, "2026-11-24T17:00:00Z", "Europe/Stockholm")
+        self.assertTrue(again["can_share"])
+        self.assertIsNone(again["next_allowed_at"])
+        self.assertIn("whenever you want", again["text"])
 
     def test_update_check_asks_and_never_pulls_by_itself(self):
         latest = {
@@ -628,15 +637,15 @@ class VersionReleaseTest(unittest.TestCase):
         self.assertTrue(version_mod.is_newer("9.9.9", version_mod.version()))
         self.assertFalse(version_mod.is_newer("0.1.0", version_mod.version()))
 
-    def test_latest_json_matches_version_and_is_monday_dated(self):
-        with open(os.path.join(ROOT, "versions", "latest.json"), encoding="utf-8") as fh:
+    def test_latest_json_is_the_only_release_file(self):
+        folder = os.path.join(ROOT, "versions")
+        self.assertEqual(os.listdir(folder), ["latest.json"])
+        with open(os.path.join(folder, "latest.json"), encoding="utf-8") as fh:
             latest = json.load(fh)
-        with open(os.path.join(ROOT, "versions", version_mod.version() + ".json"), encoding="utf-8") as fh:
-            frozen = json.load(fh)
         self.assertEqual(latest["version"], version_mod.version())
-        self.assertEqual(frozen, latest)
         self.assertEqual(latest["min_compatible_version"], version_mod.version())
-        self.assertEqual(rules.parse_time(latest["released_at"]).weekday(), 0)
+        self.assertEqual(latest["released_at"], "2026-11-26T18:00:00Z")
+        self.assertNotIn("Tentative", latest["changelog"])
         self.assertEqual(latest["repo"], rules.REPO_URL)
 
     def test_release_writer_refuses_a_wednesday_and_writes_on_monday(self):
@@ -801,13 +810,16 @@ class OneSubmissionCITest(unittest.TestCase):
             self.assertEqual(rebuilt.returncode, 0, rebuilt.stderr)
             summary = json.loads(rebuilt.stdout)
             self.assertTrue(summary["ok"])
-            self.assertEqual(summary["neighbours"], 0)
+            self.assertEqual(summary["neighbours"], 42)
+            self.assertEqual(summary["founding"], 42)
             self.assertEqual(summary["owners"], 1)
             with open(latest, encoding="utf-8") as fh:
                 self.assertEqual(fh.read(), before)
             with open(out, encoding="utf-8") as fh:
                 document = json.load(fh)
-            self.assertEqual(document["neighbours"], {})
+            self.assertEqual(len(document["neighbours"]), 42)
+            self.assertNotIn("201", document["neighbours"])
+            self.assertTrue(all(row["source"] == "founding" for row in document["neighbours"].values()))
             self.assertIn("100", document["owners"])
             self.assertEqual(
                 document["owners"]["100"]["latest_submission"], relpath)
@@ -823,6 +835,7 @@ class OneSubmissionCITest(unittest.TestCase):
             self.assertIn('"submissions/**"', rebuild_workflow)
             self.assertIn("global_build.py", rebuild_workflow)
             self.assertNotIn("pull_request:", rebuild_workflow)
+            self.assertIn("gh pr create", rebuild_workflow)
             self.assertNotIn("versions/", rebuild_workflow)
         finally:
             shutil.rmtree(parent)

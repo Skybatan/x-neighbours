@@ -1,0 +1,531 @@
+{
+  "format": "x-neighbours-submission",
+  "version": 1,
+  "submitted_at": "2026-11-26T00:00:00Z",
+  "owner": {
+    "user_id": "founding",
+    "handle": "founding-submission"
+  },
+  "verification": {
+    "code": "XN-FOUNDING",
+    "proof_post_id": "20261126000000"
+  },
+  "consent": {
+    "share_publicly": true,
+    "agreed_rules_version": "1"
+  },
+  "period": {
+    "from": "2026-08-28T00:00:00Z",
+    "to": "2026-11-26T00:00:00Z"
+  },
+  "neighbours": [
+    {
+      "user_id": "1457011887653081092",
+      "handle": "flightmediic",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "1330952300697964544",
+      "handle": "Ultima_Lumina",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "1747760581212262400",
+      "handle": "Buikechax",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "2098304673237110784",
+      "handle": "Patricia_Brdhst",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "36048436",
+      "handle": "KelleyToons",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "1519682271866884096",
+      "handle": "Tesla_Borg",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "1999130901297639424",
+      "handle": "mikeydsoftware",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "1822743945119432705",
+      "handle": "Sandra49z",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "1521234205685989376",
+      "handle": "beechking9",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "1381251623276531714",
+      "handle": "contractorsPOV",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "2741028639",
+      "handle": "iwifysom",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "1160026964025102336",
+      "handle": "RichardYoungJr7",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "718821755",
+      "handle": "DoublepPradhan",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "1485311640363016196",
+      "handle": "DocEpcot",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "3280094136",
+      "handle": "DavidTeslaTech_",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "1312805643498258433",
+      "handle": "DigitalDaisyX",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "762120336599048192",
+      "handle": "TSLASPCX1e80",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "1879989692981993472",
+      "handle": "TangoTurtleA",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "1965979870133104641",
+      "handle": "HanselRivera171",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "1589395111577780225",
+      "handle": "jacobgay1989",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "235204729",
+      "handle": "KenCCheng",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "816733",
+      "handle": "phillipstewart",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "1695882189676617728",
+      "handle": "CudaMster",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "1562196758",
+      "handle": "Code_Orangutan",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "1910338682118426624",
+      "handle": "SOwashington26",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "2067049826693283840",
+      "handle": "ColdMorningGrit",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "1946558643899383808",
+      "handle": "EvaVagrin5910",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "1855010556203147264",
+      "handle": "SirMaximusIX",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "1969205099609407490",
+      "handle": "MakunaMars",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "1646950051925590018",
+      "handle": "Ari_on_twitr",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "477201788",
+      "handle": "drtmrc1",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "965577799086964736",
+      "handle": "ZabetTward",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "955450556524482560",
+      "handle": "AmericanPi3141",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "18777958",
+      "handle": "Coveguy",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "1016892155145711616",
+      "handle": "QuietTesla",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "943100332191690753",
+      "handle": "wilzap",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "2649710906",
+      "handle": "TranscendntCode",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "2048742076003545088",
+      "handle": "lowcountryev",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "881156406384234496",
+      "handle": "chadly_c21",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "330363903",
+      "handle": "Burntkorn",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "1847028179438915584",
+      "handle": "eyeshot65",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    },
+    {
+      "user_id": "1863065787931807744",
+      "handle": "teslachoi",
+      "interactions": {
+        "replies": 2,
+        "quotes": 0,
+        "reposts": 0,
+        "likes": 44
+      },
+      "first_seen": "2026-08-28T00:00:00Z",
+      "last_seen": "2026-11-25T00:00:00Z"
+    }
+  ],
+  "generator": {
+    "bot": "x-neighbours",
+    "template_version": "3.0.0"
+  }
+}

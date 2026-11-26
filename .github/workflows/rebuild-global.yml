@@ -15,8 +15,12 @@ on:
       - "share_submission.py"
   workflow_dispatch:
 
+# The global file itself is not a trigger. Merging the rebuild request
+# must not start another rebuild.
+
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   rebuild:
@@ -26,21 +30,40 @@ jobs:
       - name: Check out main
         uses: actions/checkout@v4
 
-      - name: Rebuild from the latest submissions
+      - name: Rebuild from submissions
         run: |
           python3 global_build.py \
             --repo . \
             --now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --source-commit "${{ github.sha }}"
 
-      - name: Commit the global list
+      - name: Open a pull request for the global list
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           if git diff --quiet -- global/neighbours.global.neighbours; then
             echo "Global list already matches this commit."
             exit 0
           fi
+          branch="global-list-rebuild"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch" || true
+          git checkout -B "$branch"
           git add global/neighbours.global.neighbours
           git commit -m "Rebuild the global neighbours list"
-          git push
+          git push --force-with-lease origin "$branch"
+          number="$(gh pr list --head "$branch" --base main --state open --json number --jq '.[0].number')"
+          if [ -z "$number" ] || [ "$number" = "null" ]; then
+            gh pr create --base main --head "$branch" \
+              --title "Rebuild the global neighbours list" \
+              --body "$(cat <<'EOF'
+          Summarizes every file under submissions/ into global/neighbours.global.neighbours.
+
+          The same owner counts once per account. This request does not push that file onto main by itself.
+          EOF
+          )"
+          else
+            echo "Updated open rebuild request #${number}."
+          fi

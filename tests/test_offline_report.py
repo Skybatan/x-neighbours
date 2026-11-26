@@ -69,7 +69,7 @@ class OfflineWeekReportTest(unittest.TestCase):
         self.assertIn(self.output["picture_asset"], canvas)
         self.assertIn("<Image", canvas)
         self.assertEqual(self.output["picture_nudge"], xn.PICTURE_NUDGE)
-        self.assertEqual(self.output["good_neighbours_page"]["page_title"], "Good neighbours")
+        self.assertEqual(self.output["good_neighbours_page"]["page_title"], "Good Neighbours Newsletter")
 
     def test_waiting_is_counted_once_per_person(self):
         self.assertEqual(self.report.count("Not replied yet"), 2)

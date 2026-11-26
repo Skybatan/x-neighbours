@@ -1,5 +1,5 @@
 /**
- * Community list page. Opt-in and sharing stay in the chat.
+ * Community Honor Roll. Opt-in and sharing stay in the chat.
  * community_page.py replaces the placeholder below.
  * The only import is "grok/canvas". Data is inline. This file does not fetch.
  *

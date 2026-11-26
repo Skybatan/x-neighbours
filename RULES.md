@@ -6,9 +6,9 @@ The numbers in [`rules.py`](rules.py) and [`rules.json`](rules.json) are the cop
 
 ## Who can share
 
-Community mode is opt-in and off by default. An individual bot does not open a share pull request. One owner may submit at most once every 7 days. The bot says `next_allowed_at` first. The GitHub Action checks the same gap, so a pull request that skips the bot cannot get around it.
+Community mode is opt-in and off by default. An individual bot does not open a share pull request. An owner may submit whenever they want, including after a report that used a different period. There is no waiting period between files.
 
-A rejected pull request can be fixed and sent again. A merged file, or a pull request that is still open, holds the 7-day gap.
+A rejected pull request can be fixed and sent again. A merged file stays. A later file does not replace it.
 
 ## What gets listed
 
@@ -44,10 +44,10 @@ The owner proves the account by posting a one-time `XN-` code from their own X a
 
 ## The global list
 
-[`global/neighbours.global.neighbours`](global/neighbours.global.neighbours) is rebuilt after a merge from each owner’s latest submission. An account appears when two or more owners recommend it. Each entry records `recommended_by` (owner id, handle, time, and submission path). Opt-outs and banned owners are applied after that.
+[`global/neighbours.global.neighbours`](global/neighbours.global.neighbours) is rebuilt from every submission file. The same owner counts once per account, even when more than one of their files names that account. An older recommendation stays when a later file leaves someone out. An account appears when two or more owners recommend it. Each entry records `recommended_by` (owner id, handle, time, and submission path). Opt-outs and banned owners are applied after that. The rebuild opens a pull request for that file. It does not push the file onto `main` by itself.
 
 The one exception is the founding waiver in [`global/build.json`](global/build.json). It names a single file path. Accounts in that file enter with one recommendation and `source` set to `founding`. No other file gets the waiver. How to point the waiver at a file, once it exists, is in [`founding/README.md`](founding/README.md). The displayed credit for that file is the neutral identity in the build config (`founding` / `founding-submission`), not a personal handle. A founding entry stays until the person opts out. A later recommendation appends to `recommended_by` and the source stays `founding`.
 
 ## Releases
 
-`versions/latest.json` changes on Monday (UTC) only. A mid-week rebuild of the global list does not bump it. Every bot compares that file with the local `VERSION` once a week and asks before upgrading. Community bots also save a local copy of the global list on that Monday. Individual bots do not download the list.
+`versions/latest.json` is the only release file. It changes on Monday (UTC) only. A mid-week rebuild of the global list does not bump it. Every bot compares that file with the local `VERSION` once a week and asks before upgrading. `python3 version.py --notes` reads the release notes on that file. Community bots also save a local copy of the global list on that Monday. Individual bots do not download the list.

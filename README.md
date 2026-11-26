@@ -6,10 +6,10 @@ X Neighbours helps a creator catch up with the people who replied, quoted, liked
 
 It does four things:
 
-1. **Report.** A Page for each period, with the same sections as the short markdown report. The house-framed picture is inside that Page. The chat gets a one-line headline and the Page link. A report-card PNG is optional (`--report-card`).
-2. **Good neighbours.** A separate Page titled Good neighbours. It shows the latest post to catch up with for each person on the list, then the full list with profile links. The bot sends it with a regular report when the list is not empty, and when you ask. Adding someone stays a chat question.
-3. **Neighbours picture.** Ask anytime (“make my neighbours picture”) and the bot draws one from saved data. The weekly report also reminds you. The same picture still appears inside each report Page.
-4. **Community.** After you opt in, a Page lists recommended accounts from the shared list, each handle linking to a profile, with a recommendation count. Opt-in and sharing stay in the chat.
+1. **Period Report.** A Page for any window (daily, weekly, monthly, or a custom period), with top neighbours, unanswered replies, and new faces. The chat gets a one-line headline and the Page link. A report-card PNG is optional (`--report-card`). The welcome tour is a short Period Report; its Page title stays `Welcome tour`.
+2. **Good Neighbours Newsletter.** A separate Page titled Good Neighbours Newsletter. It shows the latest post to catch up with for each person on the list, then the full list with profile links. The bot sends it with a Period Report when the list is not empty, and when you ask. Adding someone stays a chat question.
+3. **Neighbours Picture Day.** Ask anytime (“make my neighbours picture”) and the bot draws the house-framed collage from saved data, with an optional thank-you draft. The weekly Period Report also reminds you. The same picture still appears inside each Period Report.
+4. **Community Honor Roll.** After you opt in, a Page titled Community Honor Roll lists recommended accounts from the shared list, each handle linking to a profile, with a recommendation count. Opt-in and sharing stay in the chat.
 
 ## Contributors
 
@@ -62,8 +62,8 @@ python3 x_neighbours.py --now 2026-11-04T18:00:00Z
 | `report_week.md` | Sections 1–3, the plain-text fallback. `report_day.md` for a day, `report_first.md` for the welcome tour, `report_fresh.md` since the last report |
 | `report_*_thanks.md` | Section 4, the thank-you text and link, for that fallback |
 | `report_*.canvas.tsx` | The report Page. `report_page.py` fills `templates/report.canvas.tsx` |
-| `good_neighbours.canvas.tsx` | The Good neighbours Page, when the list is not empty. `good_neighbours_page.py` |
-| `community.canvas.tsx` | The Community Page. `community_page.py` |
+| `good_neighbours.canvas.tsx` | The Good Neighbours Newsletter, when the list is not empty. `good_neighbours_page.py` |
+| `community.canvas.tsx` | The Community Honor Roll. `community_page.py` |
 | `x_neighbours_*.png` | The house-framed picture, shown inside the report Page. The chat gets it only if the Page fails, or when you ask for the picture on its own |
 
 A Grok Bot that runs this for its owner should follow [skills/x-neighbours/SKILL.md](skills/x-neighbours/SKILL.md) after the welcome tour. The welcome tour is [skills/x-neighbours/FIRST_RUN.md](skills/x-neighbours/FIRST_RUN.md). [BOT.md](BOT.md) only points at those files. The getting-started skill points at that file. Any concern in chat can become a short GitHub issue: the bot drafts it and hands over a prefilled link, once per topic, and the owner submits it. The Monday report ends with one line inviting that. The draft leaves out handles, names, and post text. A contributor's bot that changes this repo follows [skills/x-neighbours-maintain/SKILL.md](skills/x-neighbours-maintain/SKILL.md).
@@ -98,7 +98,7 @@ Community mode is off by default. An individual bot keeps the local reports and 
 
 An owner who joins gets:
 
-- a Sunday reminder, in their report timezone, that they can share when 7 days have passed, and that a feature release may land on Monday
+- a Sunday reminder, in their report timezone, that they can share their list, and that a feature release may land on Monday
 - a local copy of `global/neighbours.global.neighbours`, saved on Monday as `global_neighbours.neighbours` in the bot store. The version check itself is not part of joining. Every bot already asks before `git pull` and never upgrades in the background
 - the option to share an eligible list, described in [RULES.md](RULES.md)
 - a reminder, when they post the picture, to include @SkyXFunNext so it can be reposted. If that is already the posting account, the reminder is skipped
@@ -109,19 +109,19 @@ The runbooks are [skills/x-neighbours-community/SKILL.md](skills/x-neighbours-co
 
 ## Shared recommendations
 
-A share file is `submissions/<x user id>/<UTC timestamp>.neighbours`. JSON inside, one new file per pull request, at most once every 7 days. The score is the picture score: likes + reposts + 3 × (replies + quotes). The minimum is `max(8, ceil(50 × period_days / 90))` (50 over 90 days, 8 over 7). Replies plus quotes must be at least 2. The cap is 100. The default period is 90 days. An owner may use 7 to 93 days and may remove names. They cannot add people the counts did not produce.
+A share file is `submissions/<x user id>/<UTC timestamp>.neighbours`. JSON inside, one new file per pull request. An owner may submit again whenever they want, including after a report over a different period. The score is the picture score: likes + reposts + 3 × (replies + quotes). The minimum is `max(8, ceil(50 × period_days / 90))` (50 over 90 days, 8 over 7). Replies plus quotes must be at least 2. The cap is 100. The default period is 90 days. An owner may use 7 to 93 days and may remove names. They cannot add people the counts did not produce.
 
-The global file lists an account after two owners recommend it. `recommended_by` records who, when, and which file. Opt-outs and banned owners are applied on rebuild.
+The global file lists an account after two owners recommend it. Every file under that owner's folder counts. The same owner counts once per account. `recommended_by` records who, when, and which file. Opt-outs and banned owners are applied on rebuild.
 
 ### Founding list
 
-The global file is empty until submissions arrive. One path, set in `global/build.json` under `founding_waiver.submission`, may populate the list from a single file. That path is blank in this repo. After a new bot submits through the normal share flow and the file is merged, the maintainer sets `submission` to that exact path, keeps `owner_id` as `founding` and `owner_handle` as `founding-submission`, and labels the pull request `maintainer-waiver`. The submission file keeps that owner's real user id and handle, because the path is `submissions/<user id>/`. The displayed credit is the neutral identity from `build.json`, not the test bot and not a personal handle. There is no pre-made founding file in this repo. Any other file still needs two recommendations. Details are in [founding/README.md](founding/README.md).
+One path, set in `global/build.json` under `founding_waiver.submission`, populates the list from a single file. That path is `submissions/founding/2026-11-26T000000Z.neighbours`. The file's owner and the displayed credit are both the neutral identity: `owner_id` `founding` and `owner_handle` `founding-submission`. It does not name the repo owner. Those accounts enter with `source` `founding` and one recommendation. Any other file still needs two recommendations. Details are in [founding/README.md](founding/README.md).
 
 ### How reviews work
 
-The Action “Validate share submissions” checks shape, size, the 7-day gap, eligibility math, self-listing, and notes. [Neighbour Dog](skills/neighbour-dog/SKILL.md) is a separate reviewer bot with its own GitHub account. It merges a clean share, rejects a clear failure, and flags borderline cases (a first-time owner, a spike, a possible boost ring, a new account) with the label `needs-maintainer`. It does not edit the global file. A rebuild Action writes `global/neighbours.global.neighbours` after merges. That rebuild can happen any day and does not change `versions/latest.json`.
+The Action “Validate share submissions” checks shape, size, eligibility math, self-listing, and notes. [Neighbour Dog](skills/neighbour-dog/SKILL.md) is a separate reviewer bot with its own GitHub account. It merges a clean share, rejects a clear failure, and flags borderline cases (a first-time owner, a spike, a possible boost ring, a new account) with the label `needs-maintainer`. It does not edit the global file. A rebuild Action opens a pull request that updates `global/neighbours.global.neighbours` after merges. It does not push that file onto `main` by itself. That rebuild can happen any day and does not change `versions/latest.json`.
 
-`versions/latest.json` moves only on a Monday release. The maintainer runs the “Monday release” workflow, which refuses any other UTC weekday. It reads the number from `VERSION`, writes `versions/latest.json` and `versions/<version>.json`, tags, and opens a GitHub Release. `release_notes` on that file is what the bot shows: up to three lines when it asks, and the full list after the owner says yes. There is no mailing list.
+`versions/latest.json` is the only release file. It moves only on a Monday release. The maintainer runs the “Monday release” workflow, which refuses any other UTC weekday. It reads the number from `VERSION`, writes `versions/latest.json`, tags, and opens a GitHub Release. `release_notes` on that file is what the bot shows: up to three lines when it asks, and the full list after the owner says yes. `python3 version.py --notes` reads it. There is no mailing list.
 
 ### What the maintainer configures
 
@@ -131,7 +131,7 @@ These are not in the repo, because they are accounts and secrets:
 2. A fine-grained personal access token for that account (contents and pull requests). Store it as the Actions secret `NEIGHBOUR_DOG_TOKEN`. Until it is set, the Neighbour Dog workflow still prints a decision and does not merge. The validate check still runs.
 3. Branch protection on `main`: require the check “Validate share submissions”. Let Neighbour Dog merge share pull requests that pass. Do not require a personal review on those. Allow `github-actions[bot]` to push `global/neighbours.global.neighbours`, or the rebuild workflow cannot commit. Code pull requests stay for the owner to review.
 4. Optional: `X_NEIGHBOURS_GITHUB_TOKEN` on a community owner’s bot, so that bot can open the share pull request. Without it, the bot writes the file and the owner opens the pull request. Do not use a personal maintainer token for that if the pull request should not show a personal account.
-5. The first founding submission is flagged as a first-time owner. The maintainer reviews it, merges it, then sets the waiver path as above.
+5. The founding seed is already in place. A later first-time owner is still flagged. The maintainer reviews that pull request.
 
 ### Try it with a new bot
 
@@ -141,10 +141,8 @@ These are not in the repo, because they are accounts and secrets:
 4. Post the one-time code from the X account yourself. Give the bot the post id. The bot does not post.
 5. Open the pull request (the bot does this when `X_NEIGHBOURS_GITHUB_TOKEN` is set; otherwise take the file it wrote). It must be the only new file, under `submissions/<user id>/`.
 6. Wait for the validate check. Neighbour Dog flags a first-time owner, so review that pull request and merge it yourself if it looks right.
-7. The rebuild leaves the global list unchanged, because one owner is not enough while the waiver path is empty. Confirm the new account is absent.
-8. Set `founding_waiver.submission` to that exact file path. Keep the neutral `owner_id` and `owner_handle`. Label the pull request `maintainer-waiver` and merge it.
-9. The rebuild loads that one file. Those neighbours appear with `source` `founding` and `recommended_by` the neutral identity. A second bot’s new name stays out until another owner lists it too.
-10. On Monday, a community bot compares versions and, if nothing is newer, just refreshes `global_neighbours.neighbours` in its store. Posting the picture reminds the owner to tag @SkyXFunNext.
+7. The rebuild opens a pull request for the global file. One owner is not enough for a new name. Confirm that name is absent until a second owner lists it too. The founding seed stays, with `source` `founding` and `recommended_by` the neutral identity.
+8. On Monday, a community bot compares versions and, if nothing is newer, just refreshes `global_neighbours.neighbours` in its store. Posting the picture reminds the owner to tag @SkyXFunNext.
 
 ## Config
 
@@ -198,7 +196,7 @@ These are not in the repo, because they are accounts and secrets:
 
 Other flags: `--config`, `--data`, `--out`, `--now`, `--since`, `--days`, `--first-run`, `--trial-plan`, `--estimate-reads`, `--trial-post-count`, `--name`, `--picture-only`, `--report-card`, `--rings`, `--top`, `--theme`, `--windows day,week`, `--report likes`, `--per-post`, `--per-day`, `--picture`, `--no-picture`, `--show-names`, `--no-image`, `--good-neighbours PATH`, `--state PATH`, `--timezone`, `--fresh-hours`, `--version`.
 
-A plain run writes the markdown report and the neighbours picture. `--first-run` is the welcome tour (`trial_post_count` latest originals and quotes). The header is `Welcome tour`. `--trial-plan` prints the reads for posts already saved, including reply-search pages. `--estimate-reads N` prints how many minutes those reads should take. `--picture-only` draws the picture and skips the report. `--report-card` adds the PNG card. `--days 14` is a custom period. `--no-picture` skips the image.
+A plain run writes the Period Report and Neighbours Picture Day. `--first-run` is the welcome tour (`trial_post_count` latest originals and quotes). The Page title is `Welcome tour`. `--trial-plan` prints the reads for posts already saved, including reply-search pages. `--estimate-reads N` prints how many minutes those reads should take. `--picture-only` draws Neighbours Picture Day and skips the Period Report. `--report-card` adds the PNG card. `--days 14` is a custom period. `--no-picture` skips the image.
 
 ```bash
 python3 x_neighbours.py --now 2026-11-04T18:00:00Z --report likes
@@ -226,12 +224,12 @@ Pick a UTC timestamp `T` when you start: the actual current UTC time, not a left
 
 | # | Tool | Arguments | Save as |
 |---|---|---|---|
-| 1 | `get_users_posts` | `id={ID}`, `start_time=START`, `exclude=retweets` (do not exclude replies), `max_results=100`, `post.fields=created_at,public_metrics,in_reply_to_user_id,referenced_tweets,conversation_id`, `expansions=author_id,referenced_posts`, `user.fields=username,name,profile_image_url,public_metrics` | `posts_1`, `posts_2`, … |
-| 2 | `get_users_mentions` | `id={ID}`, `start_time=START`, `max_results=100`, `post.fields=created_at,author_id,text,in_reply_to_user_id,referenced_tweets,conversation_id`, `expansions=author_id,referenced_posts`, `user.fields=username,name,description,profile_image_url`. Save `includes` too | `mentions_1`, … |
+| 1 | `get_users_posts` | `id={ID}`, `start_time=START`, `exclude=retweets` (do not exclude replies), `max_results=100`, `post.fields=created_at,public_metrics,conversation_id`, `expansions=author_id,in_reply_to_user_id,referenced_posts`, `user.fields=username,name,profile_image_url,public_metrics` | `posts_1`, `posts_2`, … |
+| 2 | `get_users_mentions` | `id={ID}`, `start_time=START`, `max_results=100`, `post.fields=created_at,text,conversation_id`, `expansions=author_id,in_reply_to_user_id,referenced_posts`, `user.fields=username,name,description,profile_image_url`. Save `includes` too | `mentions_1`, … |
 | 3 | `get_posts_liking_users` | Original posts and quotes with likes. Never the owner's replies. `user.fields=username,name,description,profile_image_url` | `likes_<postid>` |
 | 4 | `get_posts_reposted_by` | Posts with reposts. Same user fields | `reposts_<postid>` |
-| 5 | `get_posts_quoted_posts` | Posts with quotes. `post.fields=created_at,author_id,text,referenced_tweets`, `expansions=author_id` | `quotes_<postid>` |
-| 6 | `get_users_liked_posts` and `get_users_posts` | Owner only, before Catch up. Likes: `max_results=20`, at most two pages, saved as `my_likes_1` and `my_likes_2`. Own posts: `max_results=20`, no `exclude`, one page, `post.fields` include `referenced_tweets,conversation_id`, `expansions=author_id,referenced_posts`, saved as `my_posts_1`. A failed call is skipped. Those replies are how Replies marks a mention answered | `my_likes_1`, `my_posts_1` |
+| 5 | `get_posts_quoted_posts` | Posts with quotes. `post.fields=created_at,text,conversation_id`, `expansions=author_id,referenced_posts` | `quotes_<postid>` |
+| 6 | `get_users_liked_posts` and `get_users_posts` | Owner only, before Catch up. Likes: `max_results=20`, `post.fields=id,created_at`, `expansions=author_id`, at most two pages, saved as `my_likes_1` and `my_likes_2`. Own posts: `max_results=20`, no `exclude`, one page, `post.fields=created_at,text,conversation_id`, `expansions=author_id,in_reply_to_user_id,referenced_posts`, saved as `my_posts_1`. A failed call is skipped. Those replies are how Replies marks a mention answered | `my_likes_1`, `my_posts_1` |
 | 7 | `get_users_posts` | Each good neighbour (at most 20), or at most 10 catch-up people when the list is empty. `max_results=100`, `exclude` `replies` and `retweets`, `post.fields=created_at,text,conversation_id`, `expansions=author_id,in_reply_to_user_id,referenced_posts`. One more page as `latest_<userid>_p2` if the first page is all engaged | `latest_<userid>` |
 | 8 | `get_users_me_followers` and `get_users_me_following` | `max_results=1000`. Refresh on Mondays | `followers_1`, `following_1`, … |
 
@@ -331,10 +329,10 @@ GitHub Actions runs `python3 -m unittest discover -s tests -v` and this offline 
 | `global_build.py` | Rebuild the global list. Does not touch `versions/` |
 | `community.py` | Join, leave, reminders, and the local global-list save |
 | `neighbour_dog.py` | Merge, reject, or flag decision |
-| `versions_release.py` | Write `versions/latest.json` on Monday only |
+| `versions_release.py` | Write `versions/latest.json` on Monday only. It does not write a second copy |
 | `global/build.json` | Two-recommendation rule and the one founding waiver path |
 | `global/neighbours.global.neighbours` | Rebuilt recommendation list |
-| `versions/latest.json` | Monday release pointer |
+| `versions/latest.json` | The only Monday release file |
 | `submissions/` | Public share files, one new file per pull request |
 | `founding/README.md` | How to point the waiver once a file exists |
 | `opted-out/` | Accounts removed from the global list |

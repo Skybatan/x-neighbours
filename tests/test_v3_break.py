@@ -14,7 +14,6 @@ import tempfile
 import unittest
 from contextlib import redirect_stdout
 from datetime import datetime, timedelta, timezone
-from zoneinfo import ZoneInfo
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
@@ -54,11 +53,10 @@ def codes(report):
     return [item["code"] for item in report.errors]
 
 
-def write_build(repo, waiver="", minimum=2, interval=7):
+def write_build(repo, waiver="", minimum=2):
     os.makedirs(os.path.join(repo, "global"), exist_ok=True)
     share.write_json(os.path.join(repo, "global", "build.json"), {
         "min_recommendations": minimum,
-        "submission_interval_days": interval,
         "rules_version": "1",
         "founding_waiver": {
             "submission": waiver,
@@ -77,9 +75,10 @@ def write_submission(repo, owner_id, handle, when, rows, days=90, proof="555001"
 
 
 def check(doc, relpath, repo=None, previous=None, now=CLOCK):
+    del previous
     report = share.Report()
     share.validate_document(
-        doc, relpath, report, previous_at=previous, now=now,
+        doc, relpath, report, now=now,
         waiver=share.waiver_path(share.load_build(repo)) if repo else "",
     )
     return report
@@ -549,33 +548,13 @@ class IntervalBreakTest(unittest.TestCase):
         return write_submission(
             self.repo, owner, handle, when, [person(201, "ex_neighbour")])
 
-    def test_six_days_23_hours_fails_and_exactly_seven_days_passes(self):
-        previous = "2026-03-01T12:00:00Z"
-        self.file_at(previous)
-        cases = (
-            ("2026-03-08T11:00:00Z", False),  # 6d 23h
-            ("2026-03-08T11:59:59Z", False),  # 7d - 1s
-            ("2026-03-08T12:00:00Z", True),   # exactly 7d
-            ("2026-03-08T12:00:01Z", True),
-        )
-        for when, ok in cases:
-            alone = tempfile.mkdtemp()
-            try:
-                write_build(alone)
-                write_submission(alone, "100", "example_owner", previous, [person(201, "ex_neighbour")])
-                relpath, _doc = write_submission(
-                    alone, "100", "example_owner", when, [person(202, "other_neighbour")])
-                report = share.validate_file(
-                    os.path.join(alone, relpath), alone, relpath, now=CLOCK)
-                if ok:
-                    self.assertTrue(report.ok, (when, report.errors))
-                else:
-                    self.assertIn("interval", codes(report), when)
-                allowed, nxt = rules.submission_allowed(when, previous)
-                self.assertEqual(allowed, ok, when)
-                self.assertEqual(nxt, "2026-03-08T12:00:00Z")
-            finally:
-                shutil.rmtree(alone)
+    def test_a_second_file_does_not_have_to_wait(self):
+        self.file_at("2026-03-01T12:00:00Z")
+        relpath, _doc = self.file_at("2026-03-01T13:00:00Z")
+        report = share.validate_file(
+            os.path.join(self.repo, relpath), self.repo, relpath, now=CLOCK)
+        self.assertTrue(report.ok, report.errors)
+        self.assertNotIn("interval", codes(report))
 
     def test_multiple_files_in_one_pull_request_fail(self):
         first, _doc = self.file_at("2026-03-01T12:00:00Z", owner="100")
@@ -609,64 +588,19 @@ class IntervalBreakTest(unittest.TestCase):
         self.assertFalse(payload["ok"])
         self.assertTrue(any(item["code"] == "files" for item in payload["errors"]))
 
-    def test_offsets_and_dst_use_the_utc_instant(self):
+    def test_file_stamp_uses_utc(self):
         previous = "2026-03-01T12:00:00Z"
-        # 13:00 at UTC+1 is 12:00Z, exactly seven days. The file name is UTC.
         exact_local = "2026-03-08T13:00:00+01:00"
         self.assertEqual(rules.iso(exact_local), "2026-03-08T12:00:00Z")
-        allowed, _nxt = rules.submission_allowed(exact_local, previous)
-        self.assertTrue(allowed)
-        # 12:00 at UTC+1 is 11:00Z, six days and 23 hours.
-        early_local = "2026-03-08T12:00:00+01:00"
-        self.assertEqual(rules.iso(early_local), "2026-03-08T11:00:00Z")
-        allowed, _nxt = rules.submission_allowed(early_local, previous)
-        self.assertFalse(allowed)
-        # A naive timestamp is UTC, not the machine's local zone.
-        naive = datetime(2026, 3, 8, 12, 0)
-        self.assertTrue(rules.submission_allowed(naive, previous)[0])
-        one_second = datetime(2026, 3, 8, 11, 59, 59)
-        self.assertFalse(rules.submission_allowed(one_second, previous)[0])
-
-        stockholm = ZoneInfo("Europe/Stockholm")
-
-        def utc_gap(later, earlier):
-            return later.astimezone(timezone.utc) - earlier.astimezone(timezone.utc)
-
-        # 04:00 local is after the spring-forward, so that clock time is 167 hours in UTC.
-        # Subtracting the local datetimes hides the offset change.
-        before = datetime(2026, 3, 22, 4, 0, tzinfo=stockholm)
-        after = datetime(2026, 3, 29, 4, 0, tzinfo=stockholm)
-        self.assertEqual(utc_gap(after, before), timedelta(days=6, hours=23))
-        self.assertFalse(rules.submission_allowed(after, before)[0])
-        exact = before.astimezone(timezone.utc) + timedelta(days=7)
-        self.assertTrue(rules.submission_allowed(exact, before)[0])
-        # 04:00 local is after the fall-back, so that clock time is 169 hours in UTC.
-        fall_before = datetime(2026, 10, 18, 4, 0, tzinfo=stockholm)
-        fall_after = datetime(2026, 10, 25, 4, 0, tzinfo=stockholm)
-        self.assertEqual(utc_gap(fall_after, fall_before), timedelta(days=7, hours=1))
-        self.assertTrue(rules.submission_allowed(fall_after, fall_before)[0])
-
         relpath, doc = write_submission(
             self.repo, "100", "example_owner", previous, [person(201, "ex_neighbour")])
         doc["submitted_at"] = exact_local
         matched = rules.submission_relpath("100", exact_local)
         self.assertTrue(matched.endswith("2026-03-08T120000Z.neighbours"))
-        report = check(doc, matched, repo=self.repo, previous=previous, now=CLOCK)
+        report = check(doc, matched, repo=self.repo, now=CLOCK)
         self.assertTrue(report.ok, report.errors)
-        report = check(doc, relpath, repo=self.repo, previous=previous, now=CLOCK)
+        report = check(doc, relpath, repo=self.repo, now=CLOCK)
         self.assertIn("path", codes(report))
-        doc["submitted_at"] = early_local
-        early_path = rules.submission_relpath("100", early_local)
-        report = check(doc, early_path, repo=self.repo, previous=previous, now=CLOCK)
-        self.assertIn("interval", codes(report))
-
-    def test_an_older_file_still_starts_the_seven_days(self):
-        self.file_at("2026-03-01T12:00:00Z")
-        self.file_at("2026-03-04T12:00:00Z")
-        relpath, _doc = self.file_at("2026-03-08T12:00:00Z")
-        report = share.validate_file(os.path.join(self.repo, relpath), self.repo, relpath, now=CLOCK)
-        self.assertIn("interval", codes(report))
-        self.assertTrue(any("2026-03-11T12:00:00Z" in item["message"] for item in report.errors))
 
 
 class GlobalBuildBreakTest(unittest.TestCase):
@@ -704,7 +638,11 @@ class GlobalBuildBreakTest(unittest.TestCase):
             person(202, "only_old"),
         ])
         document, _summary = self.rebuild()
-        self.assertNotIn("202", document["neighbours"])
+        self.assertIn("202", document["neighbours"])
+        dropped = document["neighbours"]["202"]
+        self.assertEqual(dropped["recommendation_count"], 2)
+        self.assertEqual(
+            [item["owner_id"] for item in dropped["recommended_by"]], ["100", "200"])
         row = document["neighbours"]["201"]
         self.assertEqual(row["recommendation_count"], 2)
         self.assertEqual(row["handle"], "new_name")
@@ -738,7 +676,8 @@ class GlobalBuildBreakTest(unittest.TestCase):
         document, _summary = self.rebuild()
         self.assertIn("201", document["neighbours"])
         self.assertEqual(document["neighbours"]["201"]["recommendation_count"], 2)
-        self.assertNotIn("202", document["neighbours"])
+        self.assertIn("202", document["neighbours"])
+        self.assertEqual(document["neighbours"]["202"]["recommendation_count"], 2)
 
     def test_handle_changes_stay_under_the_same_user_id(self):
         write_submission(self.repo, "100", "old_owner", "2026-11-01T12:00:00Z", [
@@ -964,14 +903,12 @@ class AbuseBreakTest(unittest.TestCase):
         for minimum in (0, 1, -3, "1", "nope", None):
             doc = share.read_json(os.path.join(self.repo, "global", "build.json"))
             doc["min_recommendations"] = minimum
-            doc["submission_interval_days"] = 1
             share.write_json(os.path.join(self.repo, "global", "build.json"), doc)
             document, _summary = self.rebuild()
             self.assertEqual(document["neighbours"], {}, minimum)
             self.assertGreaterEqual(document["min_recommendations"], 2)
-            self.assertGreaterEqual(document["submission_interval_days"], 7)
-            self.assertEqual(
-                document["owners"]["100"]["next_allowed_at"], "2026-12-02T17:00:00Z")
+            self.assertNotIn("submission_interval_days", document)
+            self.assertNotIn("next_allowed_at", document["owners"]["100"])
 
     def test_leading_zero_ids_are_not_a_second_owner(self):
         write_submission(self.repo, "100", "example_owner", NOW, [person(201, "ex_neighbour")])

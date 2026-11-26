@@ -27,7 +27,6 @@ import os
 import sys
 import urllib.parse
 from datetime import datetime, timezone
-from zoneinfo import ZoneInfo
 
 import rules
 import version as version_mod
@@ -163,29 +162,25 @@ def picture_tag(community_on, handle, thank_you_text=""):
 
 
 def sunday_message(community_on, now, last_submitted_at=None, zone_name=""):
+    """Sunday invite. Sharing has no cooldown, so a recent file does not delay it.
+
+    `now`, `last_submitted_at`, and `zone_name` stay in the signature so an
+    older caller can still pass them. They do not block the invite.
+    """
+    _ = (now, last_submitted_at, zone_name)
     if not community_on:
         return {"ok": True, "remind": False, "reason": "individual"}
-    allowed, nxt = rules.submission_allowed(now, last_submitted_at)
     release = "A feature release may land on Monday."
-    if allowed:
-        text = (
-            "You can share your eligible neighbours this week. "
-            + release
-            + " Say if you want to share."
-        )
-    else:
-        when = rules.parse_time(nxt)
-        try:
-            zone = ZoneInfo(zone_name) if zone_name else timezone.utc
-        except Exception:
-            zone = timezone.utc
-        local = when.astimezone(zone).strftime("%A %-d %B")
-        text = f"You can share again on {local}. {release}"
+    text = (
+        "You can share your eligible neighbours whenever you want. "
+        + release
+        + " Say if you want to share."
+    )
     return {
         "ok": True,
         "remind": True,
-        "can_share": allowed,
-        "next_allowed_at": nxt,
+        "can_share": True,
+        "next_allowed_at": None,
         "text": text,
     }
 

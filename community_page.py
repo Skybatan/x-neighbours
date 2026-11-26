@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the Community Page from the saved global list.
+"""Render the Community Honor Roll from the saved global list.
 
 The page lists recommended accounts: each @handle links to that profile,
 with the recommendation count when the file has one. Joining, leaving, and
@@ -18,7 +18,7 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE = os.path.join(ROOT, "templates", "community.canvas.tsx")
 PLACEHOLDER = "/*__PAGE_JSON__*/ null as unknown as CommunityPage"
 
-TITLE = "Community"
+TITLE = xn.COMMUNITY_HONOR_ROLL
 INTRO = "Accounts other owners recommended. A recommendation is not a follow."
 EXPLAINER = "The count is how many owners listed that account."
 
@@ -122,7 +122,7 @@ def write_page(model, canvas_path, model_path=None):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Fill the Community Page from the global list.")
+    parser = argparse.ArgumentParser(description="Fill the Community Honor Roll from the global list.")
     parser.add_argument("--global", dest="global_path", required=True, help="global_neighbours.neighbours")
     parser.add_argument("--out", required=True)
     args = parser.parse_args(argv)

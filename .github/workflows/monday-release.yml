@@ -41,9 +41,9 @@ jobs:
           version="$(python3 version.py)"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add versions/latest.json "versions/${version}.json"
+          git add versions/latest.json
           git commit -m "Release ${version}"
           git push
           git tag "v${version}"
           git push origin "v${version}"
-          gh release create "v${version}" --title "v${version}" --notes-file "versions/${version}.json"
+          gh release create "v${version}" --title "v${version}" --notes-file versions/latest.json

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the Good neighbours Page.
+"""Render the Good Neighbours Newsletter.
 
 This page is separate from the report. It shows the latest post to catch up
 with for each person on the list, then the full list with profile links.
@@ -19,7 +19,7 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE = os.path.join(ROOT, "templates", "good_neighbours.canvas.tsx")
 PLACEHOLDER = "/*__PAGE_JSON__*/ null as unknown as NeighboursPage"
 
-TITLE = "Good neighbours"
+TITLE = xn.GOOD_NEIGHBOURS_NEWSLETTER
 ADD_REMINDER = "Name someone to add to good neighbours, or say who to remove."
 CAUGHT_UP = "You're all caught up with your good neighbours."
 LATEST_EXPLAINER = (
@@ -162,7 +162,7 @@ def catch_up_for(data, neighbours, now):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Fill the Good neighbours Page.")
+    parser = argparse.ArgumentParser(description="Fill the Good Neighbours Newsletter.")
     parser.add_argument("--data", required=True)
     parser.add_argument("--user-id", required=True)
     parser.add_argument("--good-neighbours", required=True, dest="good_neighbours")

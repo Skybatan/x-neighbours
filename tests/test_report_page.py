@@ -158,14 +158,15 @@ class FewPageTest(unittest.TestCase):
         self.assertIn("<Page", code)
         self.assertNotIn("fetch(", code)
         self.assertNotIn(report_page.PLACEHOLDER, self.canvas)
-        self.assertEqual(self.payload["title"], "Last 24 hours")
-        self.assertEqual(self.output["page_title"], "Last 24 hours")
+        self.assertEqual(self.payload["title"], "Period Report")
+        self.assertEqual(self.output["page_title"], "Period Report")
+        self.assertTrue(self.payload["summary"].startswith("Last 24 hours"))
         self.assertEqual(self.output["messages"][0]["part"], "page")
         self.assertEqual(self.output["messages"][0]["text"], self.output["headline"])
         self.assertEqual(self.output["messages"][0]["images"], [])
         self.assertEqual(len(self.output["fallback_messages"]), 2)
         self.assertIn("good_neighbours_page", self.output)
-        self.assertEqual(self.output["good_neighbours_page"]["page_title"], "Good neighbours")
+        self.assertEqual(self.output["good_neighbours_page"]["page_title"], "Good Neighbours Newsletter")
 
     def test_every_markdown_link_is_on_the_page(self):
         md_urls = set(MD_LINK.findall(self.report)) | set(MD_LINK.findall(self.thanks))
@@ -186,7 +187,9 @@ class FewPageTest(unittest.TestCase):
 
     def test_headline_counts_replies_that_need_an_answer(self):
         lines = [line.strip() for line in self.report.splitlines() if line.strip()]
-        self.assertTrue(self.output["headline"].startswith(lines[0] + " · " + lines[1]))
+        self.assertIn(lines[0], self.output["headline"])
+        self.assertIn(lines[1].strip(), self.output["headline"])
+        self.assertTrue(self.output["headline"].startswith("Period Report"))
         waiting = self.report.count("Not replied yet") + len(self.more["greetings_unanswered"])
         self.assertIn(
             xn.counted(waiting, "reply to answer", "replies to answer"),
@@ -261,7 +264,7 @@ class EmptySectionTest(unittest.TestCase):
             self.assertIn(sentence, source)
         self.assertEqual(
             model["headline"],
-            "Last 24 hours · 💬 0 · 🔁💬 0 · ❤️ 0 · 🔁 0",
+            "Period Report · Last 24 hours · 💬 0 · 🔁💬 0 · ❤️ 0 · 🔁 0",
         )
         self.assertNotIn("to answer", model["headline"])
 
@@ -464,7 +467,8 @@ class OverrideTest(unittest.TestCase):
         with open(out["page_canvas"], encoding="utf-8") as fh:
             source = fh.read()
         payload = parse_canvas(source)
-        self.assertEqual(payload["title"], "Last 7 days")
+        self.assertEqual(payload["title"], "Period Report")
+        self.assertTrue(payload["summary"].startswith("Last 7 days"))
         self.assertEqual(payload["blocks"][-1]["href"], "https://x.com/intent/post?text=week")
         self.assertEqual(payload["blocks"][-1]["extra"], extra)
         self.assertIn("<for>", source)
@@ -515,7 +519,10 @@ class RunbookTest(unittest.TestCase):
         self.assertIn("WriteCanvasAsset", first)
         self.assertIn("WriteCanvasAsset", skill)
         self.assertIn("--picture-ratio", skill)
-        self.assertIn("Good neighbours", skill)
+        self.assertIn("Good Neighbours Newsletter", skill)
+        self.assertIn("Period Report", skill)
+        self.assertIn("Neighbours Picture Day", skill)
+        self.assertIn("Community Honor Roll", skill)
         self.assertIn("--picture-only", skill)
         self.assertIn("picture_nudge", skill)
         self.assertNotIn("First report", first)

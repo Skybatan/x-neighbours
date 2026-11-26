@@ -289,13 +289,14 @@ def path_rules_apply(relpath):
     return rel.startswith("submissions/")
 
 
-def validate_document(doc, relpath, report, previous_at=None, opted_out=None,
+def validate_document(doc, relpath, report, opted_out=None,
                       banned=None, waiver=None, now=None, check_path=True):
     """Append errors for one submission document. relpath is repo-relative.
 
     now is the clock for future timestamps. It defaults to the current UTC time.
     check_path is false for a draft that is not under submissions/. Content
     rules still run. The path rule runs when the file is placed for submit.
+    There is no waiting period between files from the same owner.
     """
     opted_out = set(opted_out or [])
     banned = set(banned or [])
@@ -320,23 +321,28 @@ def validate_document(doc, relpath, report, previous_at=None, opted_out=None,
         report.add("schema", "unsupported submission version")
 
     match = rules.SUBMISSION_RE.fullmatch(relpath or "") if check_path else None
-    # The waiver names one normal submissions file. It does not change that
-    # file's owner. global_build.py is what writes the neutral credit.
-    # A draft outside submissions/ skips this. Submit places the file, and
-    # the pull request check is what requires the path.
+    founding_match = rules.FOUNDING_SUBMISSION_RE.fullmatch(relpath or "") if check_path else None
+    # A draft outside submissions/ skips the path rule. Submit places the file,
+    # and the pull request check is what requires the path. The founding seed
+    # lives at submissions/founding/<timestamp>.neighbours and is credited to
+    # the neutral identity. global_build.py writes that credit from build.json.
     if check_path:
         waiver_rel = rules.clean_relpath(waiver)
-        if waiver_rel and rules.clean_relpath(relpath) == waiver_rel and not match:
-            report.add(
-                "path",
-                "the founding waiver must be a normal submissions/<user id>/<timestamp>.neighbours file",
-            )
-        if not match:
+        if founding_match:
+            owner_from_path = rules.FOUNDING_OWNER_ID
+            stamp = founding_match.group(1)
+        elif match:
+            owner_from_path, stamp = match.group(1), match.group(2)
+        else:
+            if waiver_rel and rules.clean_relpath(relpath) == waiver_rel:
+                report.add(
+                    "path",
+                    "the founding waiver must be submissions/founding/<timestamp>.neighbours"
+                    " or submissions/<user id>/<timestamp>.neighbours",
+                )
             report.add("path", "path must be submissions/<user id>/<timestamp>.neighbours")
             owner_from_path = ""
             stamp = ""
-        else:
-            owner_from_path, stamp = match.group(1), match.group(2)
     else:
         owner_from_path = ""
         stamp = ""
@@ -348,7 +354,7 @@ def validate_document(doc, relpath, report, previous_at=None, opted_out=None,
         submitted = ""
     if submitted and rules.parse_time(submitted) > clock:
         report.add("future", "submitted_at is in the future")
-    if match and submitted:
+    if stamp and submitted:
         try:
             stamped = rules.stamp_to_iso(stamp)
         except ValueError:
@@ -364,12 +370,15 @@ def validate_document(doc, relpath, report, previous_at=None, opted_out=None,
     owner_keys = set(owner) - {"user_id", "handle", "name"}
     if owner_keys:
         report.add("schema", "owner has unexpected fields")
-    if not rules.USER_ID_RE.fullmatch(owner_id):
+    if founding_match:
+        if handle != rules.FOUNDING_OWNER_HANDLE:
+            report.add("schema", "founding file owner handle must be founding-submission")
+    elif not rules.HANDLE_RE.fullmatch(handle):
+        report.add("schema", "owner handle must be an X handle")
+    if not founding_match and not rules.USER_ID_RE.fullmatch(owner_id):
         report.add("schema", "owner user_id must be the numeric X id")
     if owner_from_path and owner_id != owner_from_path:
         report.add("path", "folder name must be the owner user id")
-    if not rules.HANDLE_RE.fullmatch(handle):
-        report.add("schema", "owner handle must be an X handle")
     if owner_id in banned:
         report.add("banned_owner", "this owner is not allowed to submit")
 
@@ -416,11 +425,6 @@ def validate_document(doc, relpath, report, previous_at=None, opted_out=None,
         )
     if start_at is not None and (start_at > clock or end_at > clock):
         report.add("future", "period must not extend into the future")
-
-    if previous_at and submitted:
-        allowed, nxt = rules.submission_allowed(submitted, previous_at)
-        if not allowed:
-            report.add("interval", f"next submission is allowed at {nxt}")
 
     neighbours = doc.get("neighbours")
     if not isinstance(neighbours, list):
@@ -529,7 +533,7 @@ def previous_submission_at(repo, owner_id, ignore_relpath=""):
     """Latest committed submitted_at for this owner, ignoring one new file.
 
     In a git checkout only files on HEAD count. An uncommitted draft in the
-    working tree does not start the 7-day clock. A directory that is not a
+    working tree is not part of that history. A directory that is not a
     git checkout falls back to the files on disk, which is what the tests use.
     """
     names = head_submission_names(repo, owner_id)
@@ -577,13 +581,9 @@ def validate_file(path, repo, relpath=None, now=None):
     except json.JSONDecodeError as exc:
         report.add("schema", f"not JSON ({exc})")
         return report
-    owner_id = ""
-    if isinstance(doc, dict) and isinstance(doc.get("owner"), dict):
-        owner_id = str(doc["owner"].get("user_id") or "")
-    previous = previous_submission_at(repo, owner_id, ignore_relpath=relpath) if owner_id else None
     build = load_build(repo)
     validate_document(
-        doc, relpath, report, previous_at=previous,
+        doc, relpath, report,
         opted_out=opted_out_ids(repo), banned=banned_owner_ids(repo),
         waiver=waiver_path(build), now=now, check_path=check_path,
     )
@@ -661,7 +661,23 @@ def validate_changes(repo, changes, labels=None, base_waiver=None, head_waiver=N
         change for change in neighbours_changes
         if change.get("status") == "A" and rules.SUBMISSION_RE.fullmatch(change.get("path") or "")
     ]
-    bad_share = [change for change in neighbours_changes if change not in added_submissions]
+    # The founding seed may be added beside other maintainer files when the
+    # waiver label is set and the path is the one named in build.json.
+    head_rel = rules.clean_relpath(head_text)
+    allowed_founding = []
+    if rules.MAINTAINER_WAIVER_LABEL in labels and head_rel:
+        for change in neighbours_changes:
+            path = change.get("path") or ""
+            if change.get("status") != "A":
+                continue
+            if not rules.FOUNDING_SUBMISSION_RE.fullmatch(path):
+                continue
+            if rules.clean_relpath(path) == head_rel:
+                allowed_founding.append(change)
+    bad_share = [
+        change for change in neighbours_changes
+        if change not in added_submissions and change not in allowed_founding
+    ]
     for change in bad_share:
         report.add("history", f"submission files are append-only ({change.get('path')})")
 
@@ -672,8 +688,8 @@ def validate_changes(repo, changes, labels=None, base_waiver=None, head_waiver=N
         report.add("files", "a share pull request adds one submission file")
 
     neighbour_count = 0
-    if added_submissions and not bad_share:
-        for change in added_submissions:
+    if (added_submissions or allowed_founding) and not bad_share:
+        for change in added_submissions + allowed_founding:
             path = os.path.join(repo, change["path"])
             file_report = validate_file(path, repo, relpath=change["path"])
             report.errors.extend(file_report.errors)
@@ -858,7 +874,7 @@ def main():
     sub = parser.add_subparsers(dest="cmd", required=True)
     sub.add_parser("code", help="print a one-time verification code")
 
-    allowed = sub.add_parser("next-allowed", help="say when this owner may submit")
+    allowed = sub.add_parser("next-allowed", help="report the last submission; sharing has no waiting period")
     allowed.add_argument("--owner-id", required=True)
     allowed.add_argument("--now", required=True)
     allowed.add_argument("--previous", help="ISO time of the last submission")
@@ -933,14 +949,13 @@ def run(args):
         return 0
     if args.cmd == "next-allowed":
         previous = args.previous or previous_submission_at(args.repo, args.owner_id)
-        allowed, nxt = rules.submission_allowed(args.now, previous)
         emit({
             "ok": True,
-            "allowed": allowed,
+            "allowed": True,
             "last_submitted_at": previous,
-            "next_allowed_at": nxt,
+            "next_allowed_at": None,
         })
-        return 0 if allowed else 2
+        return 0
     if args.cmd in ("prepare", "from-data"):
         community_required(args.community_file)
         if args.cmd == "from-data":

@@ -2,14 +2,54 @@
 """Save an MCP tool result as data/<name>.json.
 
 Accepts a file that is raw JSON, or text that wraps a single JSON object
-(for example a tool log that quotes the response). Writes next to this script.
+(for example a tool log that quotes the response). A truncated write_to_file
+display that names the full payload on a `Full text: /path/to/file.txt` line
+is followed to that file. Writes next to this script.
 
 Usage:
   python3 save_raw.py <tool-result-file> <name>
 """
 import json
 import os
+import re
 import sys
+
+
+_FULL_TEXT = re.compile(r"(?m)^Full text:\s+(\S+)\s*$")
+
+
+def resolve_wrapper(raw, src, seen=None):
+    """Return payload text, following one Full text: path when this file is not JSON.
+
+    Valid JSON is left alone, so a payload that happens to mention a path is
+    not opened. A missing path is left for the JSON parser to reject.
+    """
+    text = raw.strip()
+    try:
+        json.loads(text)
+    except json.JSONDecodeError:
+        pass
+    else:
+        return text
+    seen = set() if seen is None else seen
+    match = _FULL_TEXT.search(raw)
+    if not match:
+        return raw
+    path = match.group(1)
+    if path in seen or os.path.abspath(path) == os.path.abspath(src):
+        return raw
+    if not os.path.isfile(path):
+        return raw
+    seen.add(path)
+    with open(path, encoding="utf-8") as fh:
+        followed = fh.read()
+    return resolve_wrapper(followed, path, seen)
+
+
+def load_result(src):
+    with open(src, encoding="utf-8") as fh:
+        raw = fh.read()
+    return parse_result(resolve_wrapper(raw, src), src)
 
 
 def parse_result(raw, src):
@@ -34,8 +74,7 @@ def main():
     stem = name[:-5] if name.endswith(".json") else name
     if not stem or any(c in stem for c in "/\\") or stem.startswith("."):
         sys.exit("name must be a file stem such as posts_1 or likes_123")
-    with open(src, encoding="utf-8") as fh:
-        data = parse_result(fh.read(), src)
+    data = load_result(src)
     if not isinstance(data, dict):
         sys.exit(f"expected a JSON object in {src}")
     out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")

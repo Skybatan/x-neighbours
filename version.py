@@ -38,6 +38,10 @@ UPGRADE_STEPS = [
     "python3 version.py --ack --state <state path>",
     "Keep config.json, data/, good_neighbours.json, state.json, community.json, and global_neighbours.neighbours.",
 ]
+PAUSED_ROUTINES = (
+    "If the owner has paused their scheduled routines, keep those routines paused. "
+    "Do not unpause them, and do not add a new scheduled Monday check without asking."
+)
 PIP_STEP = "python3 -m pip install -r requirements.txt"
 PIP_WHEN_CHANGED = "If requirements.txt changed, run python3 -m pip install -r requirements.txt."
 OWNER_LINE = "I removed the daily update and added a Monday check that asks before upgrading."
@@ -304,17 +308,6 @@ def apply_decision(path, answer, remote_version, now=None, requirements_changed=
     return result
 
 
-def _version_filename(name):
-    if not name.endswith(".json") or name == "latest.json":
-        return None
-    stem = name[:-len(".json")]
-    try:
-        parse_semver(stem)
-    except ValueError:
-        return None
-    return stem
-
-
 def note_lines(doc):
     lines = []
     notes = doc.get("release_notes") if isinstance(doc, dict) else None
@@ -330,26 +323,19 @@ def note_lines(doc):
 
 
 def load_catalog(repo=None):
-    """Release files under versions/, oldest first. latest.json is a copy, so skip it."""
-    folder = os.path.join(repo or ROOT, "versions")
-    found = []
-    if not os.path.isdir(folder):
-        return found
-    for name in os.listdir(folder):
-        if _version_filename(name) is None:
-            continue
-        with open(os.path.join(folder, name), encoding="utf-8") as fh:
-            doc = json.load(fh)
-        if not isinstance(doc, dict):
-            continue
-        number = str(doc.get("version") or "")
-        try:
-            parse_semver(number)
-        except ValueError:
-            continue
-        found.append(doc)
-    found.sort(key=lambda doc: parse_semver(doc["version"]))
-    return found
+    """The single release file, versions/latest.json. Older copies are not read."""
+    path = os.path.join(repo or ROOT, "versions", "latest.json")
+    if not os.path.isfile(path):
+        return []
+    with open(path, encoding="utf-8") as fh:
+        doc = json.load(fh)
+    if not isinstance(doc, dict):
+        return []
+    try:
+        parse_semver(str(doc.get("version") or ""))
+    except ValueError:
+        return []
+    return [doc]
 
 
 def notes_between(catalog, old, new):
@@ -424,6 +410,7 @@ def evaluate_bridge(state, current, catalog):
         "from_version": recorded or "",
         "bot_version": current,
         "reason": "",
+        "paused_routines": PAUSED_ROUTINES,
     }
     if shown == current:
         result["reason"] = "already shown"

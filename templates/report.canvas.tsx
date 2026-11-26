@@ -1,5 +1,5 @@
 /**
- * X Neighbours report page.
+ * Period Report page.
  * report_page.py replaces the placeholder below with the report object.
  * The only import is "grok/canvas". Data is inline. This file does not fetch.
  *
@@ -112,7 +112,7 @@ function thanksNodes(block: ThanksBlock) {
     nodes.push(<Text key="extra">{block.extra}</Text>);
   }
   if (block.picture) {
-    const alt = block.pictureAlt || "House-framed neighbours picture.";
+    const alt = block.pictureAlt || "Neighbours Picture Day.";
     if (block.pictureRatio) {
       nodes.push(
         <Image key="picture" src={block.picture} alt={alt} ratio={block.pictureRatio} />,

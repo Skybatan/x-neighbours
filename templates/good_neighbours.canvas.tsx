@@ -1,5 +1,5 @@
 /**
- * Good neighbours page. It is not the report.
+ * Good Neighbours Newsletter. It is not the Period Report.
  * good_neighbours_page.py replaces the placeholder below.
  * The only import is "grok/canvas". Data is inline. This file does not fetch.
  *

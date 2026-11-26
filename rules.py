@@ -35,7 +35,6 @@ LIST_CAP = 100
 NOTE_MAX = 140
 TAGS_MAX = 3
 TAG_MAX_LEN = 24
-SUBMISSION_INTERVAL_DAYS = 7
 MIN_RECOMMENDATIONS = 2
 MAX_FILE_BYTES = 256 * 1024
 
@@ -64,6 +63,10 @@ PROOF_RE = re.compile(r"^[0-9]{1,25}$")
 TAG_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,23})$")
 SUBMISSION_RE = re.compile(
     r"^submissions/([0-9]{1,25})/(\d{4}-\d{2}-\d{2}T\d{6}Z)\.neighbours$"
+)
+# The one founding seed. Its folder is the neutral id, not a numeric X id.
+FOUNDING_SUBMISSION_RE = re.compile(
+    r"^submissions/founding/(\d{4}-\d{2}-\d{2}T\d{6}Z)\.neighbours$"
 )
 STAMP_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})T(\d{2})(\d{2})(\d{2})Z$")
 LINK_RE = re.compile(
@@ -97,7 +100,6 @@ def as_dict():
         "min_period_days": MIN_PERIOD_DAYS,
         "max_period_days": MAX_PERIOD_DAYS,
         "cap": LIST_CAP,
-        "submission_interval_days": SUBMISSION_INTERVAL_DAYS,
         "min_recommendations": MIN_RECOMMENDATIONS,
         "note_max_chars": NOTE_MAX,
         "max_tags": TAGS_MAX,
@@ -363,21 +365,6 @@ def tags_problem(tags):
 
 def follow_bargain(text):
     return bool(FOLLOW_BARGAIN_RE.search(text or ""))
-
-
-def next_allowed_at(previous, interval_days=SUBMISSION_INTERVAL_DAYS):
-    """UTC time when the next submission may be filed. None if there is no prior one."""
-    if previous is None:
-        return None
-    return parse_time(previous) + timedelta(days=int(interval_days))
-
-
-def submission_allowed(now, previous, interval_days=SUBMISSION_INTERVAL_DAYS):
-    nxt = next_allowed_at(previous, interval_days)
-    if nxt is None:
-        return True, None
-    current = parse_time(now)
-    return current >= nxt, iso(nxt)
 
 
 def rank_key(row):

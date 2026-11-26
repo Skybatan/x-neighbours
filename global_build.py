@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""Rebuild global/neighbours.global.neighbours from the latest submissions.
+"""Rebuild global/neighbours.global.neighbours from every submission.
 
-Each owner contributes only their newest file under submissions/. The one
+Every file under submissions/<user id>/ counts. When the same owner
+recommends the same account in more than one file, that owner counts once.
+An older file is not dropped when a later file leaves someone out. The one
 path named by global/build.json founding_waiver.submission is also loaded.
 Accounts in that file enter with one recommendation and source "founding".
 Every other account needs min_recommendations (2). Opt-outs and banned
@@ -52,7 +54,12 @@ def iter_submissions(repo):
             yield relpath, os.path.join(folder, name)
 
 
-def latest_by_owner(repo):
+def submissions_by_owner(repo):
+    """Every valid file for each owner, oldest first.
+
+    The folder name has to be that owner's numeric id. A founding seed under
+    submissions/founding/ is not an owner folder; the waiver loader reads it.
+    """
     grouped = defaultdict(list)
     for relpath, path in iter_submissions(repo):
         try:
@@ -67,11 +74,9 @@ def latest_by_owner(repo):
         if not folder_owner or owner != folder_owner:
             continue
         grouped[folder_owner].append((when, relpath, doc))
-    latest = {}
-    for owner, rows in grouped.items():
-        rows.sort(key=lambda item: item[0])
-        latest[owner] = rows[-1]
-    return latest
+    for rows in grouped.values():
+        rows.sort(key=lambda item: (item[0], item[1]))
+    return grouped
 
 
 def user_sort_key(user_id):
@@ -167,7 +172,6 @@ def rows_from_submission(doc, relpath, owner_id, owner_handle, when):
 def build(repo, source_commit, generated_at):
     build_doc = share.load_build(repo)
     minimum = at_least(build_doc.get("min_recommendations"), rules.MIN_RECOMMENDATIONS)
-    interval = at_least(build_doc.get("submission_interval_days"), rules.SUBMISSION_INTERVAL_DAYS)
     waiver = build_doc.get("founding_waiver") if isinstance(build_doc.get("founding_waiver"), dict) else {}
     raw_waiver = str(waiver.get("submission") or "").strip()
     waiver_rel = contained_relpath(repo, raw_waiver)
@@ -176,26 +180,27 @@ def build(repo, source_commit, generated_at):
     opted = set(share.opted_out_ids(repo))
     banned = set(share.banned_owner_ids(repo))
 
-    latest = latest_by_owner(repo)
+    by_owner = submissions_by_owner(repo)
+    latest = {owner: rows[-1] for owner, rows in by_owner.items()}
     grouped = defaultdict(list)
     founding_ids = set()
     warnings = []
     if raw_waiver and not waiver_rel:
         warnings.append("founding waiver path is not a safe exact path inside the repository")
 
-    for owner, (when, relpath, doc) in latest.items():
-        file_owner = owner
-        file_handle = ""
-        if isinstance(doc.get("owner"), dict):
-            file_handle = str(doc["owner"].get("handle") or "")
-        if rules.clean_relpath(relpath) == waiver_rel:
+    for owner, rows in by_owner.items():
+        if owner in banned:
             continue
-        if file_owner in banned:
-            continue
-        for rec in rows_from_submission(doc, relpath, file_owner, file_handle, when):
-            if rec["user_id"] in opted:
+        for when, relpath, doc in rows:
+            file_handle = ""
+            if isinstance(doc.get("owner"), dict):
+                file_handle = str(doc["owner"].get("handle") or "")
+            if rules.clean_relpath(relpath) == waiver_rel:
                 continue
-            grouped[rec["user_id"]].append(rec)
+            for rec in rows_from_submission(doc, relpath, owner, file_handle, when):
+                if rec["user_id"] in opted:
+                    continue
+                grouped[rec["user_id"]].append(rec)
 
     if waiver_rel:
         waiver_file = os.path.join(repo, waiver_rel)
@@ -218,13 +223,16 @@ def build(repo, source_commit, generated_at):
 
     neighbours = {}
     for user_id, recs in grouped.items():
-        by_owner = {}
+        # One owner, one credit, even when several of their files name this account.
+        # The newest of those files supplies the handle, time, and path.
+        once = {}
         for rec in recs:
-            current = by_owner.get(rec["owner_id"])
-            if current is None or rec["recommended_at"] >= current["recommended_at"]:
-                by_owner[rec["owner_id"]] = rec
+            current = once.get(rec["owner_id"])
+            if current is None or (rec["recommended_at"], rec["submission"]) >= (
+                    current["recommended_at"], current["submission"]):
+                once[rec["owner_id"]] = rec
         unique = sorted(
-            by_owner.values(),
+            once.values(),
             key=lambda rec: (rec["recommended_at"], user_sort_key(rec["owner_id"])),
         )
         count = len(unique)
@@ -263,11 +271,9 @@ def build(repo, source_commit, generated_at):
         handle = ""
         if isinstance(doc.get("owner"), dict):
             handle = str(doc["owner"].get("handle") or "").lstrip("@")
-        nxt = rules.next_allowed_at(when, interval)
         owners[owner] = {
             "handle": handle,
             "last_submitted_at": rules.iso(when),
-            "next_allowed_at": rules.iso(nxt),
             "status": "banned" if owner in banned else "active",
             "latest_submission": relpath,
         }
@@ -280,7 +286,6 @@ def build(repo, source_commit, generated_at):
         "source_commit": str(source_commit or ""),
         "rules_version": str(build_doc.get("rules_version") or rules.RULES_VERSION),
         "min_recommendations": minimum,
-        "submission_interval_days": interval,
         "neighbours": ordered,
         "owners": owners,
         "opted_out": sorted(opted),

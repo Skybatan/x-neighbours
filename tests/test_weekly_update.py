@@ -35,7 +35,7 @@ def section(text, start, end):
 
 
 def release_notes():
-    path = os.path.join(ROOT, "versions", version_mod.version() + ".json")
+    path = os.path.join(ROOT, "versions", "latest.json")
     with open(path, encoding="utf-8") as fh:
         return json.load(fh)["release_notes"]
 
@@ -75,7 +75,7 @@ class WeeklyCheckTest(unittest.TestCase):
             shutil.rmtree(folder)
 
         skill = read("skills/x-neighbours/SKILL.md")
-        update = section(skill, "### Monday update check", "## Good neighbours")
+        update = section(skill, "### Monday update check", "## Good Neighbours Newsletter")
         self.assertIn("with community mode off", update)
         self.assertIn("version.py --check", update)
         self.assertIn("git pull --ff-only", update)
@@ -179,28 +179,26 @@ class ReleaseNotesTest(unittest.TestCase):
             latest = json.load(fh)
         self.assertEqual(latest["release_notes"], notes)
 
-    def test_notes_print_for_a_version_range(self):
+    def test_notes_print_from_latest_json_only(self):
+        catalog = [
+            {"version": "1.0.0", "release_notes": ["old only", "old two", "old three"]},
+            {"version": "1.1.0", "release_notes": ["middle one", "middle two", "middle three"]},
+            {"version": "1.2.0", "release_notes": ["new one", "new two", "new three"]},
+        ]
+        groups = version_mod.notes_between(catalog, "1.0.0", "1.2.0")
+        self.assertEqual([number for number, _lines in groups], ["1.1.0", "1.2.0"])
         repo = tempfile.mkdtemp()
         try:
             folder = os.path.join(repo, "versions")
             os.makedirs(folder)
-            docs = {
-                "1.0.0": ["old only", "old two", "old three"],
-                "1.1.0": ["middle one", "middle two", "middle three"],
-                "1.2.0": ["new one", "new two", "new three"],
-            }
-            for number, lines in docs.items():
-                with open(os.path.join(folder, number + ".json"), "w", encoding="utf-8") as fh:
-                    json.dump({"version": number, "release_notes": lines}, fh)
-            text, groups = version_mod.format_range(repo, "1.0.0", "1.2.0")
-            self.assertEqual([number for number, _lines in groups], ["1.1.0", "1.2.0"])
-            self.assertIn("- middle one", text)
-            self.assertIn("- new three", text)
-            self.assertNotIn("old only", text)
-            single, one = version_mod.format_range(repo, None, "1.1.0")
-            self.assertEqual([number for number, _lines in one], ["1.1.0"])
-            self.assertIn("- middle two", single)
-            self.assertNotIn("new one", single)
+            with open(os.path.join(folder, "1.1.0.json"), "w", encoding="utf-8") as fh:
+                json.dump({"version": "1.1.0", "release_notes": ["middle one", "middle two", "middle three"]}, fh)
+            with open(os.path.join(folder, "latest.json"), "w", encoding="utf-8") as fh:
+                json.dump({"version": "1.2.0", "release_notes": ["new one", "new two", "new three"]}, fh)
+            text, found = version_mod.format_range(repo, "1.0.0", "1.2.0")
+            self.assertEqual([number for number, _lines in found], ["1.2.0"])
+            self.assertIn("- new one", text)
+            self.assertNotIn("middle one", text)
             script = os.path.join(ROOT, "version.py")
             result = subprocess.run(
                 [sys.executable, script, "--notes", "1.0.0", "1.2.0", "--repo", repo],
@@ -233,6 +231,7 @@ class ReleaseNotesTest(unittest.TestCase):
                     repo, MONDAY, "A Monday line.", "abc", release_notes="Only one | And two")
             with open(os.path.join(repo, "versions", "latest.json"), encoding="utf-8") as fh:
                 self.assertEqual(json.load(fh)["source_commit"], "def")
+            self.assertFalse(os.path.exists(os.path.join(repo, "versions", "1.2.3.json")))
         finally:
             shutil.rmtree(repo)
 
@@ -274,6 +273,7 @@ class BridgeTest(unittest.TestCase):
             self.assertIn("- " + release_notes()[0], first["text"])
             self.assertNotIn("\n", first["owner_line"])
             self.assertIn("Monday check", first["owner_line"])
+            self.assertIn("paused", first["paused_routines"].lower())
             with open(path, encoding="utf-8") as fh:
                 saved = json.load(fh)
             self.assertEqual(saved["last_report_at"], "2026-11-25T09:00:00Z")

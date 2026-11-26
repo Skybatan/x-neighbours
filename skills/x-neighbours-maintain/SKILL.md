@@ -34,7 +34,7 @@ Open a pull request against `main`. The body includes a line `Closes #N`, where 
 
 Never merge. Never enable auto-merge. Never run a merge command. The owner reviews and merges.
 
-Share-list pull requests are not this flow. Neighbour Dog reviews and merges those. See [skills/neighbour-dog/SKILL.md](../neighbour-dog/SKILL.md). A community release updates `versions/` only on Monday (UTC). Docs still do not copy the number out of [`VERSION`](../../VERSION). `versions/latest.json` is the Monday pointer and is the one other file that carries it.
+Share-list pull requests are not this flow. Neighbour Dog reviews and merges those. See [skills/neighbour-dog/SKILL.md](../neighbour-dog/SKILL.md). A community release updates `versions/` only on Monday (UTC). Docs still do not copy the number out of [`VERSION`](../../VERSION). `versions/latest.json` is the only release file.
 
 ## Personal data
 

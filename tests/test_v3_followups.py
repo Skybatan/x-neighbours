@@ -368,7 +368,8 @@ class DocsAndIgnoreTest(unittest.TestCase):
         self.assertIn("requirements.txt` changed", community_skill)
         self.assertIn("submissions/<x user id>/<UTC timestamp>.neighbours", founding)
         self.assertIn("founding-submission", founding)
-        self.assertIn("Do not commit a pre-made list", founding)
+        self.assertIn("submissions/founding/2026-11-26T000000Z.neighbours", founding)
+        self.assertIn("Do not add another pre-made list", founding)
 
 
 def _write(repo, owner, when):

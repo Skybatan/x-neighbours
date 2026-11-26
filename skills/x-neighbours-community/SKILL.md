@@ -64,7 +64,7 @@ If `remind` is true, rewrite the Page with `report_page.py` so the “Post your 
 
 The reminder is skipped when the posting account is already `@SkyXFunNext`. If WriteCanvas fails, the plain-text fallback in the main runbook uses the same `intent` and adds `text` after the note. When you rewrite the Page, keep `--picture-asset` so the house picture stays inside the Page. The main runbook has the WriteCanvasAsset step.
 
-## Community Page
+## Community Honor Roll
 
 This is the list of recommended accounts. It is not the opt-in card and not the share flow. Those stay in the chat.
 
@@ -74,7 +74,7 @@ Send the Page when the owner asks to see the community list, and after the Monda
 python3 community_page.py --global <store>/global_neighbours.neighbours --out <dir>
 ```
 
-If `send` is false, say `reason` in one line. Do not invent a Page. If `send` is true, pass the canvas file to WriteCanvas. Do not pass a canvas id. The title is `Community`. The chat message is `headline` and the Page link. Each @handle on the Page links to that profile. The count is how many owners recommended them. A recommendation is not a follow.
+If `send` is false, say `reason` in one line. Do not invent a Page. If `send` is true, pass the canvas file to WriteCanvas. Do not pass a canvas id. The title is `Community Honor Roll`. The chat message is `headline` and the Page link. Each @handle on the Page links to that profile. The count is how many owners recommended them. A recommendation is not a follow.
 
 ## Sunday reminder
 
@@ -84,7 +84,7 @@ Create this when they join. Sundays at 9:00 AM in the owner’s timezone (the sa
 python3 community.py --file <community path> sunday --now <T> --timezone <IANA name>
 ```
 
-If `remind` is false, send nothing. If it is true, send `text` and nothing else. When they can share, the line invites them. When they cannot, it names the day they can share again. It also says a feature release may land on Monday.
+If `remind` is false, send nothing. If it is true, send `text` and nothing else. The line invites them to share. There is no waiting period between shares. It also says a feature release may land on Monday.
 
 ## Monday global list
 

@@ -22,13 +22,7 @@ Rules: [`RULES.md`](../../RULES.md). Checker: `share_submission.py`. Community f
 git fetch origin <branch>
 ```
 
-Read submission times under `submissions/<their user id>/` on `origin/<branch>`. Only committed files on that branch count. A local draft does not. Also pass `--previous` when `last_submitted_at` is set and `share_state` is `open` or `merged`.
-
-```bash
-python3 share_submission.py next-allowed --repo . --owner-id <id> --now <T> --previous <ISO or omit>
-```
-
-If `allowed` is false, tell them `next_allowed_at` and stop.
+There is no waiting period. A previous share does not block the next one. They may share again after a report that covered a different period.
 
 ## Build the list
 

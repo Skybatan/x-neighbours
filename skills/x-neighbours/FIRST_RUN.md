@@ -20,7 +20,7 @@ Do not tell them the tour is one minute unless that message says so. Reply pages
 
 1. One X account must be connected. If the tools are missing, ask them to tap **Connect**. Do not ask for a password, an API key, or a token. Do not open x.com to log them in.
 2. `get_users_me` with `user.fields=id,name,username,description,profile_image_url`. Copy `config.example.json` to `config.json`. Set `handle` and `user_id`. Set `name` to the display `name` from that call. When `name` is missing or blank, leave it blank: the greeting uses `@handle`. Set `timezone` to an IANA name when you know it. Leave `trial_post_count` at 5 unless they ask for another number.
-3. `get_users_posts` once. `id` is the owner. `max_results` 100. `exclude` replies and retweets. No `start_time`. `post.fields=created_at,public_metrics,conversation_id,referenced_tweets,in_reply_to_user_id`. `expansions=author_id,referenced_posts`. `user.fields=username,name,profile_image_url`. Save with `python3 save_raw.py <file> posts_1`. One page. Fetch `posts_2` only when you still have fewer than `trial_post_count` originals or quotes, `meta.next_token` is set, and the 15-read budget still has room.
+3. `get_users_posts` once. `id` is the owner. `max_results` 100. `exclude` replies and retweets. No `start_time`. `post.fields=created_at,public_metrics,conversation_id`. `expansions=author_id,in_reply_to_user_id,referenced_posts`. `user.fields=username,name,profile_image_url`. Save with `python3 save_raw.py <file> posts_1`. One page. Fetch `posts_2` only when you still have fewer than `trial_post_count` originals or quotes, `meta.next_token` is set, and the 15-read budget still has room. Do not put `author_id`, `in_reply_to_user_id`, or `referenced_tweets` in `post.fields`.
 4. Plan the rest from the saved posts, then send `estimate_message`:
 
 ```bash
@@ -31,7 +31,7 @@ python3 x_neighbours.py --trial-plan --data data --user-id <id>
 
 `estimate_message` is the whole first chat message. It greets them once. Do not write your own hello, and do not send it again when the Page is ready.
 
-5. Replies to those posts: `search_posts_all` (recent search) using the plan's `query` (`conversation_id:` joined with `OR`), `max_results` 100, `post.fields=created_at,author_id,text,in_reply_to_user_id,referenced_tweets,conversation_id`, `expansions=author_id,referenced_posts`. Save each page as `mentions_1`, `mentions_2`, and so on. Recent search returns 25 posts a page even when `max_results` is 100. Keep paging while `next_token` is set, the first-level replies you have saved are still fewer than the posts' `reply_count` total, and the read budget still has room. Stop when that first-level count matches the posts' reply metrics or the budget ends. Do not stop after one extra page. If search is missing, page `get_users_mentions` the same way and stop at the same line. Do not page through the whole account past the budget.
+5. Replies to those posts: `search_posts_all` (recent search) using the plan's `query` (`conversation_id:` joined with `OR`), `max_results` 100, `post.fields=created_at,text,conversation_id`, `expansions=author_id,in_reply_to_user_id,referenced_posts`. Save each page as `mentions_1`, `mentions_2`, and so on. Recent search returns 25 posts a page even when `max_results` is 100. Keep paging while `next_token` is set, the first-level replies you have saved are still fewer than the posts' `reply_count` total, and the read budget still has room. Stop when that first-level count matches the posts' reply metrics or the budget ends. Do not stop after one extra page. If search is missing, page `get_users_mentions` the same way and stop at the same line. Do not page through the whole account past the budget.
 
 A reply counts only when its direct `replied_to` parent is one of the posts in this welcome tour. `conversation_id` is the thread root and is not enough. `in_reply_to_user_id` equal to the owner is not enough. Owner posts P, A replies (A1), the owner replies, A replies again (A2): only A1 counts. A2 is not an unanswered reply.
 
@@ -45,7 +45,7 @@ A reply counts only when its direct `replied_to` parent is one of the posts in t
 python3 x_neighbours.py --now <T> --first-run --good-neighbours <store>/good_neighbours.json --state <store>/state.json
 ```
 
-9. Send the report as a Page. `page_canvas` is `report_first.canvas.tsx` and `page_title` is `Welcome tour`. Pass the whole file to WriteCanvas. Do not pass a canvas id. Do not write the Page by hand.
+9. Send the Period Report as a Page. `page_canvas` is `report_first.canvas.tsx` and `page_title` is `Welcome tour` (this first Period Report keeps that title). Pass the whole file to WriteCanvas. Do not pass a canvas id. Do not write the Page by hand.
 
 The Page opens with `intro`, three short lines. The first line greets them: `Hi <name>! 👋`. `<name>` is the display name from `get_users_me`, or `@handle` when that name is blank. The second line says X Neighbours helps them keep up with and grow the connections around their posts (the people who reply, like, quote and repost). The third line is `Here's a quick welcome tour of your N latest posts.` The name is part of `intro` and is escaped with the rest of the Page data. Do not write the greeting by hand, and do not add a second introduction.
 
@@ -68,7 +68,7 @@ The delivery chat message is `headline`, then the Page link labelled `Welcome to
 
 If WriteCanvas fails or returns no url, send two messages and no Page link. Message 1 is the text of `report_first.md` and no image. Message 2 is `thank_you.text`, a blank line, the link `thank_you.intent` labelled “Post your thank-you”, a blank line, and `thank_you.note`, with the PNG in `images`. That picture-on-chat path is only the fallback.
 
-Do not send a good-neighbours card. Do not send the Good neighbours Page. `add_question` is absent on the welcome tour. Do not ask them to build the list. Do not run `community.py offer`. Do not send a community or share card. `community_offer` and `share_offer` are false. The tour is the five-post report, the greeting, the one-line explainers, and What's next.
+Do not send a good-neighbours card. Do not send the Good Neighbours Newsletter. `add_question` is absent on the welcome tour. Do not ask them to build the list. Do not run `community.py offer`. Do not send a community or share card. `community_offer` and `share_offer` are false. The tour is the five-post report, the greeting, the one-line explainers, and What's next.
 
 10. Then ask what comes next, with `next_steps` from the script. One question. The options are Daily report, Weekly report, and Only when I ask.
 
@@ -76,4 +76,4 @@ Do not send a good-neighbours card. Do not send the Good neighbours Page. `add_q
 - **Weekly report.** Mondays at 9:00. Last 7 days. Read the Monday report steps in [SKILL.md](SKILL.md) and create that routine. Also create the Monday update check.
 - **Only when I ask.** Create no report routine. Do create the Monday update check.
 
-Do not create both report routines. Every choice still gets the Monday update check. Followers and following load on the first regular report, if those files are still missing. That same report is the first time you may send the ⭐ Add card, when `add_question` is present, and the first time you may send the Good neighbours Page, when the list is not empty. Offer community mode once with or after that first regular report, using the community skill. Not before.
+Do not create both report routines. Every choice still gets the Monday update check. Followers and following load on the first regular report, if those files are still missing. That same report is the first time you may send the ⭐ Add card, when `add_question` is present, and the first time you may send the Good Neighbours Newsletter, when the list is not empty. Offer community mode once with or after that first regular report, using the community skill. Not before.

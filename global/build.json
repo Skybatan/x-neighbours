@@ -1,9 +1,8 @@
 {
   "min_recommendations": 2,
-  "submission_interval_days": 7,
   "rules_version": "1",
   "founding_waiver": {
-    "submission": "",
+    "submission": "submissions/founding/2026-11-26T000000Z.neighbours",
     "owner_id": "founding",
     "owner_handle": "founding-submission"
   }

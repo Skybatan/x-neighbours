@@ -29,7 +29,7 @@ NO_ORIGINALS = "No recent original posts from your good neighbours."
 NO_REPLIES = "No replies or quote posts in this stretch."
 NONE_WAITING = "No replies waiting on you."
 NO_THANKS = "No neighbours to thank in this stretch."
-PICTURE_ALT = "House-framed neighbours picture."
+PICTURE_ALT = "Neighbours Picture Day, the house-framed collage."
 
 _URL = re.compile(r"https://\S+")
 
@@ -170,8 +170,11 @@ def build_page_model(activity, since, now, label, show=None, window="day", intro
     """Page model for one report. Wording matches `write_chat_report`."""
     if show is None:
         show = xn.CHAT_SHOW
-    title = xn.period_line(window, since, now, label)
-    summary = xn.count_line(activity["totals"])
+    period = xn.period_line(window, since, now, label)
+    tour = window == "first"
+    title = period if tour else xn.PERIOD_REPORT
+    counts = xn.count_line(activity["totals"])
+    summary = counts if tour else f"{period} · {counts}"
     people = activity["threads"] + activity["interactions"] + activity["catch_up"]
     legend_bits = []
     if any(person.get("stranger") for person in people):
@@ -180,7 +183,6 @@ def build_page_model(activity, since, now, label, show=None, window="day", intro
         legend_bits.append("⭐ = good neighbour")
     legend = " · ".join(legend_bits) if legend_bits else None
 
-    tour = window == "first"
     blocks = []
     flowers = activity["interactions"]
     flowers_explainer = xn.TOUR_FLOWERS if tour else None

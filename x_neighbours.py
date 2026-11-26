@@ -575,6 +575,11 @@ TRIAL_READ_BUDGET = 15
 SEARCH_PAGE_SIZE = 25
 # Reply pages wait on each other. A real tour spent about a minute a page.
 SEARCH_PAGE_SECONDS = 60
+# The four functions. Page titles use these names. File names, flags, and JSON keys stay.
+PERIOD_REPORT = "Period Report"
+GOOD_NEIGHBOURS_NEWSLETTER = "Good Neighbours Newsletter"
+NEIGHBOURS_PICTURE_DAY = "Neighbours Picture Day"
+COMMUNITY_HONOR_ROLL = "Community Honor Roll"
 TOUR_TITLE = "Welcome tour"
 TOUR_FLOWERS = "Flowers are the people who replied, liked, or reposted you."
 TOUR_WHATS_NEW = "What's new is a post you have not caught up with yet."
@@ -586,9 +591,9 @@ TOUR_NEXT_CHOICE = (
     "I'll ask right after this page."
 )
 TOUR_NEXT_LATER = (
-    "Good neighbours, a picture on its own, and the community list come after this tour."
+    "Good Neighbours Newsletter, Neighbours Picture Day, and Community Honor Roll come after this tour."
 )
-PICTURE_NUDGE = "Want a neighbours picture to post? Ask anytime and I'll make one."
+PICTURE_NUDGE = "Want a Neighbours Picture Day to post? Ask anytime and I'll make one."
 
 
 def one_line(value):
@@ -2631,7 +2636,7 @@ def extra_sections(data, since, now, handle, top, like_weight, reply_weight, per
 def main():
     here = os.path.dirname(os.path.abspath(__file__))
     parser = argparse.ArgumentParser(
-        description="Build an X Neighbours report, and sometimes the neighbours picture."
+        description="Build a Period Report, and sometimes Neighbours Picture Day."
     )
     parser.add_argument("--version", action="version", version=xn_version.version())
     parser.add_argument("--config", default=os.path.join(here, "config.json"))
@@ -2670,13 +2675,13 @@ def main():
     parser.add_argument("--trial-post-count", dest="trial_post_count", type=int, default=None,
                         help="how many original posts and quotes the welcome tour uses (default 5)")
     parser.add_argument("--picture-only", action="store_true",
-                        help="draw the neighbours picture from saved data and skip the report")
+                        help="draw Neighbours Picture Day from saved data and skip the Period Report")
     parser.add_argument("--read-budget", dest="read_budget", type=int, default=None,
                         help="cap for --trial-plan (default 15)")
     parser.add_argument("--report-card", action="store_true",
                         help="also write the report card PNG (off by default)")
     parser.add_argument("--picture", dest="picture", action=argparse.BooleanOptionalAction,
-                        default=None, help="include the neighbours picture (default: every report)")
+                        default=None, help="include Neighbours Picture Day (default: every Period Report)")
     parser.add_argument("--show-names", dest="show_names", action="store_true", default=None)
     parser.add_argument("--hide-names", dest="show_names", action="store_false")
     parser.add_argument("--no-image", action="store_true")
@@ -2826,7 +2831,7 @@ def main():
             "picture": picture_path,
             "picture_asset": "asset:" + os.path.basename(picture_path),
             "picture_alt": report_page.PICTURE_ALT,
-            "headline": "Your neighbours picture",
+            "headline": NEIGHBOURS_PICTURE_DAY,
             "days": span_days,
             "thank_you": {
                 "text": text,
@@ -2836,7 +2841,7 @@ def main():
             },
             "messages": [{
                 "part": "picture",
-                "text": "Your neighbours picture",
+                "text": NEIGHBOURS_PICTURE_DAY,
                 "images": [picture_path],
             }],
         }, ensure_ascii=False))

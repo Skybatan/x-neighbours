@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The Good neighbours Page is separate from the report.
+"""The Good Neighbours Newsletter is separate from the Period Report.
 
 Handles and names here are fictional.
 """
@@ -56,7 +56,7 @@ class ModelTest(unittest.TestCase):
         model = gn.build_model(neighbours, catch)
         source = gn.render_canvas(model)
         payload = parse_canvas(source)
-        self.assertEqual(payload["title"], "Good neighbours")
+        self.assertEqual(payload["title"], "Good Neighbours Newsletter")
         self.assertEqual([block["heading"] for block in payload["sections"]], ["Latest posts", "Your list"])
         self.assertIn("Latest posts", json.dumps(payload))
         blob = json.dumps(payload)
@@ -111,7 +111,7 @@ class ModelTest(unittest.TestCase):
         result = subprocess.run(cmd, cwd=ROOT, check=True, capture_output=True, text=True)
         day = json.loads(result.stdout)["day"]
         self.assertTrue(day["good_neighbours_page"]["send"])
-        self.assertEqual(day["good_neighbours_page"]["page_title"], "Good neighbours")
+        self.assertEqual(day["good_neighbours_page"]["page_title"], "Good Neighbours Newsletter")
         self.assertTrue(day["good_neighbours_page"]["add_reminder"])
         with open(day["good_neighbours_page"]["page_canvas"], encoding="utf-8") as fh:
             source = fh.read()

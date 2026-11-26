@@ -200,7 +200,7 @@ def comment_body(result):
     elif decision == "reject":
         lines.append("Not merged.")
     else:
-        lines.append("Merged. The global list is rebuilt from the latest submissions. Neighbour Dog does not edit that file by hand.")
+        lines.append("Merged. The rebuild opens a pull request for the global list. Each owner counts once per account. Neighbour Dog does not edit that file by hand.")
     lines.append("")
     lines.append("Recommendations are discovery only. They are not a follow exchange.")
     return "\n".join(lines)
